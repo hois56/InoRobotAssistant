@@ -28,6 +28,8 @@
 **/backups/
 **/*.tmp
 **/*.bak
+# Chromium/Edge write debug.log into the working folder during headless test runs.
+debug.log
 
 # Debug symbols and publish staging output must not be released accidentally.
 **/*.pdb

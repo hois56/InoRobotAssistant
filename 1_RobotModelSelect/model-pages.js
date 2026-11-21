@@ -6,9 +6,36 @@
 })(typeof window === 'undefined' ? globalThis : window, function () {
     const catalogPath = '/1_RobotModelSelect/';
     const routePrefix = catalogPath + 'models/';
+    const scaraCleanClass = 'ISO Class 4';
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[ch]));
+    }
 
     function isHiddenProduct(product) {
         return product?.specs?.Type === 'SCARA' && String(product.name || '').toUpperCase().startsWith('IR-CS');
+    }
+
+    function subtype(product) {
+        if (isHiddenProduct(product)) return '경제형';
+        if (product.specs['Clean Type'] === 'Yes') return '클린형';
+        if (product.specs.Type === 'SCARA' && /^IR-TS[45]-/i.test(product.id)) return '천장형';
+        return '일반형';
+    }
+
+    function groupCatalogProducts(products) {
+        const groups = new Map();
+        for (const product of products) {
+            // Keep the series, reach and suffix. The Z stroke can differ between bodies.
+            const key = product.specs.Type === 'SCARA' ? product.id.replace(/Z\d+[SC](?=-|$)/i, '') : product.id;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(product);
+        }
+        return Array.from(groups.values()).flatMap(group => {
+            const standard = group.find(product => product.specs['Clean Type'] === 'No');
+            const clean = group.find(product => product.specs['Clean Type'] === 'Yes');
+            return group.length === 2 && standard && clean ? [[standard, clean]] : group.map(product => [product]);
+        });
     }
 
     function modelPath(id) {
@@ -30,12 +57,7 @@
     }
 
     function displayName(product) {
-        let name = String(product.name || product.id);
-        if (product.specs?.Type === 'SCARA' && product.specs['Clean Type'] === 'Yes') {
-            name = name.replace(/\s*\(Clean Type\)\s*/gi, '');
-            name = name.replace(/Z(\d+)(S)/gi, (_, value) => 'Z' + (Number.parseInt(value, 10) - 3) + 'C');
-        }
-        return name;
+        return product.specs?.Type === 'SCARA' ? product.id : String(product.name || product.id);
     }
 
     function imagePath(product) {
@@ -74,5 +96,65 @@
         return 'Model_image/' + image;
     }
 
-    return Object.freeze({catalogPath, routePrefix, modelPath, productFromUrl, displayName, imagePath, isHiddenProduct});
+    function formatSpecWithUnit(value, unit) {
+        const text = String(value ?? '').trim();
+        if (!text || text === '-') return '-';
+        return text.endsWith(unit) ? text : `${text} ${unit}`;
+    }
+
+    function wristTorqueSpecs(product, translate = value => value) {
+        // SCARA manuals list J4 load inertia separately from base reaction and fastener torques.
+        const axes = product.specs.Type === 'SCARA' ? ['J4'] : ['J4', 'J5', 'J6'];
+        return axes.map(axis => {
+            const value = product.detailSpecs?.[`Allowed wrist torque ${axis} (N·m)`];
+            const torque = formatSpecWithUnit(value, 'N·m');
+            return [`${translate('허용 토크')} (${axis})`, torque === '-' ? translate('사양표 미기재') : torque];
+        });
+    }
+
+    function scaraComparisonHtml(variants, translate) {
+        const cell = (variant, text, heading = false) => {
+            const value = escapeHtml(text);
+            if (variants.length === 1) return value;
+            // One keyboard stop per variant. Its numeric cells open the same model.
+            return `<a href="${modelPath(variant.id)}"${heading ? '' : ' tabindex="-1"'}>${value}</a>`;
+        };
+        const headers = variants.map(variant => `<th scope="col">${cell(variant, translate(subtype(variant)), true)}</th>`);
+        const row = (label, unit, readValue) => {
+            const values = variants.map(variant => `<td>${cell(variant, formatSpecWithUnit(readValue(variant), unit))}</td>`);
+            return `<tr><th scope="row">${escapeHtml(translate(label))}</th>${values.join('')}</tr>`;
+        };
+        return `<table class="scara-comparison"><thead><tr><th scope="col">${escapeHtml(translate('사양'))}</th>${headers.join('')}</tr></thead><tbody>` +
+            row('Z축 길이', 'mm', variant => variant.specs['Z axis Length(mm)']) +
+            row('표준 사이클 시간', 's', variant => variant.detailSpecs?.['Standard cycle time (s)']) + '</tbody></table>';
+    }
+
+    function catalogCardHtml(variants, product = variants[0], translate = value => value) {
+        const specs = product.specs;
+        const paired = variants.length > 1;
+        const row = (label, value) => `<div class="spec-row"><span>${escapeHtml(label)}</span><span class="spec-value">${escapeHtml(value || '-')}</span></div>`;
+        const rows = [
+            row(translate('가반 하중 (kg)'), specs['Payload(kg)']),
+            row(translate('리치 (mm)'), specs['Manipulator Length(mm)'])
+        ];
+        if (specs.Type === 'SCARA') {
+            rows.push(scaraComparisonHtml(variants, translate));
+        } else {
+            const wrist = specs['Hollow Wrist'];
+            const wristLabel = {Yes: '중공형', No: '비중공형'}[wrist] || wrist || '-';
+            rows.push(row(translate('중공형'), translate(wristLabel)));
+            rows.push(row(translate('반복 정밀도'), formatSpecWithUnit(product.detailSpecs?.['Repeatability (mm)'], 'mm')));
+        }
+
+        const name = escapeHtml(displayName(product));
+        const href = modelPath(product.id);
+        const title = paired ? `<a class="product-main-link" href="${href}">${name}</a>` : name;
+        const contents = `<img class="product-image" src="${imagePath(product)}" alt="${name}" loading="lazy" decoding="async" style="min-height:180px">` +
+            `<div class="product-name">${title}</div><div class="product-specs">${rows.join('')}</div>`;
+        const attrs = `class="product-card" data-product-id="${escapeHtml(product.id)}"`;
+        return paired ? `<article ${attrs}>${contents}</article>` : `<a ${attrs} href="${href}">${contents}</a>`;
+    }
+
+    return Object.freeze({catalogPath, routePrefix, modelPath, productFromUrl, displayName, imagePath, isHiddenProduct,
+        scaraCleanClass, escapeHtml, subtype, groupCatalogProducts, catalogCardHtml, formatSpecWithUnit, wristTorqueSpecs});
 });

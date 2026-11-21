@@ -91,7 +91,10 @@ function translateUiText(value) {
 
 document.addEventListener('DOMContentLoaded', init);
 
+let filterSoftware;
 function init() {
+    filterSoftware = InoSite.groupFilter(Array.from(document.querySelectorAll('#softwareList .software-group')),
+        section => section.dataset.group, section => section.querySelectorAll('.software-card').length);
     document.querySelectorAll('.filter-btn').forEach(button => {
         button.addEventListener('click', () => selectSoftwareFilter(button.dataset.type));
     });
@@ -109,12 +112,7 @@ function init() {
 
 /** Show product groups without rebuilding Astryx controls or moving keyboard focus. */
 function renderSoftwareList(filterType = 'all') {
-    let matchCount = 0;
-    document.querySelectorAll('#softwareList .software-group').forEach(section => {
-        const visible = filterType === 'all' || filterType === section.dataset.group;
-        section.hidden = !visible;
-        if (visible) matchCount += section.querySelectorAll('.software-card').length;
-    });
+    const matchCount = filterSoftware(filterType);
     const count = document.getElementById('softwareResultCount');
     const label = matchCount + ' ' + translateUiText('개');
     if (count.textContent !== label) count.textContent = label;

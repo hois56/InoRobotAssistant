@@ -9,7 +9,6 @@ pub(super) const VIEW: Node = tag("footer", &[("id", "stats-bar")], &[
             tag("label", &[], &[text("Status")]),
             tag("span", &[("id", "stat-status")], &[text("Initializing...")]),
         ]),
-        tag("span", &[("id", "stat-fps"), ("translate", "no")], &[text("0 FPS")]),
     ]),
     text("\n        "),
     tag("div", &[("id", "panel-launcher"), ("class", "viewer-control-dock"), ("aria-label", "뷰어 제어 도크")], &[

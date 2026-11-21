@@ -2,10 +2,26 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 import vm from 'node:vm';
+import { gunzipSync } from 'node:zlib';
 import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobot, getEducationalModelSelection } from '../../2_3DSimulation/test-model-catalog.mjs';
+import { getStepTessellationParameters } from '../../2_3DSimulation/step-tessellation-parameters.mjs';
 import { getTestModelTreePreset } from '../../2_3DSimulation/test-model-tree-presets.mjs';
 import { normalizeConveyorDimensions, resizeConveyorContent } from '../../2_3DSimulation/conveyor-model.mjs';
+
+test('테스트 STEP의 사전 변환 메시가 현재 원본과 자동 품질 설정에 일치한다', () => {
+    for (const asset of TEST_MODEL_CATALOG.filter(item => /\.st(?:e)?p$/i.test(item.file))) {
+        const url = new URL(`../../2_3DSimulation/test-assets/${asset.file}`, import.meta.url);
+        const source = readFileSync(url);
+        const mesh = JSON.parse(gunzipSync(readFileSync(new URL(`${url.href}.mesh.json.gz`))));
+        assert.equal(mesh.sourceSha256, createHash('sha256').update(source).digest('hex'), asset.id);
+        assert.deepEqual(mesh.parameters, {
+            linearUnit: 'millimeter', linearDeflectionType: 'bounding_box_ratio', ...getStepTessellationParameters(source.length)
+        }, asset.id);
+        assert.ok(mesh.meshes.length > 0 && mesh.meshes.every(entry => entry.partId && entry.positions && entry.indices), asset.id);
+    }
+});
 
 test('컨베이어 치수는 선택된 모델에만 적용하고 유효 범위를 검증한다', () => {
     const dimensions = { length: 1000, width: 400, height: 700 };

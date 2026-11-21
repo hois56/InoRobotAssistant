@@ -7,8 +7,6 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "tool-load-info-panel"), ("c
         text("\n                    "),
         tag("div", &[], &[
             text("\n                        "),
-            tag("span", &[("data-i18n", "legacy.부하 정보")], &[text("부하 정보")]),
-            text("\n                        "),
             tag("h2", &[], &[
                 tag("i", &[("class", "fa-solid fa-weight-hanging"), ("aria-hidden", "true")], &[]),
                 text(" "),

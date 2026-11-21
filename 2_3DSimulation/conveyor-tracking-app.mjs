@@ -1,9 +1,21 @@
 import { fillConveyorForm } from './wasm/forms.mjs';
 import { uiText, uiFormat } from './ui-language.mjs';
 import * as THREE from 'three';
-import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261119-controller-reconnect-1';
+import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261119-tracking-step-1';
 import { conveyorLocalBounds } from './conveyor-scene.mjs?v=20261116-feed-1';
-import { normalizeSensorSettings, conveyorSensorLayout, createConveyorSensorVisual, createConveyorSensorPreview } from './conveyor-sensor-preview.mjs?v=20261118-request-capture-1';
+import { normalizeSensorSettings, conveyorSensorLayout, createConveyorSensorVisual, createConveyorSensorPreview } from './conveyor-sensor-preview.mjs?v=20261119-sensor-capture-1';
+
+// For rejected frames only. Successful replies use flags for camera request IDs.
+const invalidFrameReasons = new Map([
+    [1, '컨베이어 입력 시간 또는 진행 방향이 유효하지 않습니다. 가상 컨트롤러에 다시 연결하세요.'],
+    [2, '연동 중인 엔코더 배율이 변경됐습니다. 기존 배율을 확인하세요.'],
+    [3, '연동 중인 컨베이어 좌표계가 변경됐습니다. 벨트와 로봇 베이스 위치를 확인하세요.'],
+    [4, '연동 중인 센서 입력 설정이 변경됐습니다. 기존 IN 번호를 확인하세요.'],
+    [5, '대기 중인 물체 또는 추종이 있어 기존 엔코더 배율로 다시 연동해야 합니다.'],
+    [6, '대기 중인 물체 또는 추종이 있어 기존 컨베이어와 로봇 베이스 위치로 다시 연동해야 합니다.'],
+    [7, '재연동할 엔코더 위치가 입력 범위를 벗어났습니다.'],
+    [8, '가상 컨트롤러가 엔코더 또는 비전 데이터를 처리할 수 없습니다.'],
+]);
 
 const vector = values => new THREE.Vector3(...values);
 const plainBox = box => ({ min: { x: box.min.x, y: box.min.y, z: box.min.z }, max: { x: box.max.x, y: box.max.y, z: box.max.z } });
@@ -33,18 +45,29 @@ export function createConveyorTrackingApp(adapter) {
         if (dialog) return;
         const button = document.createElement('button'); button.type = 'button'; button.id = 'btn-conveyor-tracking';
         button.dataset.panelToggle = 'conveyor-tracking-dialog';
-        button.innerHTML = '<i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i> 컨베이어';
+        button.innerHTML = `<svg width="14" height="14" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1.5" y="6" width="17" height="6" rx="3"/>
+                <path d="m5.5 12-1 3m10-3 1 3"/>
+            </g>
+            <g fill="currentColor">
+                <circle cx="5.4" cy="9" r="1.1"/><circle cx="10" cy="9" r="1.1"/><circle cx="14.6" cy="9" r="1.1"/>
+            </g>
+        </svg> 컨베이어`;
         button.title = '컨베이어 표시/숨김'; button.setAttribute('aria-label', '컨베이어 표시/숨김');
         document.getElementById('btn-vision-panel')?.after(button);
         dialog = document.createElement('aside'); dialog.id = 'conveyor-tracking-dialog';
         dialog.className = 'vision-panel conveyor-tracking-panel panel-user-hidden panel-edge-resizable';
         dialog.setAttribute('aria-labelledby', 'conveyor-tracking-title');
         fillConveyorForm(dialog);
+        const title = dialog.querySelector('#conveyor-tracking-title');
+        title.firstElementChild.replaceWith(button.querySelector('svg').cloneNode(true));
         (document.getElementById('vision-panel')?.parentElement || document.body).append(dialog);
         const form = dialog.querySelector('form'); fields = form.elements;
         form.addEventListener('submit', event => event.preventDefault());
         status = dialog.querySelector('[data-status]'); table = dialog.querySelector('[data-links]');
         fields.belt.addEventListener('change', () => { stopTest(); loadSettings(); });
+        fields.autoCapture.addEventListener('change', updateCaptureFields);
         for (const field of [fields.testSpeed, fields.testDirection]) field.addEventListener('change', () => { rememberTestSettings(); stopTest(); });
         button.addEventListener('click', () => queueMicrotask(() => { if (dialog.classList.contains('panel-user-hidden')) stopJog(); }));
         const jog = dialog.querySelector('[data-action="jog"]');
@@ -168,12 +191,22 @@ export function createConveyorTrackingApp(adapter) {
         fields.feedPositionRange.value = feed?.positionRange ?? 20; fields.feedRotationRange.value = feed?.rotationRange ?? 15;
         const test = testSettings.get(fields.belt.value);
         fields.testSpeed.value = test?.speed ?? mapping?.conveyorSpeed ?? 100; fields.testDirection.value = test?.direction || 'forward';
-        const settings = saved.get(fields.belt.value); if (!settings) return;
+        const settings = saved.get(fields.belt.value);
+        fields.autoCapture.checked = settings?.autoCapture === true;
+        fields.captureDistance.value = settings?.captureDistance ?? 0;
+        updateCaptureFields();
+        if (!settings) return;
         for (const key of ['channel', 'scale', 'address', 'position', 'width', 'objectType']) fields[key].value = settings[key];
         fields.height.value = settings.height ?? '';
         const index = adapter.controllers().findIndex(item => item.ipAddress === settings.controllerIp);
         if (index >= 0) fields.controller.value = String(index);
     }
+    function updateCaptureFields() {
+        const linked = links.has(fields.belt.value);
+        fields.autoCapture.disabled = linked;
+        fields.captureDistance.disabled = linked || !fields.autoCapture.checked;
+    }
+
     function selectedController() { return adapter.controllers()[Number(fields.controller.value)]; }
     function readSettings() {
         const mapping = selectedMapping();
@@ -181,7 +214,8 @@ export function createConveyorTrackingApp(adapter) {
         return normalizeSensorSettings({ ...saved.get(mapping.gripObjectRef), belt: mapping.gripObjectRef,
             controllerIp: selectedController()?.ipAddress || '', channel: fields.channel.value, scale: fields.scale.value,
             address: fields.address.value, position: fields.position.value, width: fields.width.value,
-            height: fields.height.value === '' ? null : fields.height.value, objectType: fields.objectType.value });
+            height: fields.height.value === '' ? null : fields.height.value, objectType: fields.objectType.value,
+            autoCapture: fields.autoCapture.checked, captureDistance: fields.captureDistance.value });
     }
     function configure(value) {
         const settings = normalizeSensorSettings(value);
@@ -202,6 +236,8 @@ export function createConveyorTrackingApp(adapter) {
         for (const other of links.values()) if (other.controller === controller && (other.tracker.conveyor === channel || other.address === address)) throw new Error('컨베이어 번호 또는 센서 입력이 이미 사용 중입니다.');
         if (!isConveyorSensorAddress(address)) throw new Error('센서 입력은 IN0~64 또는 IN512~2559를 사용하세요.');
         const settings = readSettings();
+        if (settings.autoCapture && !adapter.vision().config.enabled)
+            throw new Error(uiText('비전 패널에서 카메라를 활성화하거나 자동 촬영을 해제하세요.'));
         const belt = adapter.resolveBelt(mapping), layout = conveyorSensorLayout(belt, mapping, settings, adapter.resolveSensor?.(settings));
         const { frame, scale, sensor } = layout;
         const box = conveyorLocalBounds(belt, frame);
@@ -216,7 +252,8 @@ export function createConveyorTrackingApp(adapter) {
         const euler = new THREE.Euler().setFromQuaternion(rotation, 'ZYX');
         const captureOffset = [...position.toArray(), euler.x, euler.y, euler.z].map((value, index) => index < 3 ? value : THREE.MathUtils.radToDeg(value));
         const signature = JSON.stringify({ controller: controller.ipAddress, channel, scale: Number(fields.scale.value),
-            captureOffset, sensor: plainBox(sensor), address, objectType, axis: mapping.conveyorAxis });
+            captureOffset, sensor: plainBox(sensor), address, objectType, axis: mapping.conveyorAxis,
+            autoCapture: settings.autoCapture, captureDistance: settings.captureDistance });
         const previous = suspended.get(mapping.gripObjectRef);
         const tracker = previous?.signature === signature ? previous.tracker
             : new ConveyorTracking({ conveyor: channel, countsPerMm: Number(fields.scale.value), session: crypto.randomUUID(), captureOffset,
@@ -225,8 +262,10 @@ export function createConveyorTrackingApp(adapter) {
         (layout.mount || adapter.scene()).add(helper.group);
         const link = { mapping, controller, belt, frame, scale, tracker, signature, address, objectType, helper, lastSent: 0, pending: false, pendingAt: 0,
             sensorMount: layout.mount, sensorMatrix: layout.mount?.matrixWorld.clone(), beltMatrix: belt.matrixWorld.clone(), base, baseMatrix: base.matrixWorld.clone(), axis: mapping.conveyorAxis,
+            autoCapture: settings.autoCapture, captureDistance: settings.captureDistance,
             manualCapture: false, message: '연결 확인 중', lastReply: null };
         links.set(mapping.gripObjectRef, link);
+        updateCaptureFields();
         saved.set(mapping.gripObjectRef, { ...settings, belt: mapping.gripObjectRef, controllerIp: controller.ipAddress, channel, scale: tracker.countsPerMm,
             address, position: x, width, objectType });
         adapter.save?.();
@@ -243,6 +282,7 @@ export function createConveyorTrackingApp(adapter) {
             suspended.set(key, { tracker: link.tracker, signature: link.signature });
             adapter.stop(link.mapping); link.helper.dispose(); links.delete(key);
         }
+        if (fields) updateCaptureFields();
         render();
     }
     function stopAll(message) { stopTest(); for (const controller of new Set([...links.values()].map(link => link.controller))) releaseController(controller); report(message); }
@@ -341,16 +381,27 @@ export function createConveyorTrackingApp(adapter) {
                     visible.push(object);
                 }
                 const captures = [];
-                let captureDelaySeconds = 0;
-                if (link.manualCapture || link.captureRequest) {
+                let captureDelaySeconds = 0, sensorCapture = null;
+                if (link.autoCapture || link.manualCapture || link.captureRequest) {
                     const inverse = link.frame.matrixWorld.clone().invert();
                     const vision = adapter.vision();
-                    const objects = vision.captureConveyorObjects(visible, point => vector(point).applyMatrix4(inverse).toArray(),
-                        undefined, link.objectType);
-                    captures.push({ requestId: link.captureRequest || 0, objects });
+                    const toConveyor = point => vector(point).applyMatrix4(inverse).toArray();
                     captureDelaySeconds = Number(vision.config.camera.processingMs || 0) / 1000;
+                    if (link.autoCapture) {
+                        const transform = new THREE.Matrix3().setFromMatrix4(link.frame.matrixWorld);
+                        sensorCapture = { distance: link.captureDistance, capture: fraction => {
+                            const shifts = new Map(visible.map((object, index) => {
+                                const { before, after } = entries[index];
+                                const delta = new THREE.Vector3(after.min.x - before.min.x, after.min.y - before.min.y, after.min.z - before.min.z);
+                                return [object, delta.applyMatrix3(transform).multiplyScalar(fraction - 1).toArray()];
+                            }));
+                            return vision.captureConveyorObjects(visible, toConveyor, object => shifts.get(object), link.objectType);
+                        } };
+                    }
+                    if (link.manualCapture || link.captureRequest) captures.push({ requestId: link.captureRequest || 0,
+                        objects: vision.captureConveyorObjects(visible, toConveyor, undefined, link.objectType) });
                 }
-                link.latest = link.tracker.sample({ seconds, distance, objects: entries, captures, captureDelaySeconds });
+                link.latest = link.tracker.sample({ seconds, distance, objects: entries, captures, captureDelaySeconds, sensorCapture });
                 link.manualCapture = false;
                 link.captureRequest = 0;
                 link.helper.setDetected(link.latest.sensors[0].value);
@@ -359,7 +410,14 @@ export function createConveyorTrackingApp(adapter) {
         message(message, controller) {
             if (message.type !== 'conveyorFrameResult') return false;
             const link = [...links.values()].find(item => item.controller === controller && item.tracker.session === message.session);
-            if (!message.success) { for (const item of [...links.values()].filter(item => item.controller === controller)) fail(item, new Error(message.message || 'K14 컨베이어 입력이 거부되었습니다.')); return true; }
+            if (!message.success) {
+                const rejection = message.status === 87 ? invalidFrameReasons.get(message.flags) : undefined;
+                const detail = rejection ? `${uiText(rejection)} (87)`
+                    : message.message || uiText('K14 컨베이어 입력이 거부되었습니다.');
+                const active = link ?? [...links.values()].find(item => item.controller === controller);
+                if (active) fail(active, new Error(detail));
+                return true;
+            }
             if (!link) return true;
             if (message.sequence !== link.lastSent) return true;
             try {
@@ -385,7 +443,8 @@ export function createConveyorTrackingApp(adapter) {
                 ...(item.presetVersion === 2 ? { presetVersion: 2 } : {}),
                 ...(item.moduleModelIds && typeof item.moduleModelIds === 'object' ? { moduleModelIds: { camera: String(item.moduleModelIds.camera || ''), stand: String(item.moduleModelIds.stand || ''), arm: String(item.moduleModelIds.arm || ''), objects: Array.isArray(item.moduleModelIds.objects) ? item.moduleModelIds.objects.filter(id=>typeof id==='string') : [] } } : {}),
                 height: item.height == null ? null : Number(item.height), ...(item.preset === 'tracking-test' ? { preset: item.preset } : {}),
-                address: Number(item.address), position: Number(item.position), width: Number(item.width), objectType: Number(item.objectType || 0)
+                address: Number(item.address), position: Number(item.position), width: Number(item.width), objectType: Number(item.objectType || 0),
+                autoCapture: item.autoCapture === true, captureDistance: Number(item.captureDistance ?? 0)
             });
         },
         reset() { stopAll('장면을 초기화해 컨베이어 연결을 해제했습니다.'); suspended.clear(); preview.clear(); saved.clear(); testSettings.clear(); },

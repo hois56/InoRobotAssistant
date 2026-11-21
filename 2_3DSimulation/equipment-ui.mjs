@@ -298,8 +298,15 @@ export function createEquipmentUi(adapter) {
  function show() {dialog.classList.remove('panel-user-hidden');if(!dialog.open)dialog.show();constrain();adapter.front?.();if(dialog.ownerDocument!==document)dialog.ownerDocument.defaultView.focus();}
  function openGroup(refs) {
   if(!refs.length)return;
-  edit(null,refs[0]);
-  selected.movingRef=new Set(refs);references(true);updateName();
+  // Reopening a group edits the motion that already moves exactly these parts instead of starting a duplicate.
+  const wanted=new Set(refs);
+  const existing=adapter.definitions().find(item=>{
+   if(!EQUIPMENT_TYPES.includes(item.type))return false;
+   const own=equipmentReferences(item,'movingRef');
+   return own.length===wanted.size&&own.every(ref=>wanted.has(ref));
+  });
+  edit(existing||null,refs[0]);
+  if(!existing){selected.movingRef=new Set(refs);references(true);updateName();}
   refs.forEach((ref,index)=>adapter.select?.(ref,index>0));
   show();
  }

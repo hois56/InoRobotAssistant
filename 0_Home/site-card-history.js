@@ -75,88 +75,9 @@
         return historyMarkdownPromise;
     }
 
-    function extractCardSection(markdown, heading) {
-        const lines = markdown.split(/\r?\n/);
-        const startIndex = lines.findIndex((line) => line.trim() === `## ${heading}`);
-        if (startIndex < 0) return [];
-
-        let endIndex = lines.length;
-        for (let index = startIndex + 1; index < lines.length; index += 1) {
-            const line = lines[index].trim();
-            if (line === '---' || line.startsWith('## ')) {
-                endIndex = index;
-                break;
-            }
-        }
-
-        return lines.slice(startIndex + 1, endIndex);
-    }
-
-    function appendInlineMarkdown(container, value) {
-        const parts = String(value || '').split(/(`[^`]+`)/g);
-
-        parts.forEach((part) => {
-            if (part.startsWith('`') && part.endsWith('`')) {
-                const code = document.createElement('code');
-                code.textContent = part.slice(1, -1);
-                container.appendChild(code);
-            } else if (part) {
-                container.appendChild(document.createTextNode(part));
-            }
-        });
-    }
-
-    function renderHistory(lines) {
-        body.replaceChildren();
-        let versionBlock = null;
-
-        lines.forEach((line) => {
-            const trimmed = line.trim();
-
-            if (trimmed.startsWith('### ')) {
-                versionBlock = document.createElement('section');
-                versionBlock.className = 'history-version-block';
-
-                const versionTitle = document.createElement('h3');
-                versionTitle.className = 'history-version-title';
-                versionTitle.textContent = trimmed.slice(4).trim();
-                versionBlock.appendChild(versionTitle);
-                body.appendChild(versionBlock);
-                return;
-            }
-
-            if (!versionBlock || !trimmed.startsWith('- ')) return;
-
-            const rawEntry = trimmed.slice(2).trim();
-            const tagMatch = rawEntry.match(/^`\[([^\]]+)\]`\s*(.*)$/)
-                || rawEntry.match(/^\*\*\[([^\]]+)\]\*\*\s*(.*)$/);
-            const tagName = tagMatch ? tagMatch[1] : '안내';
-            const description = tagMatch ? tagMatch[2] : rawEntry;
-
-            const entry = document.createElement('div');
-            entry.className = 'history-entry';
-
-            const tag = document.createElement('span');
-            tag.className = 'history-tag';
-            tag.dataset.tag = tagName;
-            tag.textContent = tagName;
-
-            const text = document.createElement('div');
-            appendInlineMarkdown(text, description);
-
-            entry.append(tag, text);
-            versionBlock.appendChild(entry);
-        });
-
-        if (!body.children.length) {
-            const message = document.createElement('p');
-            message.className = 'history-message';
-            message.textContent = translate('등록된 버전 기록이 없습니다.');
-            body.appendChild(message);
-        }
-
-        body.scrollTop = 0;
-    }
+    let displayedCard = null;
+    let request = 0;
+    const sections = new Map();
 
     function renderMessage(message) {
         const text = document.createElement('p');
@@ -197,13 +118,23 @@
         currentVersion.textContent = version
             ? (window.InoRobotI18n?.t('common.currentVersion', { version }) || `Current Ver ${version}`)
             : '';
+        if (!modal.classList.contains('is-open')) showModal();
+        const ticket = ++request;
+        if (displayedCard === cardKey) {
+            body.scrollTop = 0;
+            return;
+        }
+        displayedCard = null;
         renderMessage('버전 기록을 불러오는 중입니다.');
-        showModal();
 
         try {
             const markdown = await loadHistoryMarkdown();
-            renderHistory(extractCardSection(markdown, heading));
+            if (ticket !== request) return;
+            if (!sections.has(cardKey)) sections.set(cardKey, InoSite.history(markdown, heading, true));
+            InoSite.renderHistory(body, sections.get(cardKey), translate('등록된 버전 기록이 없습니다.'));
+            displayedCard = cardKey;
         } catch (error) {
+            if (ticket !== request) return;
             renderMessage('버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
         }
     }
@@ -228,17 +159,11 @@
         }
     });
 
-    document.addEventListener('inorobot:languagechange', async () => {
+    document.addEventListener('inorobot:languagechange', () => {
         historyMarkdownPromise = null;
-        if (!activeCardKey || !modal.classList.contains('is-open')) return;
-        const heading = cardHeadings[activeCardKey];
-        title.textContent = getLocalizedCardHeading(activeCardKey);
-        renderMessage('버전 기록을 불러오는 중입니다.');
-        try {
-            const markdown = await loadHistoryMarkdown();
-            renderHistory(extractCardSection(markdown, heading));
-        } catch {
-            renderMessage('버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
-        }
+        sections.clear();
+        displayedCard = null;
+        request++;
+        if (activeCardKey && modal.classList.contains('is-open')) openHistory(activeCardKey, lastFocusedElement);
     });
 })();

@@ -3,10 +3,12 @@ import { test, expect } from '@playwright/test';
 test('solid snaps require a selected face and circles expose quadrants', async ({ page }) => {
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    await route.fulfill({ response, body: `${await response.text()}\nwindow.__faceSnaps = { state, THREE, buildSimulationSnapCandidates, selectSimulationSnapFace, findSimulationSnapAtPointer };` });
+    // Wait for startup to finish so it cannot reset the camera or snap state prepared below.
+    await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__faceSnaps = { state, THREE, buildSimulationSnapCandidates, selectSimulationSnapFace, findSimulationSnapAtPointer };` });
   });
   await page.goto('/2_3DSimulation/index.html');
   await page.waitForFunction(() => window.__faceSnaps?.state.renderer);
+  await page.evaluate(() => window.__simulationReady);
   const result = await page.evaluate(async () => {
     const { state, THREE, buildSimulationSnapCandidates } = window.__faceSnaps;
     state.measurement.active = true;

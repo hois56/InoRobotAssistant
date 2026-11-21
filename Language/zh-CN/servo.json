@@ -2,149 +2,149 @@
   "pages": {
     "servo": {
       "title": "INOVANCE Servo System Solution | InoRobot Assistant",
-      "description": "INOVANCE 서보 기반 PC Ethernet 모션 제어 안내",
+      "description": "基于 INOVANCE 伺服的 PC Ethernet 运动控制介绍",
       "heading": "伺服系统解决方案",
       "hero": {
-        "badge": "타사 솔루션",
-        "tag": "Ethernet 모션 제어",
-        "title": "INOVANCE 서보로 간편하게 완성하는 PC 기반 위치제어",
-        "lead": "별도 모션 컨트롤러나 지령 배선 없이, PC에서 Ethernet 연결만으로 INOVANCE 서보를 손쉽게 다축 제어합니다.",
-        "compatibility": "SV660 · SV670 · SV680 전용",
-        "with": "FASTECH Ezi-MOTIONLINK Plus-E와 함께",
-        "alt": "INOVANCE 서보드라이브와 서보모터"
+        "badge": "第三方解决方案",
+        "tag": "Ethernet 运动控制",
+        "title": "借助 INOVANCE 伺服轻松实现基于 PC 的位置控制",
+        "lead": "无需单独的运动控制器和指令接线，仅通过 PC 的 Ethernet 连接即可轻松实现 INOVANCE 伺服多轴控制。",
+        "compatibility": "SV660 · SV670 · SV680 专用",
+        "with": "搭配 FASTECH Ezi-MOTIONLINK Plus-E",
+        "alt": "INOVANCE 伺服驱动器与伺服电机"
       },
       "connection": {
-        "title": "INOVANCE 서보 기반 Ethernet 모션 제어",
-        "intro": "SV660 · SV670 · SV680 서보드라이브에 Ezi-MOTIONLINK Plus-E를 장착하면, PC에서 Ethernet 연결만으로 최대 254축까지 데이지체인으로 손쉽게 제어할 수 있습니다. Ethernet 스위치가 내장되어 있고, 모션 조건은 파라미터로 저장되며, PC 프로그래밍용 모션 라이브러리(DLL)를 제공합니다.",
-        "pc": "상위 제어기 (PC)",
-        "library": "GUI · 모션 라이브러리(DLL)",
-        "network": "Ethernet 데이지체인 · 최대 254축",
-        "drive": "서보드라이브",
-        "motor": "서보모터",
+        "title": "基于 INOVANCE 伺服的 Ethernet 运动控制",
+        "intro": "在 SV660 · SV670 · SV680 伺服驱动器上安装 Ezi-MOTIONLINK Plus-E 后，仅通过 PC 的 Ethernet 连接即可以菊花链方式轻松控制最多 254 轴。模块内置 Ethernet 交换机，运动条件以参数形式保存，并提供用于 PC 编程的运动库（DLL）。",
+        "pc": "上位控制器（PC）",
+        "library": "GUI · 运动库（DLL）",
+        "network": "Ethernet 菊花链 · 最多 254 轴",
+        "drive": "伺服驱动器",
+        "motor": "伺服电机",
         "link": "Motion Link"
       },
       "points": {
-        "title": "핵심 포인트",
-        "intro": "INOVANCE 서보 성능 그대로, 상위 제어는 PC와 Ethernet으로 간단하게.",
-        "axisTitle": "Ethernet 연결만으로 다축 제어",
-        "axisBody": "듀얼 포트 스위치 내장으로 데이지체인 구성. 로터리 스위치로 IP를 간단히 설정합니다.",
-        "easyTitle": "간편한 설치, 배선 간소화",
-        "easyBody": "INOVANCE 서보드라이브에 바로 장착 — 별도 지령 배선 작업 없이 빠르게 설치합니다.",
-        "guiTitle": "손쉬운 셋업과 프로그래밍",
-        "guiBody": "전용 GUI로 파라미터·조그·원점·반복 테스트를, 지령 테이블을 설정하고, DLL로 PC 프로그램에 바로 연동합니다.",
-        "axes": "254축"
+        "title": "核心要点",
+        "intro": "保留 INOVANCE 伺服性能，上位控制只需 PC 与 Ethernet。",
+        "axisTitle": "仅通过 Ethernet 连接实现多轴控制",
+        "axisBody": "内置双端口交换机，可组成菊花链。通过旋转开关轻松设置 IP。",
+        "easyTitle": "安装简便，接线精简",
+        "easyBody": "直接安装在 INOVANCE 伺服驱动器上，无需额外的指令接线即可快速完成安装。",
+        "guiTitle": "轻松完成设置与编程",
+        "guiBody": "使用专用 GUI 设置参数、点动、原点复归、重复测试和指令表，并通过 DLL 直接集成到 PC 程序中。",
+        "axes": "254 轴"
       },
       "set": {
-        "title": "추천 SET 구성",
-        "intro": "아래 구성을 세트로 구매하여 손쉽게 위치제어를 구현합니다.",
-        "badge": "원스톱 세트 구매",
-        "drive": "INOVANCE 서보드라이브",
-        "motor": "INOVANCE 서보모터",
-        "result": "PC 기반 Ethernet 위치제어 완성",
+        "title": "推荐套装配置",
+        "intro": "成套购买以下配置，即可轻松实现位置控制。",
+        "badge": "一站式套装采购",
+        "drive": "INOVANCE 伺服驱动器",
+        "motor": "INOVANCE 伺服电机",
+        "result": "完成基于 PC 的 Ethernet 位置控制",
         "checks": [
-          "장착만으로 셋업 완료",
-          "최대 254축 확장",
-          "GUI · DLL 제공"
+          "安装即完成设置",
+          "最多扩展至 254 轴",
+          "提供 GUI · DLL"
         ]
       },
       "naming": {
-        "title": "형번 체계",
-        "intro": "INOVANCE 서보용 드라이브 공통 코드 INO를 선택합니다.",
-        "series": "시리즈명",
-        "communication": "기본형",
+        "title": "型号命名规则",
+        "intro": "为 INOVANCE 伺服选择驱动器通用代码 INO。",
+        "series": "系列名称",
+        "communication": "基本型",
         "communicationValue": "PE : Plus Ethernet",
-        "drive": "드라이브 종류",
+        "drive": "驱动器类型",
         "driveValue": "INO : INOVANCE SV660 / SV670 / SV680"
       },
       "dimensions": {
-        "title": "제어기 크기",
-        "intro": "드라이브 전면에 장착되는 소형 모듈.",
-        "drawing": "제어기 치수 도면 (mm)",
-        "product": "Ezi-MOTIONLINK Plus-E 모듈",
-        "width": "폭 (W)",
-        "height": "높이 (H)",
-        "depth": "깊이 (D)",
-        "screws": "고정 나사"
+        "title": "控制器尺寸",
+        "intro": "安装在驱动器前面的小型模块。",
+        "drawing": "控制器尺寸图（mm）",
+        "product": "Ezi-MOTIONLINK Plus-E 模块",
+        "width": "宽度（W）",
+        "height": "高度（H）",
+        "depth": "深度（D）",
+        "screws": "固定螺丝"
       },
       "specs": {
-        "title": "제어기 규격",
-        "intro": "Ezi-MOTIONLINK Plus-E 공통 사양",
+        "title": "控制器规格",
+        "intro": "Ezi-MOTIONLINK Plus-E 通用规格",
         "rows": [
           {
-            "label": "입력 전압",
+            "label": "输入电压",
             "value": "24 V DC ± 10 %"
           },
           {
-            "label": "다축 제어",
-            "value": "최대 254축 구동 (IP: 1 ~ 254 설정)"
+            "label": "多轴控制",
+            "value": "最多驱动 254 轴（IP：1 ~ 254 设置）"
           },
           {
-            "label": "소비 전류",
-            "value": "최대 500 mA"
+            "label": "消耗电流",
+            "value": "最大 500 mA"
           },
           {
-            "label": "사용 온도 / 습도",
-            "value": "0 ~ 55 °C / 35 ~ 85 % RH (결로 없을 것)"
+            "label": "使用温度 / 湿度",
+            "value": "0 ~ 55 °C / 35 ~ 85 % RH（无凝露）"
           },
           {
-            "label": "보관 온도 / 습도",
+            "label": "保存温度 / 湿度",
             "value": "-20 ~ 70 °C / 10 ~ 90 % RH"
           },
           {
-            "label": "내진동",
+            "label": "耐振动",
             "value": "0.5 g"
           },
           {
-            "label": "표시기",
-            "value": "7세그먼트 LED — IP 주소, 알람 상태"
+            "label": "显示",
+            "value": "7 段 LED — IP 地址、报警状态"
           },
           {
-            "label": "지령 펄스 출력",
-            "value": "2펄스(CW/CCW) 또는 1펄스(Pulse/Dir), 최대 5 MHz"
+            "label": "指令脉冲输出",
+            "value": "2 脉冲（CW/CCW）或 1 脉冲（Pulse/Dir），最大 5 MHz"
           },
           {
-            "label": "엔코더 입력",
-            "value": "최대 4 MHz"
+            "label": "编码器输入",
+            "value": "最大 4 MHz"
           },
           {
-            "label": "위치 지령 범위",
-            "value": "-134,217,728 ~ +134,217,727 펄스 (28비트)"
+            "label": "位置指令范围",
+            "value": "-134,217,728 ~ +134,217,727 脉冲（28 位）"
           },
           {
-            "label": "가감속",
-            "value": "대칭 / 비대칭 사다리꼴"
+            "label": "加减速",
+            "value": "对称 / 非对称梯形"
           },
           {
-            "label": "입력 신호",
-            "value": "고정 3점 (LIMIT+, LIMIT−, ORIGIN) + 가변 1점 (포토커플러)"
+            "label": "输入信号",
+            "value": "固定 3 点（LIMIT+、LIMIT−、ORIGIN）+ 可变 1 点（光耦）"
           },
           {
-            "label": "출력 신호",
-            "value": "가변 1점 (포토커플러) + 브레이크 신호 1점"
+            "label": "输出信号",
+            "value": "可变 1 点（光耦）+ 制动信号 1 点"
           },
           {
-            "label": "통신",
-            "value": "10BASE-T / 100BASE-TX, 전이중, 듀얼 포트 스위치 내장"
+            "label": "通信",
+            "value": "10BASE-T / 100BASE-TX，全双工，内置双端口交换机"
           },
           {
-            "label": "원점 복귀",
-            "value": "원점 센서, Z상, 리밋 센서(+/−)"
+            "label": "原点复归",
+            "value": "原点传感器、Z 相、限位传感器（+/−）"
           },
           {
-            "label": "위치 제어",
-            "value": "상대값 / 절대값 이동 모드"
+            "label": "位置控制",
+            "value": "相对值 / 绝对值移动模式"
           },
           {
-            "label": "사용자 소프트웨어",
-            "value": "Ezi-MOTION Plus-E (Windows 7 이상)"
+            "label": "用户软件",
+            "value": "Ezi-MOTION Plus-E（Windows 7 及以上）"
           },
           {
-            "label": "모션 API",
-            "value": "모션 라이브러리 (Windows / Linux)"
+            "label": "运动 API",
+            "value": "运动库（Windows / Linux）"
           }
         ]
       },
-      "source": "FASTECH 제품 · FASTECH Ezi-MOTIONLINK Plus-E 카탈로그 (KOR Rev.6.2) 발췌"
+      "source": "FASTECH 产品 · 摘自 FASTECH Ezi-MOTIONLINK Plus-E 产品目录（KOR Rev.6.2）"
     }
   }
 }

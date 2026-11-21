@@ -12,13 +12,24 @@ async function setup(page) {
     });
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: await response.text() + '\nwindow.__controllerConfig={state,togglePanelVisibility,refreshVirtualControllerUi,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,getArticulatedRobots,saveMotionProjectNow,connectVirtualController};' });
+        await route.fulfill({ response, body: (await response.text()).replace('init();\n', 'window.__simulationReady = init();\n') + '\nwindow.__controllerConfig={state,togglePanelVisibility,refreshVirtualControllerUi,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,getArticulatedRobots,saveMotionProjectNow,connectVirtualController};' });
     });
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__controllerConfig?.state.workspaceRecovery.ready);
+    // Finish startup (including the first bridge health check) before tests replace its timers.
+    await page.evaluate(() => window.__simulationReady);
     await page.evaluate(() => window.__controllerConfig.togglePanelVisibility('virtual-controller-panel'));
     return { errors, commands };
 }
+
+test('전용 브리지는 기존 이름으로 다운로드된다', async ({ page }) => {
+    await setup(page);
+    const link = page.locator('.virtual-controller-bridge-download');
+    await expect(link).toHaveAttribute('download', 'InoRobotVirtualControllerBridge.zip');
+    const [download] = await Promise.all([page.waitForEvent('download'), link.click()]);
+    expect(download.suggestedFilename()).toBe('InoRobotVirtualControllerBridge.zip');
+    expect(await download.failure()).toBeNull();
+});
 
 test('미연결 구성도 순서대로 가상 IP를 배정하고 종류별 주소를 유지한다', async ({ page }) => {
     const { errors } = await setup(page);
@@ -205,6 +216,8 @@ test('연결 준비 중 삭제한 설정은 인증 응답이 늦게 도착해도
         clearTimeout(controller.bridgeHealthTimer);
         controller.bridgeHealthTimer = null;
         controller.bridgeHealthMonitorGeneration += 1;
+        // Discard a monitor health check still in flight; it would restore the token and skip the delayed request.
+        controller.bridgeHealthCheckSequence += 1;
         controller.bridgeToken = null;
     });
     let releaseHealth;

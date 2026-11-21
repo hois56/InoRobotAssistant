@@ -302,13 +302,14 @@ assert((viewerSource.match(/applyAxesHelperColors\(/g) || []).length >= 3, 'Ever
 assert((viewerSource.match(/applyTransformControlColors\(/g) || []).length >= 3, 'Every transform gizmo must use the shared RGB palette');
 assert(/const SCARA_TOOL_AXES\s*=\s*\{\s*x:\s*\[1,\s*0,\s*0\],\s*y:\s*\[0,\s*1,\s*0\],\s*z:\s*\[0,\s*0,\s*1\]\s*\}/.test(viewerSource), 'SCARA Tool axes must match the Base coordinate system');
 assert(/const SIX_AXIS_TOOL_AXES\s*=\s*\{\s*x:\s*\[0,\s*0,\s*1\],\s*y:\s*\[0,\s*-1,\s*0\],\s*z:\s*\[1,\s*0,\s*0\]\s*\}/.test(viewerSource), 'Six-axis Tool axes must retain the flange coordinate mapping');
-assert(viewerSource.includes('toolAxes: SCARA_TOOL_AXES') && viewerSource.includes('toolAxes: SIX_AXIS_TOOL_AXES'), 'Robot manifests must use their type-specific Tool axes');
+// Ceiling SCARA uses its own flange orientation; floor SCARA and six-axis robots use the shared constants.
+assert(/toolAxes: kinematicVariant === 'ceiling-scara'[\s\S]{0,120}?:\s*SCARA_TOOL_AXES,/.test(viewerSource) && viewerSource.includes('toolAxes: SIX_AXIS_TOOL_AXES'), 'Robot manifests must use their type-specific Tool axes');
 assert(viewerSource.includes("toolAxesAtTcp.name = 'Tool axes at TCP'"), 'TCP axes must be identified as the Tool coordinate system');
 assert(viewerSource.includes('tcpFrame.add(toolAxesAtTcp)'), 'TCP axes must inherit the live Tool frame pose');
 assert(viewerSource.includes('robot.userData.toolAxesAtTcp = toolAxesAtTcp'), 'Robot state must retain the Tool axes helper');
 assert(viewerSource.includes('TCP_AXES_SCREEN_PIXELS = 40'), 'TCP axes must use a compact target size on screen');
 assert(viewerSource.includes('function updateCameraScaledTcpAxes('), 'TCP axes must respond to camera distance and zoom');
-assert(/updateCameraScaledTcpAxes\(\);[\s\S]*?updateSimulationSnapMarkerCameraScale\(\);[\s\S]*?state\.renderer\.render/.test(viewerSource), 'TCP axes must be resized immediately before each render');
+assert(/updateCameraScaledTcpAxes\(\);[\s\S]*?updateSimulationSnapMarkerCameraScale\(\);[\s\S]*?renderSimulationScene\(state\.renderer, state\.camera\)/.test(viewerSource), 'TCP axes must be resized immediately before each render');
 assert(!viewerSource.includes('Base axes at TCP') && !viewerSource.includes('baseAxesAtTcp'), 'TCP axes must not remain fixed to the Base frame');
 const tcpVisualSource = viewerSource.slice(
     viewerSource.indexOf('function syncTcpVisualAtPose('),
@@ -447,7 +448,7 @@ for (const angle of [-132, -120, -45, 0, 45, 120, 132]) {
     ).scale;
     assert(Math.abs(mappedEndDistance - endDistance * endScale) < 1e-8, `SCARA conduit did not flow continuously into J2 at J1=${angle}`);
 }
-assert(viewerSource.includes("if (robot.userData.manifest?.robotType === 'scara') return solveScaraIK(robot, target);"), 'SCARA must use analytic IK');
+assert(/if \(robot\.userData\.manifest\?\.robotType === 'scara'\) return solveScaraIK\(robot, target(?:, precision)?\);/.test(viewerSource), 'SCARA must use analytic IK');
 assert(viewerSource.includes('const targetFlangeQuaternion = target.quaternion.clone()')
     && viewerSource.includes('const targetFlangePosition = target.position.clone().sub('),
 'SCARA analytic IK must remove the active TCP offset before solving the flange target');

@@ -1,22 +1,8 @@
 /* Paper and ink shared by the catalogue, engineering tools and resource pages. */
 html:root {
     color-scheme: light;
-    --tool-paper: #f3f4ef;
-    --tool-header: #fafaf6;
-    --tool-surface: #fdfefb;
-    --tool-inset: #edf0e8;
-    --tool-hover: #e5eade;
-    --tool-ink: #1b2325;
-    --tool-muted: #505c53;
-    --tool-line: #cdd3c8;
-    --tool-border-strong: #82947a;
-    --tool-accent: #36552f;
-    --tool-selected: #e0eccf;
-    --tool-action: #304735;
-    --tool-action-hover: #405d45;
     --tool-danger: #963a32;
     --tool-warning: #7c501d;
-    --tool-shadow: 0 3px 12px rgba(37, 49, 35, .055);
     --ino-bg: var(--tool-paper);
     --ino-surface: var(--tool-surface);
     --ino-primary: var(--tool-ink);
@@ -49,29 +35,13 @@ html body[data-design-page] {
     background: var(--tool-paper);
     font-family: Inter, "Segoe UI", "Noto Sans KR", "Malgun Gothic", "Microsoft YaHei", sans-serif;
 }
-body[data-design-page] [data-theme-accent="blue"] {
+body[data-design-page] [data-theme-accent] {
     --page-button: var(--tool-action);
     --page-button-hover: var(--tool-action-hover);
-    --page-accent: #315474;
-    --page-icon-top: #dceaf4;
-    --page-icon-bottom: #dceaf4;
-    --page-edge: #9ab1c2;
-}
-body[data-design-page] [data-theme-accent="teal"] {
-    --page-button: var(--tool-action);
-    --page-button-hover: var(--tool-action-hover);
-    --page-accent: #365c46;
-    --page-icon-top: #e1eddb;
-    --page-icon-bottom: #e1eddb;
-    --page-edge: #9aad95;
-}
-body[data-design-page] [data-theme-accent="gold"] {
-    --page-button: var(--tool-action);
-    --page-button-hover: var(--tool-action-hover);
-    --page-accent: #6f542c;
-    --page-icon-top: #f1e8d7;
-    --page-icon-bottom: #f1e8d7;
-    --page-edge: #bbab8d;
+    --page-accent: var(--tool-accent);
+    --page-icon-top: var(--tool-selected);
+    --page-icon-bottom: var(--tool-selected);
+    --page-edge: var(--tool-border-strong);
 }
 html body[data-design-page] > :is(header#topbar, .inorobot-responsive-header, .document-header, .site-header, .software-header) {
     background: var(--tool-header);
@@ -93,13 +63,19 @@ body[data-design-page] .inorobot-language-select option { background: var(--tool
         min-height: 68px;
         padding-block: 8px !important;
     }
-    body[data-design-page] > header .header-inner { min-height: 52px; }
-    body[data-design-page="software"] .header-inner { min-height: 68px; padding-block: 8px; }
+    body[data-design-page] > header .header-inner { min-height: 51px; }
+    /* Same 68px bar as the other tools (67px row + 1px bottom border). */
+    body[data-design-page="software"] > header .header-inner { min-height: 67px; padding-block: 8px; }
     html body[data-design-page]:not([data-design-page="simulation"]) > header :is(.logo-link img, .inorobot-header-brand > a > img) {
         width: 150px !important;
         height: 40px !important;
     }
     body[data-design-page="project"] > header #appLogo { padding: 0; }
+}
+@media (max-width: 720px) {
+    /* Phone header bars are 68px including the 1px bottom border, like the other tools. */
+    body[data-design-page="software"] > header .header-inner { min-height: 67px; padding-block: 9px; }
+    body[data-design-page="document"] > header .header-inner { min-height: 47px; }
 }
 
 html body[data-design-page] :is(.glass-card, .glass, .filter-section, .content-card, .history-dialog, .modal-content, .cart-panel) {
@@ -141,7 +117,7 @@ body[data-design-page="model"] {
     --border-color: var(--tool-line);
     --glass-bg: var(--tool-surface);
 }
-body[data-design-page="model"] .product-image { filter: drop-shadow(0 4px 4px #26342618); }
+body[data-design-page="model"] .product-image { filter: drop-shadow(0 4px 4px #16375218); }
 body[data-design-page="model"] .product-card { border-top: 1px solid var(--tool-line); }
 body[data-design-page="model"] .product-card:hover { border-color: var(--tool-border-strong); }
 body[data-design-page="model"] .filter-option.active { color: var(--tool-accent); background: var(--tool-selected); }
@@ -154,12 +130,22 @@ body[data-design-page="tool"] :is(.overall.ng, td.ng, .delbtn) { color: var(--to
 body[data-design-page="tool"] .warn { color: var(--tool-warning); }
 body[data-design-page="tool"] .info-tip { color: var(--tool-ink); background: var(--tool-surface); }
 
-body[data-design-page="project"] > header :is(#btnGuide, #btnOption) {
-    background: var(--tool-inset);
-    color: var(--tool-accent);
-    border-color: var(--tool-line);
+/* Dialog backdrops use the same navy veil as the home and history dialogs. */
+body[data-design-page="model"] .modal-overlay,
+body[data-design-page="project"] :is(#optionsModal, #simulationModal, #visionModal, #nameModal) {
+    background-color: rgba(20, 37, 53, .42);
+    backdrop-filter: none;
 }
-body[data-design-page="project"] > header :is(#btnGuide, #btnOption):hover { background: var(--tool-hover); }
+/* The guide's first child is its backdrop, not the dialog box the shared panel rule targets. */
+body[data-design-page="project"] #guideModal > div.absolute.inset-0 {
+    background: rgba(20, 37, 53, .42) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none;
+}
+/* Option description pane: a light surface instead of the old dark overlay. */
+body[data-design-page="project"] #optionsModal [class*="bg-slate-950/"] { background-color: var(--tool-surface); }
 body[data-design-page="project"] #guideModal :is(.guide-desc, .tc-lbl, .tc-sh-lbl) { color: var(--tool-muted); }
 body[data-design-page="project"] #guideModal .tc-in { color: #2c5278; }
 body[data-design-page="project"] #guideModal .tc-out { color: #365d3d; }
@@ -182,7 +168,7 @@ body[data-design-page="debugging"] .history-tag[data-tag="변경"] { color: #355
 body[data-design-page="debugging"] .history-tag:is([data-tag="개선"], [data-tag="배포"]) { color: #59456e; background: #eae4f1; }
 body[data-design-page="calibration"] #axis-rows input { background: var(--tool-surface); color: var(--tool-ink); }
 body[data-design-page="servo"] .model-name b { color: var(--tool-muted); }
-body[data-design-page="servo"] .hero { background: #e8eee2; border-color: var(--tool-line); color: var(--tool-ink); }
+body[data-design-page="servo"] .hero { background: var(--tool-selected); border-color: var(--tool-line); color: var(--tool-ink); }
 body[data-design-page="servo"] :is(.hero h2, .hero-lead, .hero-with, .model-tags span) { color: var(--tool-ink); }
 body[data-design-page="privacy"] :is(h1, h3, .meta strong) { color: var(--tool-ink); }
 body[data-design-page="privacy"] a { color: var(--tool-accent); }
@@ -206,16 +192,6 @@ body[data-design-page="software"] .software-group {
     --product-button-edge: var(--tool-action);
     --product-icon-top: var(--tool-selected);
     --product-icon-bottom: var(--tool-selected);
-}
-body[data-design-page="software"] .software-group[data-group="InoRobotTP"] {
-    --product-accent: #315474;
-    --product-icon-top: #dceaf4;
-    --product-icon-bottom: #dceaf4;
-}
-body[data-design-page="software"] .software-group[data-group="InoRobotKoreanInstaller"] {
-    --product-accent: #6f542c;
-    --product-icon-top: #f1e8d7;
-    --product-icon-bottom: #f1e8d7;
 }
 body[data-design-page="software"] .filter-btn.active { background: var(--tool-selected); color: var(--tool-accent); }
 body[data-design-page="software"] .release-list { background: var(--tool-surface); border: 1px solid var(--tool-line); }

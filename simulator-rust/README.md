@@ -17,7 +17,7 @@ node simulator-rust/target/standalone/start.cjs
 
 상단의 **60 FPS** 체크박스는 화면 렌더링 상한을 켠다. 기본값은 꺼짐이며, 브라우저와 디스플레이가 제공하는 화면 갱신 주기로 그린다. 선택은 같은 브라우저 주소에서 다시 열어도 유지된다. 현재 FPS는 왼쪽 하단 상태 표시 아래에서 확인할 수 있다.
 
-컨트롤러 연결 패널에서 **브리지 다운로드**를 선택해 Rust 브리지를 받은 다음 압축을 풀고 `start-rust-bridge.cmd`를 실행한다. 실행 및 원복 방법은 `2_3DSimulation/RustControllerBridge/README.md`에 있다.
+컨트롤러 연결 패널에서 **브리지 다운로드**를 선택한 뒤 압축을 풀고 `InoRobotVirtualControllerBridge.exe`를 실행한다. 실행 방법은 `2_3DSimulation/VirtualControllerBridge/README.md`에 있다.
 
 ## 빌드와 검사
 
@@ -29,7 +29,7 @@ node simulator-rust/build.mjs
 node node_modules/@playwright/test/cli.js test --config=simulator-rust/playwright.config.mjs
 ```
 
-독립 실행판은 웹사이트의 브리지 다운로드를 포함한다. 별도로 빌드한 브리지 ZIP을 넣으려면 `build.mjs`에 `--rust-bridge-zip=<브리지 ZIP 경로>`를 전달한다.
+독립 실행판은 웹사이트의 브리지 다운로드를 포함한다. 별도로 빌드한 브리지 ZIP을 넣으려면 `build.mjs`에 `--bridge-zip=<브리지 ZIP 경로>`를 전달한다.
 
 빌드는 저장소의 `2_3DSimulation/wasm/simulation.wasm`도 갱신한다. Windows에서 소스를 빌드하려면 Cargo의 호스트 빌드 스크립트를 링크할 수 있는 환경이 필요하다. MSVC 도구 체인은 Visual Studio C++ 빌드 도구를, GNU 도구 체인은 MinGW 링커를 사용한다. SPC25 행렬 연산을 재생성해야 할 때는 저장소의 펌웨어 레지스터 명령 목록을 갱신한 뒤 `node simulator-rust/generate-matrix.mjs`를 실행한다.
 

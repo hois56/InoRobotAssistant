@@ -2,6 +2,13 @@
 // One clock drives scene motion, sensor edges and capture encoder latches.
 import { engine, numbers } from './wasm/engine.mjs';
 const MAX_EVENTS = 500;
+const MAX_SAMPLE_SECONDS = 0.25;
+
+export function forEachConveyorTrackingStep(elapsed, advance) {
+    const steps = Math.max(1, Math.ceil(elapsed / MAX_SAMPLE_SECONDS));
+    const seconds = elapsed / steps;
+    for (let step = 0; step < steps; step++) advance(seconds);
+}
 const AXES = ['x', 'y', 'z'];
 
 function finite(value, name, min = -1e9, max = 1e9) {
@@ -77,12 +84,13 @@ export class ConveyorTracking {
         this.levels = new Map(this.sensors.map(s => [s.id, false]));
         this.pending = []; this.acknowledged = 0; this.lastFrame = null;
         this.processingCaptures = [];
+        this.captureTriggers = [];
     }
 
     // Returns displacement to use for the rendered belt. A caller must pass
     // before/after geometry from that same step to sample(), without a new clock.
     movement(seconds, speed) {
-        finite(seconds, 'seconds', 0, 0.25); finite(speed, 'speed', -5000, 5000);
+        finite(seconds, 'seconds', 0, MAX_SAMPLE_SECONDS); finite(speed, 'speed', -5000, 5000);
         return seconds * speed;
     }
 
@@ -94,8 +102,8 @@ export class ConveyorTracking {
         return structuredClone(this.lastFrame);
     }
 
-    sample({ seconds, distance, objects = [], captures = [], captureDelaySeconds = 0 }) {
-        finite(seconds, 'seconds', 0, 0.25); finite(distance, 'distance', -1250, 1250);
+    sample({ seconds, distance, objects = [], captures = [], captureDelaySeconds = 0, sensorCapture = null }) {
+        finite(seconds, 'seconds', 0, MAX_SAMPLE_SECONDS); finite(distance, 'distance', -1250, 1250);
         finite(captureDelaySeconds, 'camera processing time', 0, 60);
         if (seconds === 0 && distance !== 0) throw new RangeError('motion needs elapsed time');
         if (seconds > 0 && Math.abs(distance / seconds) > 5000.000001) throw new RangeError('speed');
@@ -108,6 +116,14 @@ export class ConveyorTracking {
         const count = encoder(position, this.countsPerMm);
         const events = [], levels = new Map(this.levels);
         const processing = [...this.processingCaptures];
+        const scheduled = sensorCapture ? [...this.captureTriggers] : [];
+        const triggerDistance = finite(sensorCapture?.distance ?? 0, 'sensor trigger distance', 0, 1e6);
+        const shots = [...captures];
+        const direction = Math.sign(distance);
+        const expose = fraction => {
+            // One explicit exposure in this step also serves a coincident sensor trigger.
+            if (!captures.length) shots.push({ fraction, objects: sensorCapture.capture(fraction) });
+        };
         const stamp = fraction => ({
             time: this.elapsed + seconds * fraction,
             position: this.position + distance * fraction,
@@ -122,6 +138,10 @@ export class ConveyorTracking {
                 level = value;
                 events.push({ kind: 'sensor', sensor: sensor.id, address: sensor.address, value: value ? 1 : 0,
                     ...stamp(fraction) });
+                if (value && sensorCapture) {
+                    if (triggerDistance) scheduled.push({ position: this.position + distance * fraction, direction });
+                    else expose(fraction);
+                }
             };
             if (!occupied.length || occupied[0][0] > 0) edge(false, 0);
             for (const [enter, leave] of occupied) {
@@ -130,7 +150,18 @@ export class ConveyorTracking {
             }
             levels.set(sensor.id, level);
         }
-        for (const capture of captures) {
+        const pendingTriggers = [];
+        for (const shot of scheduled) {
+            const travel = shot.direction || direction;
+            const travelled = distance * travel;
+            const remainingDistance = triggerDistance - (this.position - shot.position) * travel;
+            if (travelled > 0 && remainingDistance <= travelled + 1e-9) {
+                expose(Math.max(0, Math.min(1, remainingDistance / travelled)));
+            } else {
+                pendingTriggers.push({ ...shot, direction: travel });
+            }
+        }
+        for (const capture of shots) {
             const fraction = finite(capture.fraction ?? 1, 'capture fraction', 0, 1);
             if (!Array.isArray(capture.objects) || capture.objects.length > MAX_EVENTS) throw new RangeError('vision objects');
             const detected = capture.objects.map(object => {
@@ -147,11 +178,12 @@ export class ConveyorTracking {
             else remaining.push(shot);
         }
         events.sort((a, b) => a.time - b.time);
-        if (this.pending.length + events.length + remaining.length > MAX_EVENTS) throw new RangeError('unacknowledged conveyor events full');
+        if (this.pending.length + events.length + remaining.length + pendingTriggers.length > MAX_EVENTS) throw new RangeError('unacknowledged conveyor events full');
         // Commit after every validation. Failed frames do not move the encoder.
         for (const event of events) event.id = ++this.eventId;
         this.pending.push(...events); this.levels = levels;
         this.processingCaptures = remaining;
+        this.captureTriggers = pendingTriggers;
         this.position = position; this.positionError = positionError; this.elapsed += seconds; ++this.sequence;
         const phase = Number((BigInt(count) % 4n + 4n) % 4n);
         this.lastFrame = {
@@ -176,6 +208,7 @@ export class ConveyorTracking {
         this.pending = retained ? this.pending.filter(stillRequested) : [];
         this.processingCaptures = retained
             ? this.processingCaptures.filter(({ event }) => stillRequested(event)) : [];
+        if (!retained) this.captureTriggers = [];
         this.eventId = this.acknowledged = eventId;
         for (const event of this.pending) event.id = ++this.eventId;
         return Boolean(requestId && (this.pending.some(event => event.requestId === requestId)

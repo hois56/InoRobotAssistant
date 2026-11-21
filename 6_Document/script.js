@@ -759,51 +759,68 @@ function readSelection() {
     return selection;
 }
 
-function matchesFilters(man, selection) {
-    if (selection.hardwareOnly && !['hardware', 'expansion', 'safetyFunction', 'selection'].some(category => hasCategory(man, category))) return false;
-
-    if (selection.cad !== 'all') {
-        if (man.robotType !== 'cad') return false;
-        if (selection.cad !== 'cad' && man.cadGroup !== selection.cad) return false;
+// Assign IDs from the catalog itself so new categories and variants are indexed
+// without changing the Rust engine. Row order follows the published catalog.
+const documentOptions = new Map();
+const optionGroups = [];
+function optionId(group, key) {
+    const name = group + '/' + key;
+    if (!documentOptions.has(name)) {
+        documentOptions.set(name, optionGroups.length);
+        optionGroups.push(group);
     }
-
-    if (selection.type !== 'all') {
-        if (man.robotType !== selection.type) return false;
-    }
-
-    if (selection.software !== 'all' && !hasCategory(man, selection.software)) return false;
-    if (selection.edu !== 'all' && !hasCategory(man, selection.edu)) return false;
-    if (selection.profile !== 'all' && !hasCategory(man, selection.profile)) return false;
-    if (selection.cert !== 'all' && !hasCategory(man, selection.cert)) return false;
-    return true;
+    return documentOptions.get(name);
 }
-
-function matchesSearch(man, searchTerm) {
-    return man.title.toLowerCase().includes(searchTerm) ||
-        man.description.toLowerCase().includes(searchTerm) ||
-        man.path.toLowerCase().includes(searchTerm) ||
-        String(man.additionalTag || '').toLowerCase().includes(searchTerm) ||
-        translateUiText(man.title).toLowerCase().includes(searchTerm) ||
-        translateUiText(man.description).toLowerCase().includes(searchTerm) ||
-        translateUiText(man.additionalTag).toLowerCase().includes(searchTerm) ||
-        translateUiText(man.cadVariant).toLowerCase().includes(searchTerm);
-}
-
-// Each model and product variant gets one row; counts follow rows rather than files.
-function countRows(documents) {
-    const cadModels = new Set();
-    let rows = 0;
-    documents.forEach(man => {
-        if (!hasCategory(man, 'cad')) {
-            rows += 1;
-            return;
+let documentCatalog;
+function createDocumentCatalog() {
+    const documentRows = manualData.map(man => {
+        const categories = getCategories(man);
+        const ids = [optionId(1, man.robotType)];
+        if (man.robotType === 'cad') ids.push(optionId(0, 'cad'), optionId(0, man.cadGroup));
+        for (const category of categories) {
+            for (let group = 2; group <= 5; group++) ids.push(optionId(group, category));
         }
-        const key = getCadGroupKey(man);
-        if (cadModels.has(key)) return;
-        cadModels.add(key);
-        rows += 1;
+        if (categories.some(c => ['hardware', 'expansion', 'safetyFunction', 'selection'].includes(c))) {
+            ids.push(optionId(6, 'hardware'));
+        }
+        return ids;
     });
-    return rows;
+    return InoSite.catalog(optionGroups, 7, documentRows);
+}
+let searchLocale;
+function selectDocuments(selection) {
+    documentCatalog ||= createDocumentCatalog();
+    const flags = new Uint8Array(optionGroups.length);
+    const keys = [[0, selection.cad], [1, selection.type], [2, selection.software],
+        [3, selection.edu], [4, selection.profile], [5, selection.cert]];
+    if (selection.hardwareOnly) keys.push([6, 'hardware']);
+    for (const [group,key] of keys) {
+        if (key === 'all') continue;
+        const id = documentOptions.get(group + '/' + key);
+        if (id === undefined) return [];
+        flags[id] = 1;
+    }
+    const locale = window.InoRobotI18n?.locale || 'ko';
+    if (selection.search && searchLocale !== locale) {
+        documentCatalog.setSearchFields(manualData.map(man => Array.from(new Set([
+            man.title, man.description, man.path, man.additionalTag, translateUiText(man.title),
+            translateUiText(man.description), translateUiText(man.additionalTag), translateUiText(man.cadVariant)
+        ].map(value => String(value || '').toLowerCase())))));
+        searchLocale = locale;
+    }
+    return Array.from(documentCatalog.select(flags, selection.search).rows, i => manualData[i]);
+}
+
+// Insertion order keeps each CAD variant at its first matching file position.
+function groupDocuments(documents) {
+    const groups = new Map();
+    for (const man of documents) {
+        const key = hasCategory(man, 'cad') ? getCadGroupKey(man) : man;
+        const row = groups.get(key);
+        if (row) row.push(man);
+        else groups.set(key, [man]);
+    }
+    return groups;
 }
 
 function cloneTemplate(id) {
@@ -936,7 +953,7 @@ function renderFilterCounts() {
             selection[group.key] = value;
             const count = document.createElement('span');
             count.className = 'filter-count';
-            count.textContent = String(countRows(manualData.filter(man => matchesFilters(man, selection))));
+            count.textContent = String(groupDocuments(selectDocuments(selection)).size);
             button.append(count);
         });
     });
@@ -955,6 +972,12 @@ function init() {
     renderFilterCounts();
     renderManuals();
     document.addEventListener('inorobot:languagechange', renderManuals);
+    document.addEventListener('inorobot:i18nready', () => {
+        if (searchLocale !== undefined) {
+            searchLocale = undefined;
+            renderManuals();
+        }
+    });
 }
 
 function renderManuals() {
@@ -962,7 +985,7 @@ function renderManuals() {
     list.replaceChildren();
 
     const selection = readSelection();
-    const filtered = manualData.filter(man => matchesFilters(man, selection) && matchesSearch(man, selection.search));
+    const filtered = selectDocuments(selection);
 
     if (filtered.length === 0) {
         const empty = document.createElement('p');
@@ -974,19 +997,12 @@ function renderManuals() {
         return;
     }
 
-    const renderedCadGroups = new Set();
-    filtered.forEach(man => {
-        if (hasCategory(man, 'cad')) {
-            const groupKey = getCadGroupKey(man);
-            if (renderedCadGroups.has(groupKey)) return;
-            renderedCadGroups.add(groupKey);
-            renderCadModelCard(list, filtered.filter(candidate => hasCategory(candidate, 'cad') && getCadGroupKey(candidate) === groupKey));
-            return;
-        }
-
-        renderManualDocument(list, man);
-    });
-
+    const fragment = document.createDocumentFragment();
+    for (const documents of groupDocuments(filtered).values()) {
+        if (hasCategory(documents[0], 'cad')) renderCadModelCard(fragment, documents);
+        else renderManualDocument(fragment, documents[0]);
+    }
+    list.appendChild(fragment);
     updateResultCount(list.children.length);
     syncFilterState();
 }

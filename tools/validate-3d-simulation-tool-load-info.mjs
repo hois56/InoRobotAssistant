@@ -12,7 +12,7 @@ const assert = (condition, message) => {
 const html = readSimulationMarkup();
 const css = read('2_3DSimulation/style.css');
 const main = read('2_3DSimulation/main.js');
-const versionHistory = read('0_Home/version-history.json');
+// Version-history wording is checked by the version history tests, not here.
 
 [
     'model-tool-load-info',
@@ -48,8 +48,5 @@ assert(main.includes("model?.kind === 'grip-part'"), 'Missing persisted grip obj
 assert(!html.includes('program-add-grip-use'), 'Legacy grip command button must be removed.');
 assert(main.includes('normalizeToolAttachmentSource'), 'Missing Tool source restoration metadata handling.');
 assert(main.includes("model?.kind === 'tool-part'"), 'Missing persisted Tool part restoration handling.');
-assert(versionHistory.includes('로봇에 부착된 Tool의 부품별 재질 또는 직접 입력한 질량'), 'Missing Korean Tool load information version entry.');
-assert(versionHistory.includes('为已安装的 Tool 添加负载信息'), 'Missing Chinese Tool load information version entry.');
-assert(versionHistory.includes('Đã thêm thông tin tải cho Tool được gắn'), 'Missing Vietnamese Tool load information version entry.');
 
 console.log('3D Simulation Tool load information validation passed.');

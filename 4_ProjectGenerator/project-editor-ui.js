@@ -69,17 +69,12 @@ window.ProjectEditUI = (() => {
     }
     function preview() {
         try {
-            const text = fileContent($('fileSelector').value), editor = $('codeEditor');
+            const file = $('fileSelector').value;
+            const text = fileContent(file);
             $('tableContainer').classList.add('opacity-0', 'pointer-events-none');
             $('tableContainer').replaceChildren();
-            $('prismContainer').classList.toggle('opacity-0', state.editMode);
-            $('prismContainer').classList.toggle('pointer-events-none', state.editMode);
-            editor.classList.toggle('opacity-0', !state.editMode);
-            editor.classList.toggle('pointer-events-none', !state.editMode);
-            editor.value = text;
-            $('codeOutput').textContent = text;
-            $('btnToggleEdit').disabled = $('fileSelector').value === 'Remote_IO_mapping.dat';
-            if (window.Prism && !state.editMode) Prism.highlightElement($('codeOutput'));
+            $('btnToggleEdit').disabled = file === 'Remote_IO_mapping.dat';
+            showSourceCode(text);
         } catch (error) { notice(error.message, true); }
     }
     function captureEdit() {

@@ -7,10 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Calculate robot zero calibration values from factory and current encoder values.">
     <title>Robot Zero Calibration Tool</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.468.0"></script>
+    <!-- Lucide icons used on this page (prebuilt) -->
+    <script src="../icons.js?v=20261121-1"></script>
     <!-- Google Fonts -->
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
@@ -80,6 +78,10 @@
             background: rgba(30, 41, 59, 0.8);
         }
 
+        .input-focus:focus::placeholder {
+            opacity: 0;
+        }
+
         .result-highlight {
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
             border: 1px solid rgba(59, 130, 246, 0.2);
@@ -112,720 +114,12 @@
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js" defer></script>
+    <link rel="stylesheet" href="/Language/runtime/i18n.css?v=20261121-header-font">
+    <script src="/Language/runtime/locales-data.js?v=5fc7759e7500" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/7_DebuggingTool/ZeroCalibration/">
@@ -839,8 +133,11 @@
     <meta name="twitter:title" content="Robot Zero Calibration Tool">
     <meta name="twitter:description" content="Calculate robot zero calibration values from factory and current encoder values.">
     <!-- SUBPAGE-SEO:END -->
-    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261118-tools-1">
-    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261118-1">
+    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261120-headings">
+    <link rel="stylesheet" href="/shared/brand-colors.css?v=20261120-blue">
+    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261120-blue">
+    <!-- Prebuilt Tailwind utilities; kept last like the former runtime-generated style. -->
+    <link rel="stylesheet" href="../tailwind.css?v=20261121-1">
 </head>
 
 <body data-design-page="calibration" class="relative flex flex-col min-h-screen">
@@ -851,11 +148,11 @@
         class="inorobot-responsive-header sticky top-0 h-16 bg-[#0f131c]/95 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 z-50">
         <div class="inorobot-header-brand flex items-center gap-4">
             <a class="logo-link" href="/" title="메인 페이지로"><img src="/1_RobotModelSelect/INOVANCE_Logo.png" alt="INOVANCE" width="224" height="60"></a>
-            <a href="../index.html"
+            <a href="../index.html" aria-label="Debugging Tool" title="Debugging Tool"
                 class="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
-            <h1 class="font-outfit text-lg font-bold text-white tracking-tight">Zero Calibration Tool</h1>
+            <h1 class="text-white" data-i18n="legacy.Zero Calibration Tool">영점 보정 툴</h1>
         </div>
         <div class="inorobot-header-actions" data-i18n-language-slot></div>
         <!-- <div class="flex items-center gap-3">
@@ -911,10 +208,10 @@
                     <thead>
                         <tr class="text-left border-b border-white/5">
                             <th class="p-3 text-xs font-bold text-slate-500 uppercase tracking-widest w-20">축</th>
-                            <th class="p-3 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">공장
+                            <th id="zero-factory-heading" class="p-3 text-xs font-bold text-slate-500 uppercase tracking-widest text-center">공장
                                 출하 영점값</th>
                             <th
-                                class="p-3 text-xs font-bold text-slate-500 uppercase tracking-widest text-center relative">
+                                id="zero-teaching-heading" class="p-3 text-xs font-bold text-slate-500 uppercase tracking-widest text-center relative">
                                 티칭값
                                 <!-- <span class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full text-sm font-medium text-slate-500 mt-1 normal-case leading-tight">(최대한 홈에 일치하도록 티칭)</span> -->
                             </th>
@@ -944,6 +241,7 @@
         <p class="text-slate-600 text-xs">© 2026 INOVANCE ROBOTICS. All rights reserved.</p>
     </footer> -->
 
+    <script src="/shared/site-engine.js"></script>
     <script>
         // Generate rows for J1 to J6
         const tbody = document.getElementById('axis-rows');
@@ -953,14 +251,14 @@
             const row = document.createElement('tr');
             row.className = 'border-b border-white/5 group hover:bg-white/[0.01] transition-colors';
             row.innerHTML = `
-                <td class="p-3 font-outfit font-bold text-white text-base">${axis}</td>
+                <td id="zero-axis-${index}" class="p-3 font-outfit font-bold text-white text-base">${axis}</td>
                 <td class="p-3">
-                    <input type="number" id="factory-${index}" placeholder="0" 
+                    <input type="number" id="factory-${index}" placeholder="0" aria-labelledby="zero-axis-${index} zero-factory-heading"
                            class="w-full bg-slate-900/60 border border-white/10 rounded-lg py-2 px-3 text-center text-white text-sm input-focus font-mono"
                            oninput="calculate(${index})">
                 </td>
                 <td class="p-3">
-                    <input type="number" id="teaching-${index}" placeholder="0" 
+                    <input type="number" id="teaching-${index}" placeholder="0" aria-labelledby="zero-axis-${index} zero-teaching-heading"
                            class="w-full bg-slate-900/60 border border-white/10 rounded-lg py-2 px-3 text-center text-white text-sm input-focus font-mono"
                            oninput="calculate(${index})">
                 </td>
@@ -973,22 +271,28 @@
             tbody.appendChild(row);
         });
 
+        function selectEnteredZero(event) {
+            const input = event.target;
+            if (input instanceof HTMLInputElement && input.valueAsNumber === 0) {
+                input.select();
+            }
+        }
+        tbody.addEventListener('focusin', selectEnteredZero);
+        tbody.addEventListener('click', selectEnteredZero);
+
+        const axisHighlights = [];
+        const formatCount = new Intl.NumberFormat().format;
         function calculate(index) {
             const factoryVal = parseFloat(document.getElementById(`factory-${index}`).value) || 0;
             const teachingVal = parseFloat(document.getElementById(`teaching-${index}`).value) || 0;
 
-            // Formula: C4 + ROUND((D4-C4)/1048576, 0) * 1048576
-            const divisor = 1048576;
-            const finalValue = factoryVal + Math.round((teachingVal - factoryVal) / divisor) * divisor;
-
+            const finalValue = InoSite.calibrate(factoryVal, teachingVal);
             const resultEl = document.getElementById(`result-${index}`);
-            resultEl.textContent = finalValue.toLocaleString();
-
-            // Add pulse effect on change
-            resultEl.classList.remove('animate-pulse');
-            void resultEl.offsetWidth; // trigger reflow
-            resultEl.classList.add('animate-pulse');
-            setTimeout(() => resultEl.classList.remove('animate-pulse'), 500);
+            resultEl.textContent = formatCount(finalValue);
+            const highlight = axisHighlights[index] ||= resultEl.animate(
+                [{ opacity: 1 }, { opacity: 0.5 }, { opacity: 1 }], 500);
+            highlight.currentTime = 0;
+            highlight.play();
         }
 
         function resetAll() {
@@ -996,6 +300,7 @@
                 document.getElementById(`factory-${i}`).value = '';
                 document.getElementById(`teaching-${i}`).value = '';
                 document.getElementById(`result-${i}`).textContent = '0';
+                axisHighlights[i]?.cancel();
             }
         }
 

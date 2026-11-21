@@ -19,7 +19,8 @@ import { hasRapidDynamicsModel, resolveRapidDynamicsModel } from './robot-rapid-
 import { createPositionPointsUi, nextPositionPointMetadata } from './position-points-ui.mjs?v=20261117-delete-1';
 import { normalizeToolLoad, buildToolParamFile, buildWobjParamFile, combineToolLoads } from './tool-data-core.mjs?v=20261102-dat-export-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
-import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261030-1';
+import { createViewRecording } from './view-recording.mjs?v=20261120-5';
+import { renderWithContactAO, disposeContactAO } from './contact-ambient-occlusion.mjs?v=20261120-record';
 import { usesSoftwareRasterizer, renderPacedSoftwareFrame, RenderFrameLimit } from './software-renderer.mjs?v=frame-limit-1';
 import { ROBOT_MOUNTING_HOLES } from './robot-mounting-holes.mjs?v=20261029-2';
 import { collectTeachingPoints, normalizeTeachingPointSettings } from './teaching-point-core.mjs?v=20261023-teaching-defaults-1';
@@ -37,11 +38,12 @@ import { TEST_MODEL_CATALOG, getTestModelSelection, getTestModelSelectionForRobo
 import { getTestModelTreePreset } from './test-model-tree-presets.mjs';
 import { resizeConveyorContent } from './conveyor-model.mjs';
 import { getTestModelDimensionFields, normalizeTestModelDimensions, resizeTestModelContent } from './test-model-dimensions.mjs';
+import { getStepTessellationParameters } from './step-tessellation-parameters.mjs';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { clone as cloneObjectWithSkeletons } from 'three/addons/utils/SkeletonUtils.js';
 import { enableContinuousTransformRotation } from '../3_ToolSelector/continuous-transform-rotation.mjs';
-import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20261110-curves-1';
+import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs?v=20261121-rust-topology';
 import {
     combineStepParts,
     createCoordinateFrame,
@@ -147,9 +149,10 @@ import { conveyorSensorLayout } from './conveyor-sensor-preview.mjs?v=20261114-s
 import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
 import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261116-feed-1';
 import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
-import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261117-catalog-belt-2';
-import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261119-controller-reconnect-1';
-import * as WorkspaceRecovery from './workspace-recovery-core.mjs';
+import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261120-record';
+import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261121-compact-icon';
+import { forEachConveyorTrackingStep } from './conveyor-tracking-core.mjs?v=20261119-tracking-step-1';
+import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20261121-step-import';
 import {
     calculateMeasurementResult,
     calculatePlacementTarget,
@@ -854,6 +857,7 @@ const state = {
     viewTransition: null,
     activeViewSlot: null,
     viewWindow: null,
+    viewRecording: null,
     motionSaveTimer: null,
     workspaceRecovery: {
         db: null,
@@ -1125,7 +1129,6 @@ const state = {
     renderFrameRequest: null,
     renderFrameLimit: new RenderFrameLimit(),
     renderFpsLimited: false,
-    renderedSceneFrames: 0,
     outlineMode: true,
     tcpAxesVisible: true,
     grid: null, baseAxes: null, labels: [],
@@ -1200,7 +1203,6 @@ const el = {
     loadingProgressText: document.getElementById('loading-progress-text'),
     emptyState:      document.getElementById('empty-state'),
     statStatus:      document.getElementById('stat-status'),
-    statFps:         document.getElementById('stat-fps'),
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
@@ -1404,9 +1406,6 @@ const el = {
     modelPlacementSnapType: document.getElementById('model-placement-snap-type'),
     modelPlacementHoverReadout: document.getElementById('model-placement-hover-readout'),
     measurementPlacementTargetPoint: document.getElementById('measurement-placement-target-point'),
-    btnMeasurementApplyPlacement: document.getElementById('btn-measurement-apply-placement'),
-    btnMeasurementCancelPlacement: document.getElementById('btn-measurement-cancel-placement'),
-    btnMeasurementResetPlacement: document.getElementById('btn-measurement-reset-placement'),
     modelContextMenu: document.getElementById('model-context-menu'),
     modelExportDialog: document.getElementById('model-export-dialog'),
     modelExportFormat: document.getElementById('model-export-format'),
@@ -1819,6 +1818,7 @@ const BASE_JOG_GIZMO_MESH_THICKNESS = 1.55;
 const BASE_JOG_GIZMO_STROKE_RADIUS = 0.014;
 const BASE_JOG_GIZMO_ACTIVE_STROKE_RADIUS = 0.022;
 const BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE = 0.58;
+const BASE_JOG_GIZMO_HOVER_COLOR = 0xb45309;
 const BASE_JOG_MAX_VISIBLE_LINE_SPAN = 10;
 const SCARA_TOOL_AXES = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
 const SIX_AXIS_TOOL_AXES = { x: [0, 0, 1], y: [0, -1, 0], z: [1, 0, 0] };
@@ -1951,6 +1951,9 @@ const STEP_IMPORT_CACHE_VERSION = 6;
 const STEP_IMPORT_CACHE_MAX_ENTRIES = 6;
 const STEP_IMPORT_CACHE_MAX_SOURCE_BYTES = 96 * MEBIBYTE;
 const STEP_IMPORT_CACHE_MAX_BYTES = 384 * MEBIBYTE;
+const BUNDLED_STEP_ASSETS = new Map(TEST_MODEL_CATALOG
+    .filter(asset => /\.st(?:e)?p$/i.test(asset.file))
+    .map(asset => [asset.file.split('/').pop().toLowerCase(), asset.path]));
 const STL_GEOMETRY_CACHE_DB_NAME = 'inorobot-3d-stl-geometry-cache';
 const STL_GEOMETRY_CACHE_STORE_NAME = 'geometries';
 const STL_GEOMETRY_CACHE_VERSION = 1;
@@ -1961,6 +1964,7 @@ const STL_GEOMETRY_CACHE_MAX_BYTES = 256 * MEBIBYTE;
 // returning only empty mesh records. Route those files to the robust OCCT
 // engine before the standard path discards them as non-renderable.
 const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 50 * MEBIBYTE;
+const STEP_XCAF_AUTO_MIN_BYTES = 20 * MEBIBYTE;
 const LARGE_MODEL_PERFORMANCE_MIN_BYTES = 100 * MEBIBYTE;
 const STEP_IMPORT_QUALITY_PRESETS = Object.freeze({
     auto: Object.freeze({ key: 'auto', label: '자동 (권장)' }),
@@ -2419,7 +2423,6 @@ async function init() {
         setupLights();
         setupControls();
         setupEventListeners();
-        startRenderFpsDisplay();
         animate();
         scheduleStepImportWorkerWarmup();
         await populateModelList();
@@ -2488,8 +2491,12 @@ function setupUI() {
         const workObjectButton = document.createElement('button');
         workObjectButton.type = 'button';
         workObjectButton.dataset.panelToggle = 'workobject-panel';
+        workObjectButton.dataset.i18nTitle = 'legacy.Wobj 설정 표시/숨기기';
+        workObjectButton.dataset.i18nAriaLabel = workObjectButton.dataset.i18nTitle;
         workObjectButton.title = uiText('Wobj 설정 표시/숨기기');
-        workObjectButton.innerHTML = `<i class="fa-solid fa-compass-drafting"></i> <span id="wobj-launcher-label">Wobj 0</span>`;
+        workObjectButton.innerHTML = '<span id="wobj-launcher-label">Wobj 0</span>';
+        const workObjectIcon = el.workObjectPanel?.querySelector('.workobject-frame-icon');
+        if (workObjectIcon) workObjectButton.prepend(workObjectIcon.cloneNode(true));
         const tcpButton = el.panelLauncher.querySelector('[data-panel-toggle="tcp-profile-panel"]');
         const divider = el.panelLauncher.querySelector('.viewer-control-divider');
         el.panelLauncher.insertBefore(workObjectButton, tcpButton || divider);
@@ -5499,6 +5506,7 @@ function saveViewPreset(slot) {
 }
 
 function refreshViewPresetsUi() {
+    state.viewRecording?.refresh();
     if (!el.viewPresetsList) return;
     const template = el.viewPresetsList.querySelector('[data-view-slot="0"]');
     for (let slot = 0; template && slot < VIEW_PRESET_COUNT; slot += 1) {
@@ -5666,6 +5674,7 @@ function refreshLocalizedControls() {
     refreshCollaborationUi();
     state.panelWindows.forEach((record, panelId) => {
         window.InoRobotI18n?.refresh?.(record.panel);
+        record.popup.document.documentElement.lang = document.documentElement.lang;
         record.popup.document.title = getPanelWindowTitle(panelId);
     });
     if (el.selectedModelName && state.selectedModel) {
@@ -14305,7 +14314,7 @@ function finishSelectedPrimitiveShapeDimension() {
 
 function setupScene() {
     state.scene = new THREE.Scene();
-    state.scene.background = new THREE.Color(0xe7e8e3);
+    state.scene.background = new THREE.Color(0xe8eff5);
     state.camera = new THREE.PerspectiveCamera(45, el.canvasContainer.clientWidth / el.canvasContainer.clientHeight, 0.1, 1e7);
     state.camera.up.set(0, 0, 1);
     state.camera.position.set(1400, -1400, 1000);
@@ -14319,7 +14328,7 @@ function setupScene() {
     el.canvasContainer.appendChild(state.renderer.domElement);
     state.renderer.domElement.addEventListener('mousedown', preventMiddleButtonAutoscroll, { capture: true });
 
-    state.grid = new THREE.GridHelper(10000, 100, 0xa6ada0, 0xcdd2c7);
+    state.grid = new THREE.GridHelper(10000, 100, 0x9bafbf, 0xc7d5e0);
     state.grid.rotateX(Math.PI / 2);
     // Keep the reference grid on the world XY plane. Render it first without
     // writing depth so opaque model surfaces always cover it, even when a
@@ -17777,12 +17786,6 @@ function updateMeasurementUi() {
         el.measurementPlacementTargetPoint.textContent = currentPlacementTargetPoint
             ? formatMeasurementPoint(currentPlacementTargetPoint) : '-';
     }
-    const previewReady = Boolean(
-        placement.previewTranslation && placement.targetPoint && !placement.applied
-    );
-    if (el.btnMeasurementApplyPlacement) el.btnMeasurementApplyPlacement.disabled = !previewReady;
-    if (el.btnMeasurementCancelPlacement) el.btnMeasurementCancelPlacement.disabled = !previewReady;
-    if (el.btnMeasurementResetPlacement) el.btnMeasurementResetPlacement.disabled = !p1 && !p2;
 }
 
 function capturePlacementModelTransform(model, includeSelection = true) {
@@ -17950,13 +17953,11 @@ function updatePlacementPreview() {
         updateMeasurementUi();
         return false;
     }
-    const updated = updatePlacementPreviewFromTranslation(new THREE.Vector3(
+    return updatePlacementPreviewFromTranslation(new THREE.Vector3(
         calculated.translation.x,
         calculated.translation.y,
         calculated.translation.z
     ));
-    if (updated) setMeasurementPanelStatus('배치 미리보기가 적용되었습니다. 적용 또는 취소를 선택하세요.');
-    return updated;
 }
 
 function updatePlacementPreviewFromTranslation(translation) {
@@ -18179,6 +18180,7 @@ function handleMeasurementSnapSelection(snap) {
 
     const placement = state.placement;
     if (!placement.sourcePoint || placement.directionPoint) {
+        restorePlacementPreview();
         selectSceneModel(placement.model, { preservePart: true, preserveSelection: true });
         placement.sourcePoint = point;
         placement.directionPoint = null;
@@ -18187,7 +18189,6 @@ function handleMeasurementSnapSelection(snap) {
         placement.targetDistance = null;
         placement.currentDistance = null;
         placement.applied = false;
-        placement.previewOriginalTransform = capturePlacementModelTransform(getPlacementTransformTarget());
         measurement.points = [point, null];
         setMeasurementPanelStatus('P2 방향점을 선택하세요.');
         setStatus('P1 기준점을 선택했습니다. 목표 방향의 P2를 선택하세요.', '#60a5fa');
@@ -18217,7 +18218,7 @@ function handleMeasurementSnapSelection(snap) {
             placement.currentDistance = result.diagonal;
             placement.targetDistance = result.diagonal;
             placement.applied = false;
-            updatePlacementPreview();
+            applyMeasurementPlacement();
         }
     }
     updateMeasurementUi();
@@ -18277,17 +18278,7 @@ function applyMeasurementPlacement() {
     placement.applied = true;
     recordHistory('선택 모델 기준 배치', before, after);
     setMeasurementPanelStatus('모델 배치를 적용했습니다.');
-    setStatus('입력한 거리 기준으로 모델을 배치했습니다.', '#22c55e');
-    updateMeasurementUi();
-    updateMeasurementOverlay();
-    requestRender();
-}
-
-function cancelMeasurementPlacement() {
-    if (!state.placement.previewOriginalTransform) return;
-    restorePlacementPreview();
-    setMeasurementPanelStatus('모델 배치 미리보기를 취소했습니다.');
-    setStatus('모델 배치 미리보기를 취소했습니다.', '#60a5fa');
+    setStatus('모델 배치를 적용했습니다.', '#22c55e');
     updateMeasurementUi();
     updateMeasurementOverlay();
     requestRender();
@@ -19784,6 +19775,8 @@ function handleMainSurfaceWheelZoom(event) {
 }
 
 function setupControls() {
+    // Let a JOG handle claim its press before orbit navigation changes the camera pivot.
+    setupBaseJogTransformControls();
     recreateMainOrbitControls();
     state.renderer.domElement.addEventListener('wheel', handleMainSurfaceWheelZoom, { capture: true, passive: false });
     state.renderer.domElement.addEventListener('pointerdown', trackMainOrbitControlPointer, { capture: true });
@@ -19800,7 +19793,12 @@ function setupControls() {
     state.transformControls.addEventListener('dragging-changed', (event) => {
         state.controls.enabled = !event.value;
         if (state.placement.active) hideSimulationSnapMarker();
-        if (!event.value) clearModelTransformRotationSnap();
+        if (!event.value) {
+            clearModelTransformRotationSnap();
+            if (!state.spaceKeyHeld && state.spaceHeldControl?.kind === 'model-move') {
+                releaseSpaceTransformOverride();
+            }
+        }
     });
     state.transformControls.addEventListener('mouseDown', () => {
         if (!state.historySuspended && state.selectedModel) {
@@ -19896,8 +19894,6 @@ function setupControls() {
     });
     zeroPointEdit.transformControls.addEventListener('objectChange', requestRender);
     state.scene.add(zeroPointEdit.transformControls);
-
-    setupBaseJogTransformControls();
 }
 
 function setupBaseJogTransformControls() {
@@ -19912,6 +19908,12 @@ function setupBaseJogTransformControls() {
     controls.visible = false;
     controls.enabled = false;
     controls.userData.baseJogActiveAxis = null;
+    const clearHover = () => {
+        if (!controls.dragging) controls.axis = null;
+    };
+    controls.domElement.addEventListener('pointerleave', clearHover);
+    controls.addEventListener('mode-changed', clearHover);
+    controls.addEventListener('axis-changed', requestRender);
     controls.addEventListener('dragging-changed', (event) => {
         state.controls.enabled = !event.value;
         if (!event.value) controls.userData.baseJogActiveAxis = null;
@@ -19927,8 +19929,9 @@ function setupBaseJogTransformControls() {
         controls.userData.baseJogActiveAxis = null;
     });
     removeRotationScreenHandle(controls);
+    useVisibleBaseJogPickers(controls);
     emphasizeBaseJogTransformControls(controls);
-    applyTransformControlColors(controls);
+    applyTransformControlColors(controls, BASE_JOG_GIZMO_HOVER_COLOR);
     state.baseJogTransformControls = controls;
     state.scene.add(controls);
 }
@@ -21589,9 +21592,6 @@ function setupEventListeners() {
     });
     el.btnMeasurementRemeasure?.addEventListener('click', resetMeasurementSelection);
     el.btnMeasurementDelete?.addEventListener('click', deleteMeasurement);
-    el.btnMeasurementApplyPlacement?.addEventListener('click', applyMeasurementPlacement);
-    el.btnMeasurementCancelPlacement?.addEventListener('click', cancelMeasurementPlacement);
-    el.btnMeasurementResetPlacement?.addEventListener('click', resetPlacementSelection);
     el.tcpSnapType?.addEventListener('change', () => {
         state.tcpSnapType = el.tcpSnapType.value || 'auto';
         resetTcpSnapPoints();
@@ -22494,9 +22494,15 @@ function setupEventListeners() {
     [el.tcpProfilePanel, el.workObjectPanel, document.getElementById('position-points-panel'), document.getElementById('conveyor-tracking-dialog')].forEach(makePanelEdgeResizable);
     renderIoSimulatorPanel();
     makeModelTransformSplitResizable(el.modelBrowserPanel);
-    [el.interferenceZoneDialog, el.endMonitoringDialog].forEach(setupInterferenceZoneDialogDragging);
+    [el.interferenceZoneDialog, el.endMonitoringDialog, document.getElementById('recording-editor')].forEach(setupFloatingDialogDragging);
     initializePanelStack();
 
+    const recordButton = document.getElementById('view-record');
+    if (recordButton) state.viewRecording = createViewRecording({
+        button: recordButton, editButton: document.getElementById('view-record-edit'),
+        editorDialog: document.getElementById('recording-editor'), state, requestRender, download: downloadGeneratedModelBlob, status: setStatus,
+        getBeltAnimation: conveyorVisuals.getBeltAnimation
+    });
     el.viewPresetsList?.addEventListener('click', handleViewPresetListClick);
     el.viewPresetsList?.addEventListener('input', handleViewPresetListInput);
     el.viewPresetsList?.addEventListener('change', handleViewPresetTimeChange);
@@ -22866,7 +22872,7 @@ function setupEventListeners() {
     window.addEventListener('pointerup', (event) => stopBaseJogHold(event.pointerId));
     window.addEventListener('blur', () => {
         stopBaseJogHold();
-        releaseSpaceRotationOverride();
+        releaseSpaceTransformOverride();
         state.sceneSelectionPointer = null;
         resetMainOrbitControlInteraction();
     });
@@ -23048,9 +23054,27 @@ function getSpaceRotationOverrideTarget() {
     return null;
 }
 
-function beginSpaceRotationOverride() {
+function beginSpaceTransformOverride() {
     if (state.spaceKeyHeld) return;
     state.spaceKeyHeld = true;
+    const model = state.selectedModel;
+    const controls = state.transformControls;
+    if (state.spaceHeldControl?.kind === 'model-move') {
+        controls.visible = true;
+        requestRender();
+        return;
+    }
+    if (controls && !controls.enabled && !isAny3DTransformHandleDragging()
+        && isModelTreeVisible(model) && !isArticulatedRobotModel(model)
+        && ![...state.modelSelection.values()].some(isArticulatedRobotModel)
+        && !state.zeroPointEdit.active && !state.primitiveShapeOverlay.dimensionMode
+        && !isSimulationSnapPicking() && !document.querySelector('dialog[open]')) {
+        const restoreBaseJog = state.baseJogTransformControls?.enabled;
+        setSelectedTransformMode('translate');
+        setTransformHandlesEnabled(true);
+        state.spaceHeldControl = { kind: 'model-move', restoreBaseJog };
+        return;
+    }
     const target = getSpaceRotationOverrideTarget();
     if (!target) return;
     state.spaceHeldControl = target;
@@ -23058,14 +23082,24 @@ function beginSpaceRotationOverride() {
     else setSelectedTransformMode('rotate');
 }
 
-function releaseSpaceRotationOverride() {
+function releaseSpaceTransformOverride() {
     const target = state.spaceHeldControl;
-    state.spaceHeldControl = null;
     state.spaceKeyHeld = false;
     if (!target) return;
 
+    if (target.kind === 'model-move' && state.transformControls.dragging) {
+        // Let mouseup finish the transform and record its history.
+        state.transformControls.visible = false;
+        requestRender();
+        return;
+    }
+    state.spaceHeldControl = null;
     if (target.kind === 'base') {
         if (state.baseJogGizmoMode === 'rotate') setBaseJogGizmoMode('translate');
+    } else if (target.kind === 'model-move') {
+        setTransformHandlesEnabled(false);
+        if (target.restoreBaseJog) setBaseJogGizmoEnabled(true);
+        requestRender();
     } else if (state.transformControls?.mode === 'rotate') {
         setSelectedTransformMode('translate');
     }
@@ -23075,7 +23109,7 @@ function handleGlobalKeyUp(event) {
     if (!isSpaceKeyEvent(event)) return;
     if (state.spaceKeyHeld) {
         event.preventDefault();
-        releaseSpaceRotationOverride();
+        releaseSpaceTransformOverride();
         return;
     }
     if (!isKeyboardEditingTarget(event.target)) event.preventDefault();
@@ -23233,7 +23267,7 @@ function handleGlobalKeyDown(event) {
         && Boolean(state.selectedModel);
     if (isSpaceKeyEvent(event)) {
         event.preventDefault();
-        if (!event.repeat) beginSpaceRotationOverride();
+        if (!event.repeat) beginSpaceTransformOverride();
         return;
     }
     if (el.importDialog?.open) return;
@@ -23253,6 +23287,22 @@ function removeRotationScreenHandle(transformControls) {
     });
     handles.forEach((handle) => handle.removeFromParent());
     transformControls.userData.removedScreenRotationHandles = handles.length;
+}
+
+function useVisibleBaseJogPickers(controls) {
+    const { gizmo, picker } = controls.children.find(child => child.isTransformControlsGizmo);
+    for (const mode of ['translate', 'rotate']) {
+        // Stock pickers extend behind the positive arrows and around the undrawn half of each ring.
+        picker[mode].clear();
+        picker[mode].raycast = (raycaster, hits) => {
+            for (const handle of gizmo[mode].children) {
+                if (handle.isMesh && handle.visible && !handle.userData.baseJogActiveStroke
+                    && handle.layers.test(raycaster.layers)) {
+                    handle.raycast(raycaster, hits);
+                }
+            }
+        };
+    }
 }
 
 function createPolylineCurve(points, closed) {
@@ -23478,7 +23528,7 @@ function getTransformHandleColorKey(handleName, activeAxis = '') {
     return null;
 }
 
-function applyTransformControlColors(transformControls) {
+function applyTransformControlColors(transformControls, hoverColor = null) {
     transformControls.traverse((object) => {
         const initialColorKey = getTransformHandleColorKey(object.name, transformControls.axis);
         if (!initialColorKey) return;
@@ -23488,6 +23538,9 @@ function applyTransformControlColors(transformControls) {
             const color = new THREE.Color(AXIS_COLORS[colorKey]);
             if (transformControls.userData.baseJogActiveAxis === object.name) {
                 color.multiplyScalar(BASE_JOG_GIZMO_ACTIVE_COLOR_SCALE);
+            } else if (hoverColor !== null && transformControls.enabled && !transformControls.dragging
+                && transformControls.axis === object.name) {
+                color.setHex(hoverColor);
             }
             materials.forEach((material) => material?.color?.copy(color));
         };
@@ -24487,6 +24540,7 @@ function popOutPanel(panelId) {
     popup.document.open();
     popup.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${getPanelWindowTitle(panelId)}</title></head><body></body></html>`);
     popup.document.close();
+    popup.document.documentElement.lang = document.documentElement.lang;
     document.querySelectorAll('link[rel="stylesheet"]').forEach((source) => {
         if (panelId === 'position-points-panel') {
             // Apply the loaded local styles immediately, as in the detached view window.
@@ -24505,6 +24559,7 @@ function popOutPanel(panelId) {
         popup.document.head.appendChild(link);
     });
     popup.document.body.className = 'panel-popout-body';
+    enablePopupPanelDrag(popup);
     popup.addEventListener('keydown', handleGlobalKeyDown);
     popup.addEventListener('keyup', handleGlobalKeyUp);
     if (panelId === 'trace-panel') popup.document.addEventListener('keydown', handleTraceKeyDown);
@@ -24605,8 +24660,8 @@ function restorePanelFromWindow(panelId, closePopup = false, hidePanel = false) 
     updatePanelLauncher(panelId);
 }
 
-function setupInterferenceZoneDialogDragging(dialog) {
-    const header = dialog?.querySelector('.interference-zone-dialog-header');
+function setupFloatingDialogDragging(dialog) {
+    const header = dialog?.querySelector('.interference-zone-dialog-header, .recording-editor-header');
     if (!dialog || !header) return;
     bindPanelFocusOnPointerDown(dialog);
     let drag = null;
@@ -24643,6 +24698,74 @@ function setupInterferenceZoneDialogDragging(dialog) {
     header.addEventListener('pointerup', stopDrag);
     header.addEventListener('pointercancel', stopDrag);
     header.addEventListener('lostpointercapture', stopDrag);
+}
+
+function enablePopupPanelDrag(popup) {
+    const surface = popup.document.body;
+    const excluded = PANEL_DRAG_EXCLUDED_SELECTOR + ', canvas, summary, [contenteditable], p, pre, td, th';
+    let drag = null;
+    let sizeToRestore = null;
+    const restoreSizeAfterMove = () => {
+        if (!sizeToRestore
+            || (popup.outerWidth === sizeToRestore.width && popup.outerHeight === sizeToRestore.height)) return;
+        const { width, height } = sizeToRestore;
+        sizeToRestore = null;
+        popup.resizeTo(width, height);
+    };
+    const movePopup = () => {
+        drag.frame = 0;
+        if (drag.left === popup.screenX && drag.top === popup.screenY) return;
+        sizeToRestore = drag;
+        popup.moveTo(drag.left, drag.top);
+        restoreSizeAfterMove();
+    };
+    popup.addEventListener('resize', restoreSizeAfterMove);
+    surface.classList.add('panel-drag-anywhere');
+    surface.addEventListener('pointerdown', (event) => {
+        if (event.defaultPrevented || event.pointerType !== 'mouse' || event.button !== 0
+            || event.target.closest(excluded)) return;
+        drag = {
+            pointerId: event.pointerId,
+            offsetX: event.screenX - popup.screenX,
+            offsetY: event.screenY - popup.screenY,
+            width: popup.outerWidth,
+            height: popup.outerHeight,
+            left: popup.screenX,
+            top: popup.screenY,
+            frame: 0
+        };
+        surface.setPointerCapture(event.pointerId);
+        surface.classList.add('panel-is-dragging');
+        event.preventDefault();
+    });
+    surface.addEventListener('pointermove', (event) => {
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        const left = event.screenX - drag.offsetX;
+        const top = event.screenY - drag.offsetY;
+        if (left === drag.left && top === drag.top) return;
+        drag.left = left;
+        drag.top = top;
+        if (!drag.frame) drag.frame = popup.requestAnimationFrame(movePopup);
+    });
+    const stopDrag = (event) => {
+        if (drag?.pointerId !== event.pointerId) return;
+        if (drag.frame) {
+            popup.cancelAnimationFrame(drag.frame);
+            if (event.type === 'pointerup') movePopup();
+        }
+        const completedDrag = drag;
+        drag = null;
+        surface.classList.remove('panel-is-dragging');
+        // The browser can report its final size after pointerup.
+        popup.setTimeout(() => {
+            if (sizeToRestore !== completedDrag) return;
+            restoreSizeAfterMove();
+            sizeToRestore = null;
+        }, 100);
+    };
+    surface.addEventListener('pointerup', stopDrag);
+    surface.addEventListener('pointercancel', stopDrag);
+    surface.addEventListener('lostpointercapture', stopDrag);
 }
 
 function makePanelDraggable(panel) {
@@ -25860,6 +25983,7 @@ function attachTransformControlsToSelectedModel() {
 }
 
 function setTransformHandlesEnabled(enabled) {
+    if (state.spaceHeldControl?.kind === 'model-move') state.spaceHeldControl = null;
     if (state.zeroPointEdit.active) {
         const shouldEnableZeroPoint = Boolean(enabled);
         state.transformControls.visible = false;
@@ -28041,10 +28165,6 @@ async function loadModelFromServer(modelDefinition, options = {}) {
         ensureWorkspaceModelId(model, options.workspaceModelId);
         updateModelRenderComplexity(model);
 
-        // Spread models a bit when adding another robot.
-        if (appendModel && state.models.length > 0) {
-            model.position.y += (state.models.length * 600);
-        }
         if (options.transform) applyClipboardTransform(model, options.transform);
         if (replacementTransform) {
             model.position.copy(replacementTransform.position);
@@ -29952,31 +30072,6 @@ function getAutomaticSourceUpAxis(extension) {
     return Y_UP_IMPORT_EXTENSIONS.has(extension) ? 'y' : 'z';
 }
 
-function getStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') {
-    if (qualityKey === 'lightweight') {
-        return { linearDeflection: 0.004, angularDeflection: 1.0 };
-    }
-    if (qualityKey === 'standard') {
-        return { linearDeflection: 0.001, angularDeflection: 0.5 };
-    }
-    if (qualityKey === 'high') {
-        return { linearDeflection: 0.00025, angularDeflection: 0.25 };
-    }
-    if (fileSizeBytes >= 150 * MEBIBYTE) {
-        return { linearDeflection: 0.003, angularDeflection: 0.85 };
-    }
-    if (fileSizeBytes >= 50 * MEBIBYTE) {
-        // Large assemblies can generate several times their source size in
-        // triangles. Keep Auto interactive; Standard and High remain exact
-        // opt-ins for inspection work.
-        return { linearDeflection: 0.004, angularDeflection: 0.9 };
-    }
-    if (fileSizeBytes >= 20 * MEBIBYTE) {
-        return { linearDeflection: 0.003, angularDeflection: 0.75 };
-    }
-    return { linearDeflection: 0.001, angularDeflection: 0.5 };
-}
-
 function getLargeStepTessellationParameters(fileSizeBytes, qualityKey = 'auto') {
     if (qualityKey === 'lightweight') {
         if (fileSizeBytes >= 400 * MEBIBYTE) return { linearDeflectionAbsolute: 16, angularDeflection: 1.4 };
@@ -30131,51 +30226,23 @@ function resetStepImportWorkerSession(session = state.stepImportWorkerSession) {
 function getStepImportWorkerSession() {
     if (state.stepImportWorkerSession) return state.stepImportWorkerSession;
 
-    const workerUrl = new URL('./step-import-worker.js?v=20261103-direct-face-colors-1', import.meta.url);
+    const workerUrl = new URL('./step-import-worker.js?v=20261121-step-preflight-1', import.meta.url);
     const worker = new Worker(workerUrl);
-    let readySettled = false;
-    let resolveReady;
-    let rejectReady;
-    const readyPromise = new Promise((resolve, reject) => {
-        resolveReady = resolve;
-        rejectReady = reject;
-    });
-    const session = { worker, readyPromise };
+    const session = { worker };
     state.stepImportWorkerSession = session;
-
-    const finishReady = (error = null) => {
-        if (readySettled) return;
-        readySettled = true;
-        worker.removeEventListener('message', handleReadyMessage);
-        worker.removeEventListener('error', handleReadyError);
-        if (error) {
-            resetStepImportWorkerSession(session);
-            rejectReady(error);
-        } else {
-            resolveReady(session);
-        }
-    };
-    const handleReadyMessage = (event) => {
-        const payload = event.data || {};
-        if (payload.type === 'ready') finishReady();
-        else if (payload.type === 'error' && payload.requestId == null) {
-            finishReady(new Error(payload.message || 'STEP worker initialization failed.'));
-        }
-    };
-    const handleReadyError = (event) => {
+    worker.addEventListener('error', (event) => {
         event.preventDefault();
-        finishReady(new Error(event.message || 'STEP worker initialization failed.'));
-    };
-    worker.addEventListener('message', handleReadyMessage);
-    worker.addEventListener('error', handleReadyError);
-    worker.postMessage({ type: 'init' });
+        resetStepImportWorkerSession(session);
+    }, { once: true });
     return session;
 }
 
 function warmStepImportWorker() {
-    getStepImportWorkerSession().readyPromise.catch((error) => {
+    try {
+        getStepImportWorkerSession().worker.postMessage({ type: 'init' });
+    } catch (error) {
         console.warn('STEP worker warm-up failed:', error);
-    });
+    }
 }
 
 function scheduleStepImportWorkerWarmup() {
@@ -30262,22 +30329,17 @@ function createStepMeshFromWorker(meshDefinition, index, placement, performanceM
 async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName, onMesh, onProgress) {
     onProgress?.({ phase: 'engine' });
     const session = getStepImportWorkerSession();
-    await session.readyPromise;
-    if (state.stepImportWorkerSession !== session) {
-        throw new Error('STEP worker restarted before the import began.');
-    }
 
     return new Promise((resolve, reject) => {
         const { worker } = session;
         const requestId = ++state.stepImportRequestId;
         let settled = false;
 
-        const finish = (callback, value, resetWorker = false) => {
+        const finish = (callback, value) => {
             if (settled) return;
             settled = true;
             worker.removeEventListener('message', handleMessage);
             worker.removeEventListener('error', handleError);
-            if (resetWorker) resetStepImportWorkerSession(session);
             callback(value);
         };
 
@@ -30288,7 +30350,7 @@ async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName,
                 try {
                     onMesh(payload.mesh);
                 } catch (error) {
-                    finish(reject, error, true);
+                    finish(reject, error);
                 }
                 return;
             }
@@ -30301,12 +30363,11 @@ async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName,
                 return;
             }
             if (payload.type === 'error') {
-                finish(reject, new Error(payload.message || 'STEP worker stopped unexpectedly.'), true);
+                finish(reject, new Error(payload.message || 'STEP worker stopped unexpectedly.'));
             }
         };
         const handleError = (event) => {
-            event.preventDefault();
-            finish(reject, new Error(event.message || 'STEP worker stopped unexpectedly.'), true);
+            finish(reject, new Error(event.message || 'STEP worker stopped unexpectedly.'));
         };
         worker.addEventListener('message', handleMessage);
         worker.addEventListener('error', handleError);
@@ -30325,17 +30386,57 @@ async function parseStepBufferInWorker(fileBuffer, parameters, engine, fileName,
                 }
             }, [fileBuffer]);
         } catch (error) {
-            finish(reject, error, true);
+            finish(reject, error);
         }
     });
 }
 
-async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = null) {
+async function readBundledStepMesh(assetPath, file, fileBuffer, parameters) {
+    try {
+        const [response, sourceHash] = await Promise.all([
+            fetch(new URL(`${assetPath}.mesh.json.gz?v=1`, import.meta.url)),
+            getCadFileHash(file, fileBuffer)
+        ]);
+        if (!response.ok || !response.body) return null;
+        const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
+        const record = await new Response(stream).json();
+        if (record.version !== 1 || record.sourceSha256 !== sourceHash
+            || record.parameters?.linearDeflection !== parameters.linearDeflection
+            || record.parameters?.angularDeflection !== parameters.angularDeflection
+            || !Array.isArray(record.meshes)) return null;
+
+        const decode = (value, ArrayType) => {
+            if (value == null) return null;
+            if (typeof Uint8Array.fromBase64 === 'function') return new ArrayType(Uint8Array.fromBase64(value).buffer);
+            const binary = atob(value);
+            const bytes = new Uint8Array(binary.length);
+            for (let index = 0; index < bytes.length; index += 1) bytes[index] = binary.charCodeAt(index);
+            return new ArrayType(bytes.buffer);
+        };
+        const meshes = record.meshes.map(({ positions, indices, normals, colors, indexBytes, ...metadata }) => ({
+            ...metadata,
+            positions: decode(positions, Float32Array),
+            indices: decode(indices, indexBytes === 2 ? Uint16Array : Uint32Array),
+            normals: decode(normals, Float32Array),
+            colors: decode(colors, Float32Array)
+        }));
+        return { rootName: record.rootName, meshes };
+    } catch (error) {
+        console.warn('Bundled STEP mesh could not be read:', error);
+        return null;
+    }
+}
+
+async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = null, { savedEngine = null, onPreview = null } = {}) {
     const group = new THREE.Group();
     group.name = 'STEP Assembly';
     const importStartedAt = performance.now();
     try {
         const useLargeFileEngine = file.size >= STEP_LARGE_FILE_ENGINE_MIN_BYTES;
+        const legacyEngine = useLargeFileEngine ? 'large' : 'standard';
+        const requiresXcaf = savedEngine === 'xcaf';
+        const tryXcaf = !savedEngine && !useLargeFileEngine
+            && qualityKey === 'auto' && file.size >= STEP_XCAF_AUTO_MIN_BYTES;
         const performanceMode = file.size >= LARGE_MODEL_PERFORMANCE_MIN_BYTES;
         group.userData.largeModelMode = performanceMode;
         const parameters = useLargeFileEngine
@@ -30343,40 +30444,68 @@ async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = 
             : getStepTessellationParameters(file.size, qualityKey);
         const cacheEnabled = file.size <= STEP_IMPORT_CACHE_MAX_SOURCE_BYTES;
         const cacheKey = cacheEnabled ? getStepImportCacheKey(file, parameters, qualityKey) : null;
+        const xcafCacheKey = cacheKey ? `${cacheKey}|xcaf-relative-v1` : null;
+        const bundledAsset = BUNDLED_STEP_ASSETS.get(file.name.toLowerCase());
         onProgress?.(5);
-        const cached = cacheEnabled ? await readStepImportCache(cacheKey) : null;
+        let cachedEngine = requiresXcaf ? 'xcaf' : legacyEngine;
+        let cachedKey = requiresXcaf ? xcafCacheKey : cacheKey;
+        let cached = cachedKey ? await readStepImportCache(cachedKey) : null;
+        let bundled = false;
+        let fileBuffer = null;
+        let sourceReadMs = 0;
+        const readSource = async () => {
+            onProgress?.(10);
+            const startedAt = performance.now();
+            fileBuffer = await file.arrayBuffer();
+            sourceReadMs = performance.now() - startedAt;
+            onProgress?.(18);
+        };
+        if (!cached?.meshes?.length && !requiresXcaf && !useLargeFileEngine && qualityKey === 'auto' && bundledAsset
+            && typeof DecompressionStream === 'function' && window.crypto?.subtle) {
+            await readSource();
+            cached = await readBundledStepMesh(bundledAsset, file, fileBuffer, parameters);
+            bundled = Boolean(cached);
+        }
+        if (!cached?.meshes?.length && tryXcaf && xcafCacheKey) {
+            cachedEngine = 'xcaf';
+            cachedKey = xcafCacheKey;
+            cached = await readStepImportCache(cachedKey);
+        }
         if (cached?.meshes?.length) {
             try {
+                const batchProgressStart = bundled ? 18 : 10;
+                let batchStartedAt = performance.now();
                 for (let index = 0; index < cached.meshes.length; index += 1) {
                     group.add(createStepMeshFromWorker(cached.meshes[index], index, placement, performanceMode));
-                    onProgress?.(10 + Math.round(((index + 1) / cached.meshes.length) * 85));
-                    if (index > 0 && index % 4 === 0) await yieldToAnimationFrame();
+                    onProgress?.(batchProgressStart + Math.round((index + 1) / cached.meshes.length * (95 - batchProgressStart)));
+                    if (index + 1 < cached.meshes.length && performance.now() - batchStartedAt >= 8) {
+                        await yieldToAnimationFrame();
+                        batchStartedAt = performance.now();
+                    }
                 }
                 group.name = cached.rootName || group.name;
+                group.userData.stepImportEngine = cachedEngine;
                 group.userData.importTimings = {
                     cacheHit: true,
+                    bundled,
                     totalMs: performance.now() - importStartedAt
                 };
                 return group;
             } catch (error) {
                 disposeObjectResources(group);
                 group.clear();
-                await deleteStepImportCache(cacheKey);
+                if (!bundled) await deleteStepImportCache(cachedKey);
                 console.warn('Discarded invalid STEP cache entry:', error);
             }
         }
 
-        onProgress?.(10);
-        const sourceReadStartedAt = performance.now();
-        const fileBuffer = await file.arrayBuffer();
-        onProgress?.(18);
-        const sourceReadMs = performance.now() - sourceReadStartedAt;
+        if (!fileBuffer) await readSource();
         const cacheMeshes = cacheEnabled ? [] : null;
         let meshBuildMs = 0;
-        const result = await parseStepBufferInWorker(
+        const convert = (engine) => parseStepBufferInWorker(
             fileBuffer,
             parameters,
-            useLargeFileEngine ? 'large' : 'standard',
+            engine,
             file.name,
             (meshDefinition) => {
                 cacheMeshes?.push(meshDefinition);
@@ -30388,6 +30517,7 @@ async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = 
                     performanceMode
                 ));
                 meshBuildMs += performance.now() - meshBuildStartedAt;
+                if (engine === 'large') onPreview?.(group);
             },
             ({ phase, partIndex = 0, partCount = 0 }) => {
                 // The large-file worker performs STEP reading/import and the
@@ -30413,14 +30543,30 @@ async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = 
                 });
             }
         );
+        let engine = requiresXcaf || tryXcaf ? 'xcaf' : legacyEngine;
+        let result;
+        try {
+            result = await convert(engine);
+        } catch (error) {
+            if (!tryXcaf) throw error;
+            disposeObjectResources(group);
+            group.clear();
+            if (cacheMeshes) cacheMeshes.length = 0;
+            meshBuildMs = 0;
+            console.warn('XCAF STEP conversion failed; retrying with the standard importer:', error);
+            await readSource();
+            engine = legacyEngine;
+            result = await convert(engine);
+        }
         onProgress?.(96);
         group.name = result.rootName || group.name;
+        group.userData.stepImportEngine = engine;
         if (group.children.length === 0) {
             throw new Error('The STEP file contains no triangulated mesh.');
         }
         if (cacheEnabled) {
             scheduleStepImportCacheWrite({
-                key: cacheKey,
+                key: engine === 'xcaf' ? xcafCacheKey : cacheKey,
                 savedAt: Date.now(),
                 rootName: group.name,
                 meshes: cacheMeshes,
@@ -30436,6 +30582,7 @@ async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = 
         };
         console.info('[3D Simulation] STEP import timing', JSON.stringify({
             name: file.name,
+            engine,
             meshCount: group.children.length,
             ...group.userData.importTimings
         }));
@@ -30443,10 +30590,12 @@ async function parseStepFile(file, placement, qualityKey = 'auto', onProgress = 
     } catch (error) {
         disposeObjectResources(group);
         throw error;
+    } finally {
+        group.removeFromParent();
     }
 }
 
-async function parseUploaded3DFile(file, extension, placement, qualityKey = 'auto', onProgress = null) {
+async function parseUploaded3DFile(file, extension, placement, qualityKey = 'auto', onProgress = null, stepOptions) {
     if (isModelImportFileTooLarge(file)) {
         throw new Error('The model file exceeds the 500 MB import limit.');
     }
@@ -30509,7 +30658,7 @@ async function parseUploaded3DFile(file, extension, placement, qualityKey = 'aut
         });
     }
     if (extension === 'stp' || extension === 'step') {
-        return parseStepFile(file, placement, qualityKey, onProgress);
+        return parseStepFile(file, placement, qualityKey, onProgress, stepOptions);
     }
     throw new Error(`Unsupported file extension: ${extension}`);
 }
@@ -31142,9 +31291,25 @@ async function handle3DImport(options = {}) {
 
     let importedModel = null;
     let assetPersistenceFailed = false;
+    const persistSource = !options.skipAssetPersistence && !IS_MANUAL_GUIDE_EMBED;
+    let stagedSource = null;
+    const preview = placement === 'scene' && !options.workspaceModelId && !options.transform
+        ? (content) => {
+            if (!content.parent) state.scene.add(content);
+            requestRender();
+        }
+        : null;
     try {
         const content = await parseUploaded3DFile(file, extension, placement, importQuality.key, (progress) => {
             if (progress && typeof progress === 'object' && progress.indeterminate) {
+                if (!stagedSource && persistSource && file.size >= STEP_LARGE_FILE_ENGINE_MIN_BYTES && progress.phase === 'tessellating') {
+                    // The STEP reader has finished. Save the source while the worker meshes the parts.
+                    const db = state.workspaceRecovery.db;
+                    if (db && state.workspaceRecovery.ready && !state.workspaceRecovery.restoring) {
+                        stagedSource = { db, result: persistImportedWorkspaceAsset(file, extension)
+                            .then(assetId => ({ assetId }), error => ({ error })) };
+                    }
+                }
                 reportProgress(progress);
                 return;
             }
@@ -31152,7 +31317,7 @@ async function handle3DImport(options = {}) {
                 ? progress.progress
                 : progress;
             reportProgress(5 + Math.round((Number(parserProgress) || 0) * 0.65));
-        });
+        }, { savedEngine: options.savedStepEngine, onPreview: preview });
         const conveyorDimensions = options.conveyorDimensions
             ? resizeConveyorContent(content, options.conveyorDimensions) : null;
         const testModelAssetId = options.testModelAssetId || (options.testModel
@@ -31198,6 +31363,7 @@ async function handle3DImport(options = {}) {
         importedModel.userData.sourceFileSize = file.size;
         importedModel.userData.largeModelMode = performanceMode;
         importedModel.userData.importQuality = importQuality.key;
+        if (content.userData.stepImportEngine) importedModel.userData.stepImportEngine = content.userData.stepImportEngine;
         if (options.workspaceAssetId) importedModel.userData.workspaceAssetId = options.workspaceAssetId;
         ensureWorkspaceModelId(importedModel, options.workspaceModelId);
         if (options.testModel) importedModel.userData.testModel = true;
@@ -31291,9 +31457,16 @@ async function handle3DImport(options = {}) {
             state.modelTreeCollapsedIds.add(ensureModelTreeId(importedModel));
         }
 
-        if (!options.skipAssetPersistence && !IS_MANUAL_GUIDE_EMBED) {
+        if (persistSource) {
             try {
-                const assetId = await persistImportedWorkspaceAsset(file, extension);
+                let assetId;
+                if (stagedSource) {
+                    const stored = await stagedSource.result;
+                    if (stored.error) throw stored.error;
+                    assetId = stored.assetId;
+                } else {
+                    assetId = await persistImportedWorkspaceAsset(file, extension);
+                }
                 if (assetId) importedModel.userData.workspaceAssetId = assetId;
             } catch (storageError) {
                 console.warn('Imported source asset could not be saved:', storageError);
@@ -31335,6 +31508,12 @@ async function handle3DImport(options = {}) {
         return importedModel;
     } catch (error) {
         console.error('3D import failed:', error);
+        if (stagedSource && !importedModel?.userData.workspaceAssetId) {
+            const { db, result } = stagedSource;
+            void result.then(({ assetId }) => assetId && db.discardUnpublishedAsset(assetId)).catch(storageError => {
+                console.warn('Unable to discard the unpublished STEP source:', storageError);
+            });
+        }
         importedModel?.removeFromParent();
         if (importedModel) disposeObjectResources(importedModel);
         if (historyBefore) applySceneSnapshot(historyBefore);
@@ -31481,13 +31660,17 @@ function applyTestToolCollisionProfile(tool) {
 }
 
 async function loadTestModelAssetFile(assetPath) {
-    const response = await fetch(assetPath, { cache: 'no-store' });
+    const response = await fetch(assetPath);
     if (!response.ok) {
         throw new Error(`Test asset request failed (${response.status}): ${assetPath}`);
     }
     const blob = await response.blob();
     const name = assetPath.split('/').pop() || 'test-model';
-    return new File([blob], name, { type: blob.type || 'application/octet-stream' });
+    const lastModified = Date.parse(response.headers.get('last-modified'));
+    return new File([blob], name, {
+        type: blob.type || 'application/octet-stream',
+        ...(Number.isFinite(lastModified) ? { lastModified } : {})
+    });
 }
 
 async function importTestModelFile(file, placement, options = {}) {
@@ -31657,14 +31840,20 @@ async function handleTestModelImport() {
     el.btnTestModel.disabled = true;
     let completed = 0;
     const failures = [];
+    // Fetch the selected originals together while keeping scene changes in selection order.
+    const sources = selection.map(({ asset }) => loadTestModelAssetFile(asset.path)
+        .then(file => ({ file }), error => ({ error })));
     try {
-        for (const { asset, quantity, dimensions, position = [0, 0, 0] } of selection) {
+        for (const [selectionIndex, { asset, quantity, dimensions, position = [0, 0, 0] }] of selection.entries()) {
             try {
-                const file = await loadTestModelAssetFile(asset.path);
+                const { file, error } = await sources[selectionIndex];
+                if (error) throw error;
                 const placement = asset.category === 'tool' ? 'tcp' : 'scene';
+                let workspaceAssetId = null;
                 for (let index = 0; index < quantity; index++) {
                     const model = await importTestModelFile(file, placement, {
                         file, placement, attachmentRobot: robot, testModel: true,
+                        workspaceAssetId, skipAssetPersistence: Boolean(workspaceAssetId),
                         conveyorDimensions: asset.id === 'conveyor' ? dimensions : undefined,
                         testModelAssetId: asset.id,
                         testModelDimensions: asset.id !== 'conveyor' ? dimensions : undefined,
@@ -31673,6 +31862,7 @@ async function handleTestModelImport() {
                         throwOnError: true
                     });
                     if (!model) throw new Error(asset.name);
+                    workspaceAssetId = model.userData.workspaceAssetId || workspaceAssetId;
                     if (choice.educational && asset.id === 'single-vac') {
                         applyTestTcpProfile(robot, [0, 0, robotType === 'scara' ? -100 : 100]);
                     }
@@ -38111,7 +38301,15 @@ function updateConveyorSimulation(timestamp) {
     conveyorVisuals.update(state.ioFunctionMappings, mappings, resolveConveyorBelt, seconds,
         state.models.filter(model => model.userData.testModelAssetId === 'conveyor'
             || (model.userData.testModel && /^Conveyor\.step$/i.test(model.userData.modelName || ''))));
-    if (!mappings.length && !conveyorTrackingApp.active && !conveyorTrackingApp.monitoring) return;
+    if (conveyorTrackingApp.active) {
+        // A throttled browser timer can supply more than one valid tracking sample.
+        forEachConveyorTrackingStep(seconds, elapsed => advanceConveyorSimulation(mappings, elapsed));
+    } else if (mappings.length || conveyorTrackingApp.monitoring) {
+        advanceConveyorSimulation(mappings, seconds);
+    }
+}
+
+function advanceConveyorSimulation(mappings, seconds) {
     conveyorFeedApp.beforeStep(mappings, seconds);
     const candidates = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost).map(item => item.object);
     conveyorTrackingApp.beforeStep(candidates);
@@ -45887,6 +46085,7 @@ function serializeWorkspaceSceneModel(model) {
             sourceUpAxis: model.userData.sourceUpAxis || '',
             sourceFileSize: Number(model.userData.sourceFileSize) || 0,
             importQuality: model.userData.importQuality || 'auto',
+            ...(model.userData.stepImportEngine === 'xcaf' ? { stepImportEngine: 'xcaf' } : {}),
             largeModelMode: Boolean(model.userData.largeModelMode),
             testModel: Boolean(model.userData.testModel),
             ...(model.userData.conveyorDimensions ? { conveyorDimensions: { ...model.userData.conveyorDimensions } } : {}),
@@ -46719,6 +46918,7 @@ async function restoreWorkspaceImportedModel(entry, robotsById) {
         toolLoadProperties: entry.toolLoadProperties,
         visible: entry.visible !== false,
         importQuality: entry.importQuality,
+        savedStepEngine: entry.stepImportEngine === 'xcaf' ? 'xcaf' : 'legacy',
         workspaceAssetId: asset.id,
         workspaceModelId: entry.workspaceModelId,
         transform,
@@ -51929,7 +52129,7 @@ function installSimulationManualGuide() {
 }
 
 function requiresContinuousRendering() {
-    return Boolean(state.viewTransition && state.viewTransition.session?.status !== 'paused')
+    return state.viewRecording?.active || Boolean(state.viewTransition && state.viewTransition.session?.status !== 'paused')
         || equipmentApp.active(state.ioFunctionMappings)
         || activeConveyorMappings().length > 0
         || isViewWindowOpen()
@@ -51977,34 +52177,15 @@ function requestRender() {
     });
 }
 
-function startRenderFpsDisplay() {
-    if (!el.statFps) return;
-    let lastTime = performance.now();
-    let lastCount = state.renderedSceneFrames;
-    window.setInterval(() => {
-        const now = performance.now();
-        const count = state.renderedSceneFrames;
-        const fps = Math.round((count - lastCount) * 1000 / (now - lastTime));
-        const label = `${fps} FPS`;
-        if (el.statFps.textContent !== label) el.statFps.textContent = label;
-        lastTime = now;
-        lastCount = count;
-    }, 500);
-}
-
 function renderSimulationScene(renderer, camera) {
     // CPU rasterizers in VMs can block the transport timer during AO passes.
     // Keep every original mesh, transform and collision shape; omit only the
     // optional lighting post-process and render at the existing reduced DPR.
-    const previousFrame = renderer.info.render.frame;
     if (usesSoftwareRasterizer(renderer)) {
         const painted = renderPacedSoftwareFrame(renderer, () => renderer.render(state.scene, camera), undefined, 0);
         // Also retry an on-demand edit; a skipped final frame must not be lost.
         if (!painted) requestRender();
     } else renderWithContactAO(renderer, state.scene, camera, state.models);
-    if (renderer === state.renderer && renderer.info.render.frame !== previousFrame) {
-        state.renderedSceneFrames++;
-    }
 }
 
 function animate(timestamp = performance.now(), paintTime = timestamp) {
@@ -52057,6 +52238,7 @@ function animate(timestamp = performance.now(), paintTime = timestamp) {
     updateSketchPreview();
     updateTeachingPointDisplay();
     visionApp.update();
+    state.viewRecording?.sample(timestamp);
     if (!state.renderFpsLimited || state.renderFrameLimit.permits(paintTime)) {
         renderSimulationScene(state.renderer, state.camera);
         renderViewWindow();

@@ -1,5 +1,57 @@
 import { test, expect } from '@playwright/test';
 
+test('대용량 STEP 변환 실패 시 미리 저장한 원본을 정리한다', async ({ page }) => {
+    page.on('dialog', dialog => dialog.dismiss());
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        const source = (await response.text())
+            .replace('const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 50 * MEBIBYTE;', 'const STEP_LARGE_FILE_ENGINE_MIN_BYTES = 1;')
+            .replace('init();\n', 'window.__stageReady = init();\n');
+        await route.fulfill({ response, body: `${source}
+            const storeImportSource = persistImportedWorkspaceAsset;
+            persistImportedWorkspaceAsset = async (...args) => {
+                const id = await storeImportSource(...args);
+                window.__stagedAssetId = id;
+                return id;
+            };
+            window.__stageReady.then(() => {
+                const add = state.scene.add.bind(state.scene);
+                state.scene.add = (...objects) => {
+                    if (objects.some(object => object.name === 'STEP Assembly')) window.__stepPreviewShown = true;
+                    return add(...objects);
+                };
+            });
+            window.__importState = state;` });
+    });
+    await page.route('**/2_3DSimulation/step-import-worker.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: `${await response.text()}
+            parseLargeStepFile = async (_message, requestId) => {
+                self.postMessage({ type: 'progress', requestId, phase: 'tessellating' });
+                self.postMessage({ type: 'mesh', requestId, mesh: {
+                    positions: new Float32Array([0, 0, 0, 10, 0, 0, 0, 10, 0]), indices: new Uint16Array([0, 1, 2])
+                } });
+                throw new Error('Invalid STEP input');
+            };` });
+    });
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__stageReady);
+    await page.evaluate(() => window.__stageReady);
+    await page.locator('#input-import-3d').setInputFiles({
+        name: 'Invalid.step', mimeType: 'application/octet-stream', buffer: Buffer.from('invalid')
+    });
+    await page.locator('#btn-confirm-import').click();
+    await page.waitForFunction(() => window.__stagedAssetId && window.__importState.fileImportLoads.size === 0);
+    await expect.poll(() => page.evaluate(async () => {
+        return !!(await window.__importState.workspaceRecovery.db.getAsset(window.__stagedAssetId));
+    })).toBe(false);
+    expect(await page.evaluate(() => ({
+        previewShown: window.__stepPreviewShown,
+        previewLeft: window.__importState.scene.children.some(object => object.name === 'STEP Assembly'),
+        registered: window.__importState.models.length
+    }))).toEqual({ previewShown: true, previewLeft: false, registered: 0 });
+});
+
 test('조립 STEP의 중첩 부품은 이름과 배치 좌표를 유지한다', async ({ page }) => {
     test.setTimeout(90_000);
     await page.goto('/health');

@@ -86,10 +86,10 @@ test('홈의 사용 방법은 밝은 배경에서 재생하고 좁은 화면에�
     const trigger = page.locator('button[data-tool-guide="document"]');
     await trigger.click();
     const guide = page.locator('#tool-guide-modal').getByRole('dialog');
-    await expect(guide).toHaveCSS('background-color', 'rgb(253, 254, 251)');
-    await expect(guide.locator('.manual-guide-header')).toHaveCSS('background-color', 'rgb(250, 250, 246)');
-    await expect(guide.locator('[data-tool-guide-next]')).toHaveCSS('background-color', 'rgb(253, 254, 251)');
-    await expect(guide.locator('[data-tool-guide-launch]')).toHaveCSS('background-color', 'rgb(48, 71, 53)');
+    await expect(guide).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(guide.locator('.manual-guide-header')).toHaveCSS('background-color', 'rgb(247, 250, 253)');
+    await expect(guide.locator('[data-tool-guide-next]')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(guide.locator('[data-tool-guide-launch]')).toHaveCSS('background-color', 'rgb(8, 104, 158)');
     await page.waitForFunction(() => window.ToolGuide.getState().frameReady);
     await guide.locator('[data-tool-guide-play]').click();
     for (const width of [1440, 360]) {

@@ -79,8 +79,9 @@ const traceJointState = parseVirtualControllerMessage({
 }, 26);
 assert.equal(traceJointState.kind, 'state');
 assert.deepEqual(traceJointState.joints, [1, 2, 3, 4, 5, 6]);
-assert.equal(traceJointState.position, null);
-assert.equal(traceJointState.rotation, null);
+// A complete, finite Trace pose is kept as controller TCP feedback (see simulation-controller-tcp tests).
+assert.deepEqual(traceJointState.position, [100, 200, 300]);
+assert.deepEqual(traceJointState.rotation, [10, 20, 30]);
 
 const tracePackedJointState = parseVirtualControllerMessage({
     type: 'traceData',
@@ -116,14 +117,14 @@ assert.deepEqual(buffer.getLatest().joints, [8, 0, 0, 0, 0, 0]);
 assert.ok(buffer.getRateHz() >= 249 && buffer.getRateHz() <= 251);
 const html = readSimulationMarkup();
 const main = await readFile(new URL('../2_3DSimulation/main.js', import.meta.url), 'utf8');
-const bridge = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/Program.cs', import.meta.url), 'utf8');
-const nativeClient = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/NativeRobotClient.cs', import.meta.url), 'utf8');
-const bridgeProject = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/InoRobotVirtualControllerBridge.csproj', import.meta.url), 'utf8');
+const bridge = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/src/main.rs', import.meta.url), 'utf8');
+const nativeClient = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/src/sdk.rs', import.meta.url), 'utf8');
+const worker = await readFile(new URL('../2_3DSimulation/VirtualControllerBridge/src/worker.rs', import.meta.url), 'utf8');
 assert.match(html, /id="virtual-controller-panel"/);
 assert.match(html, /data-panel-toggle="virtual-controller-panel"/);
 assert.match(html, /id="virtual-controller-connections"/);
 assert.match(html, /id="virtual-controller-add"/);
-assert.match(html, /bridge\/InoRobotVirtualControllerBridge\.zip/);
+assert.match(html, /bridge\/InoRobotVirtualControllerBridge\.zip[^"]*" download="InoRobotVirtualControllerBridge\.zip"/);
 assert.match(html, /id="virtual-controller-source"/);
 assert.match(html, /id="virtual-controller-kind"/);
 assert.match(html, /id="virtual-controller-ip"/);
@@ -138,7 +139,7 @@ assert.match(html, /data-view-slot="3"/);
 assert.doesNotMatch(html, /view-b-index|view-b-monitor|view-b-start|view-b-stop/);
 assert.doesNotMatch(html, /<span>현재 로봇<\/span>/);
 assert.doesNotMatch(html, /<span>체크 로봇<\/span>/);
-assert.match(html, /InoRobotTrace_V1\.5\.zip/);
+assert.match(html, /\.\/trace-compat\/InoRobotTrace_V1\.5\.zip/);
 assert.doesNotMatch(main, /from\s+['"]\.\/virtual-controller-core\.mjs/);
 assert.match(main, /ensureVirtualControllerCore\(\)/);
 assert.match(main, /import\('\.\/virtual-controller-core\.mjs(?:\?v=[^']+)?'\)/);
@@ -202,57 +203,34 @@ assert.match(
 assert.match(main, /const sample = controller\.samples\.getLatest\(\)/);
 assert.match(main, /sample\.sampleId <= controller\.lastAppliedSampleId/);
 assert.match(main, /sample\.joints\.length < joints\.length/);
-assert.match(main, /setJointAngle\(joint, (?:sample\.joints\[index\]|value), false\)/);
+assert.match(main, /setJointAngle\(joint, (?:sample\.joints\[index\]|value), false(?:, true)?\)/);
 assert.match(main, /function addViewMotionStep\(\)/);
 assert.match(main, /step\.motion === 'VIEW'/);
 assert.match(main, /Trace에서 관절 위치\(J1~J6\)를 가져올 수 없습니다\./);
 assert.doesNotMatch(main, /sampleQuaternionForRobot|isTraceIkSolutionContinuous|TRACE_POSE_FALLBACK_STATUS/);
-assert.match(bridge, /BridgePort = 5055/);
-assert.match(bridge, /ControllerPort = 2222/);
-assert.match(bridge, /ActiveSessions/);
-assert.match(bridge, /ActiveCommunicationIds/);
-assert.match(bridge, /TryAllocateCommunicationId/);
-assert.doesNotMatch(bridge, /activeClient/);
+assert.match(bridge, /const BRIDGE_PORT: u16 = 5055/);
+assert.match(bridge, /"controllerPort":2222/);
+assert.match(bridge, /type Slots = Mutex<\[Option<Arc<Mutex<Connection>>>; 64\]>/);
+assert.match(bridge, /app.reserve\(Arc::clone\(&connection\)\)/);
 assert.match(bridge, /INOROBOT_BRIDGE_TOKEN/);
 assert.match(bridge, /INOROBOT_BRIDGE_ORIGINS/);
-assert.match(bridge, /RandomNumberGenerator\.GetBytes/);
+assert.match(bridge, /getrandom::fill/);
 assert.match(bridge, /https:\/\/inovancerobot\.com/);
-assert.match(bridge, /controllerKind = root\.TryGetProperty\("controllerKind"/);
-assert.match(bridge, /robot\.Connect\(\s*ip,\s*ControllerPort,\s*InitialControllerTimeoutSeconds\s*\)/);
-assert.doesNotMatch(bridge, /!requestedRealController \|\| !realControllerAllowed/);
-assert.match(bridge, /TimeSpan\.FromSeconds\(10\)/);
-assert.match(bridge, /TimeSpan\? timeout = null/);
-assert.match(bridge, /ReceiveMessageAsync\(socket, sessionCancellation\.Token\);/);
-assert.match(bridge, /controllerConnectionLost/);
-assert.match(bridge, /InitialControllerTimeoutSeconds = 5/);
-assert.match(bridge, /ReconnectControllerTimeoutSeconds = 3/);
-assert.match(bridge, /controllerReconnectFailed/);
-assert.match(bridge, /else if \(!robot\.IsConnected\s*&&\s*Volatile\.Read\(ref controllerReconnectEnabled\) == 1/);
-assert.match(bridge, /robot\.LastConnectionLossDiagnostic/);
-assert.match(bridge, /IsAllowedOrigin/);
-assert.match(bridge, /type == "shutdown"/);
-assert.doesNotMatch(bridge, /AccessControlAllowOrigin = "\*"/);
+assert.match(bridge, /Duration::from_secs\(10\), socket.recv\(\)/);
+assert.match(bridge, /if origin.is_some\(\) && !allowed/);
+assert.match(bridge, /"shutdown"/);
+assert.match(worker, /real && !self\.worker\.allow_real/);
+assert.match(worker, /self\.connect\(ip, real, 5\)/);
+assert.match(worker, /self\.connect\(ip, real, 3\)/);
+assert.match(worker, /controllerConnectionLost/);
+assert.match(worker, /controllerReconnectFailed/);
+assert.match(worker, /now\.duration_since\(\*start\)/);
+assert.match(worker, /span < Duration::from_millis\(100\)/);
+assert.match(worker, /self\.failures = None;/);
+assert.match(worker, /\.map_or\(&\[\]\[\.\.\]/);
 assert.match(nativeClient, /IMC100_Get_RobJPosHere/);
-assert.match(nativeClient, /int port = 2222/);
-assert.match(nativeClient, /int timeoutSeconds = 5/);
-assert.doesNotMatch(nativeClient, /timeoutMs = 1000/);
-assert.match(nativeClient, /RuntimeLibraryName = "MSVCR120\.dll"/);
-assert.match(nativeClient, /EnsureEmbeddedLibrary\(EmbeddedRuntimeLibraryName, runtimePath\)/);
-assert.match(nativeClient, /_runtimeLibraryHandle = LoadLibrary\(runtimePath\)/);
-assert.match(nativeClient, /SHA256\.HashData/);
-assert.match(bridgeProject, /Native\\MSVCR120\.dll/);
-assert.match(bridgeProject, /InoRobotVirtualControllerBridge\.MSVCR120\.dll/);
-assert.match(nativeClient, /JointReadFailureDisconnectThresholdMs = 100/);
-assert.match(nativeClient, /RegisterJointReadFailureUnsafe\(\$"return code \{jointResult\}"\);/);
-assert.match(nativeClient, /ResetJointReadFailuresUnsafe\(\);/);
-assert.match(nativeClient, /durationMs < JointReadFailureDisconnectThresholdMs/);
-assert.match(nativeClient, /LastConnectionLossDiagnostic/);
-assert.doesNotMatch(
-    nativeClient,
-    /if \(jointResult < 0\)\s*\{\s*DisconnectUnsafe\(\);/,
-    'A single failed joint read must not immediately tear down the controller session.'
-);
-assert.match(nativeClient, /double\[\] tcp = Array\.Empty<double>\(\)/);
-assert.match(nativeClient, /if \(tcpResult >= 0\)/);
+assert.match(nativeClient, /IMC100_Get_RobPosHere/);
+assert.match(nativeClient, /include_bytes!\("\.\.\/Native\/MSVCR120\.dll"\)/);
+assert.match(nativeClient, /include_bytes!\(".*IMC100API\.dll"\)/);
 
 console.log('Virtual controller validation passed: joint sync and saved-view integration.');

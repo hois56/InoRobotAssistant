@@ -74,7 +74,7 @@ test('설비 설정 중 다른 창을 사용할 수 있고 가동부를 여러 �
     await page.locator('#model-select').selectOption('robot:IR-R10H-120');
     await page.waitForFunction(() => window.__equipment.state.models.some(model => model.userData.tcpFrame));
     await expect(page.locator('#equipment-dialog')).toBeVisible();
-    expect(await page.locator('[data-equipment-role="movingRef"] input:checked').evaluateAll(nodes => nodes.map(node => node.value))).toEqual(refs);
+    expect(await page.evaluate(() => window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[0].movingRefs)).toEqual(refs);
     const result = await page.evaluate(async () => {
         const api = window.__equipment, app = api.equipmentApp;
         const def = api.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[0];
@@ -190,11 +190,12 @@ test('회전 축의 여러 탑재물과 그리퍼 양쪽의 여러 부품을 선
     await page.locator(`[data-equipment-id="${refs.rotary}"] [data-equipment-command="EDIT"]`).click();
     await setEquipmentParts(page, 'carriedRef', refs.carried);
     await page.locator('#equipment-form button[type="submit"]').click();
-    await page.locator(`[data-equipment-id="${refs.grip}"] [data-equipment-command="EDIT"]`).click();
-    await setEquipmentParts(page, 'movingRef', refs.right);
-    await setEquipmentParts(page, 'secondRef', refs.left);
-    await page.locator('#equipment-form button[type="submit"]').click();
     await expect(page.locator('#equipment-error')).toContainText('저장했습니다');
+    // The gripper type and its finger-part lists are no longer offered in the dialog; existing grippers keep working.
+    await page.evaluate(({ grip, right, left }) => {
+        const api = window.__equipment, def = api.state.equipmentDefinitions.find(item => item.id === grip);
+        api.equipmentApp.save({ ...def, movingRef: right[0], movingRefs: right, secondRef: left[0], secondRefs: left });
+    }, refs);
     const result = await page.evaluate(() => {
         const api = window.__equipment, app = api.equipmentApp;
         const [rotary, grip] = api.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT');
@@ -217,9 +218,10 @@ test('회전 축의 여러 탑재물과 그리퍼 양쪽의 여러 부품을 선
     expect(result.error).toBe(''); expect(errors).toEqual([]);
 });
 
-test('외부 축·그리퍼·필름을 IO 매핑으로 운전하고 완전 박리 후 해제한다', async ({ page }) => {
+// Grippers are a legacy type: existing projects still run them, but new IO mappings cannot target them.
+test('외부 축·필름을 IO 매핑으로 운전하고 완전 박리 후 해제한다', async ({ page }) => {
     const errors = await setup(page);
-    const types = ['LINEAR_AXIS', 'ROTARY_AXIS', 'GRIPPER', 'FILM_PEEL'];
+    const types = ['LINEAR_AXIS', 'ROTARY_AXIS', 'FILM_PEEL'];
     for (const type of types) await createEquipmentFixture(page, type);
     await page.locator('#equipment-form [name="speed"]').fill('');
     await page.locator('#equipment-form [name="speed"]').fill('300');
@@ -238,12 +240,12 @@ test('외부 축·그리퍼·필름을 IO 매핑으로 운전하고 완전 박�
     await page.locator('#io-function-mapping-address').fill('620');
     await page.locator('#io-function-mapping-add').click();
     await page.locator('#io-function-mapping-close').click();
-    await page.evaluate(() => { for (let bit = 600; bit <= 603; bit++) window.__equipment.writeOlpAddress(`Out[${bit}]`, 1); });
-    await expect.poll(() => page.evaluate(() => window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT').map(def => def.runtime.position))).toEqual([200, 90, 50, 300]);
-    await page.evaluate(() => { for (let bit = 600; bit <= 603; bit++) window.__equipment.writeOlpAddress(`Out[${bit}]`, 0); window.__equipment.writeOlpAddress('Out[620]', 1); });
-    await expect.poll(() => page.evaluate(() => window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[3].runtime.released)).toBe(true);
-    const high = await page.evaluate(() => Math.max(...window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[3].runtime.film.points.map(p => p[2])));
-    await expect.poll(() => page.evaluate(() => Math.max(...window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[3].runtime.film.points.map(p => p[2])))).toBeLessThan(high - 5);
+    await page.evaluate(() => { for (let bit = 600; bit <= 602; bit++) window.__equipment.writeOlpAddress(`Out[${bit}]`, 1); });
+    await expect.poll(() => page.evaluate(() => window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT').map(def => def.runtime.position))).toEqual([200, 90, 300]);
+    await page.evaluate(() => { for (let bit = 600; bit <= 602; bit++) window.__equipment.writeOlpAddress(`Out[${bit}]`, 0); window.__equipment.writeOlpAddress('Out[620]', 1); });
+    await expect.poll(() => page.evaluate(() => window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[2].runtime.released)).toBe(true);
+    const high = await page.evaluate(() => Math.max(...window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[2].runtime.film.points.map(p => p[2])));
+    await expect.poll(() => page.evaluate(() => Math.max(...window.__equipment.state.equipmentDefinitions.filter(def => def.type !== 'OBJECT')[2].runtime.film.points.map(p => p[2])))).toBeLessThan(high - 5);
     expect(errors).toEqual([]);
 });
 

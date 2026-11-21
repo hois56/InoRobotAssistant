@@ -5,7 +5,7 @@ const routes = require('../1_RobotModelSelect/model-pages.js');
 
 const site = 'https://inovancerobot.com';
 const generatedNotice = '<!-- Generated model detail: tools/robot-model-pages.cjs; edit data.js and the catalog source instead. -->';
-const escape = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const escape = routes.escapeHtml;
 const encodePath = value => value.split('/').map(encodeURIComponent).join('/');
 
 function browserValue(root, file, expression) {
@@ -22,11 +22,13 @@ function facts(product) {
         ['가반 하중', specs['Payload(kg)'] && specs['Payload(kg)'] + ' kg'],
         ['리치', specs['Manipulator Length(mm)'] && specs['Manipulator Length(mm)'] + ' mm'],
         ['Z축 길이', specs['Z axis Length(mm)'] && specs['Z axis Length(mm)'] + ' mm'],
-        ['클린 사양', specs['Clean Type'] === 'Yes' ? '클린형' : '기본형'],
+        ['클린 사양', specs.Type === 'SCARA' && specs['Clean Type'] === 'Yes'
+            ? `클린형 (${routes.scaraCleanClass})` : (specs['Clean Type'] === 'Yes' ? '클린형' : '기본형')],
         ['중공형', specs['Hollow Wrist'] && (specs['Hollow Wrist'] === 'Yes' ? '중공형' : '비중공형')],
         ['중량 (kg)', detail['Weight (kg)'] || detail['Weight (excluding cables) (kg)']],
         ['반복 정밀도 (mm)', detail['Repeatability (mm)'] || detail['Repeatability J1+J2 (mm)']],
-        ['방수·방진 등급', detail['IP rating']],
+        ...routes.wristTorqueSpecs(product),
+        ['방수·방진 등급', detail['IP rating']?.replace(/\s*\n\s*/g, ' ')],
         ['표준 사이클 시간 (s)', detail['Standard cycle time (s)']]
     ].filter(([, value]) => value !== undefined && value !== null && value !== '');
 }
@@ -72,19 +74,6 @@ function publicResources(root, product, cad, manuals) {
     return resources;
 }
 
-function cardHtml(product) {
-    const specs = product.specs;
-    const image = routes.imagePath(product);
-    const extra = specs.Type === 'SCARA'
-        ? '<div class="spec-row"><span>Z축 길이 (mm)</span><span class="spec-value">' + escape(specs['Z axis Length(mm)']) + '</span></div>'
-        : '<div class="spec-row"><span>중공형</span><span class="spec-value">' + (specs['Hollow Wrist'] === 'Yes' ? '중공형' : '비중공형') + '</span></div>';
-    return '<a class="product-card" data-product-id="' + escape(product.id) + '" href="' + routes.modelPath(product.id) + '">' +
-        '<img class="product-image" src="' + encodePath(image) + '" alt="' + escape(routes.displayName(product)) + '" loading="lazy" decoding="async" style="min-height:180px">' +
-        '<div class="product-name">' + escape(routes.displayName(product)) + '</div><div class="product-specs">' +
-        '<div class="spec-row"><span>가반 하중 (kg)</span><span class="spec-value">' + escape(specs['Payload(kg)']) + '</span></div>' +
-        '<div class="spec-row"><span>리치 (mm)</span><span class="spec-value">' + escape(specs['Manipulator Length(mm)']) + '</span></div>' + extra + '</div></a>';
-}
-
 function replaceMeta(html, attribute, key, value) {
     const expression = new RegExp('(<meta\\s+' + attribute + '="' + key + '"\\s+content=")[^"]*(")', 'i');
     if (!expression.test(html)) throw new Error('Missing model metadata: ' + key);
@@ -105,7 +94,8 @@ function createModelPages(root) {
     let catalog = fs.readFileSync(path.join(root, '1_RobotModelSelect/index.html'), 'utf8');
     const marker = /<!-- MODEL-PAGES:CARDS:START -->[\s\S]*?<!-- MODEL-PAGES:CARDS:END -->/;
     if (!marker.test(catalog)) throw new Error('Missing model card build marker');
-    catalog = catalog.replace(marker, '<!-- MODEL-PAGES:CARDS:START -->\n' + products.map(cardHtml).join('\n') + '\n<!-- MODEL-PAGES:CARDS:END -->');
+    const groups = routes.groupCatalogProducts(products);
+    catalog = catalog.replace(marker, '<!-- MODEL-PAGES:CARDS:START -->\n' + groups.map(group => routes.catalogCardHtml(group)).join('\n') + '\n<!-- MODEL-PAGES:CARDS:END -->');
     const pages = products.map(product => {
         const url = routes.modelPath(product.id);
         const name = routes.displayName(product);
@@ -113,8 +103,11 @@ function createModelPages(root) {
         const description = name + ', 가반 하중 ' + product.specs['Payload(kg)'] + ' kg, 리치 ' + product.specs['Manipulator Length(mm)'] + ' mm. 로봇 사양과 CAD·하드웨어 매뉴얼을 확인하고 옵션을 구성하세요.';
         const properties = facts(product);
         const resources = publicResources(root, product, cad, manuals);
+        const variants = groups.find(group => group.includes(product));
+        const bodySelector = variants.length > 1 ? '<nav class="model-static-resources" aria-label="로봇 바디 옵션">' +
+            variants.map(variant => `<a href="${routes.modelPath(variant.id)}"${variant === product ? ' aria-current="page"' : ''}>${routes.subtype(variant)}</a>`).join('') + '</nav>' : '';
         const fallback = '<section class="model-static-detail"><div><img src="' + encodePath(routes.imagePath(product)) + '" alt="' + escape(name) + '"></div><div>' +
-            '<h2>' + escape(name) + '</h2><dl class="model-static-specs">' +
+            '<h2>' + escape(name) + '</h2>' + bodySelector + '<dl class="model-static-specs">' +
             properties.map(([label, value]) => '<div><dt>' + escape(label) + '</dt><dd>' + escape(value) + '</dd></div>').join('') +
             '</dl><nav class="model-static-resources" aria-label="관련 자료">' +
             resources.map(resource => '<a href="' + escape(resource.path) + '"' + (resource.download ? ' download' : ' target="_blank" rel="noopener"') + '>' + escape(resource.label) + '</a>').join('') +
@@ -128,7 +121,7 @@ function createModelPages(root) {
         html = replaceMeta(html, 'name', 'twitter:title', title);
         html = replaceMeta(html, 'name', 'twitter:description', description);
         html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, (_, open, close) => open + site + url + close);
-        html = html.replace(/<h1 class="app-title">[\s\S]*?<\/h1>/, '<span class="app-title">Inovance Robot Select</span>');
+        html = html.replace(/<h1( class="app-title"[^>]*)>([^<]*)<\/h1>/, '<span$1>$2</span>');
         html = html.replace('<h3 id="modal-title">제품 상세 및 구성</h3>', '<h1 id="modal-title">' + escape(name) + ' 로봇 사양 및 구성</h1>');
         html = html.replace(/(id="options-modal"[^>]*style=")display:\s*none;?(")/, '$1display:flex;$2');
         html = html.replace(/(<div class="modal-body" id="modal-body"[^>]*>)[\s\S]*?(<\/div>)/, (_, open, close) => open + fallback + close);

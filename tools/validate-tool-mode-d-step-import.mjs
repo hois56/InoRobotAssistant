@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { integrateStepMesh } from '../3_ToolSelector/mass-properties.mjs';
+import { integrateStepMesh } from '../3_ToolSelector/tool-mass.mjs';
 import { buildStepSnapCandidates } from '../3_ToolSelector/snap-geometry.mjs';
 
 const source = readFileSync(new URL('../3_ToolSelector/mode-d.js', import.meta.url), 'utf8');
@@ -45,16 +45,17 @@ assert.match(worker, /occt\.ReadStepFile\(new Uint8Array\(buffer\), options \|\|
 assert.match(worker, /toTypedArray\(mesh\?\.attributes\?\.position\?\.array, Float32Array\)/);
 assert.match(worker, /toTypedArray\(mesh\?\.index\?\.array, Uint32Array\)/);
 assert.match(worker, /self\.postMessage\(\{ type: 'complete', result: compactResult \}, transferables\)/);
-assert.match(largeWorker, /occt-wasm@5\.3\.4\/dist\/index\.js/);
+const occtVersion = largeWorker.match(/occt-wasm@(\d+\.\d+\.\d+)\/dist\/index\.js/)?.[1];
+assert.ok(occtVersion && largeWorker.includes(`occt-wasm@${occtVersion}/dist/occt-wasm.wasm`));
 assert.match(largeWorker, /async function parseLargeStepFile\(message, requestId\)/);
 assert.match(largeWorker, /kernel\.importXCAFFromSTEP\(sourceBuffer\)/);
-assert.match(largeWorker, /function collectXcafParts\(document\)/);
+assert.match(largeWorker, /function collectXcafParts\(document[,)]/);
 assert.match(largeWorker, /document\.getRoots\(\)/);
 assert.match(largeWorker, /document\.getChildren\(referred \?\? label\)/);
 assert.match(largeWorker, /document\.getReferredLabel\?\.\(label\)/);
 assert.match(largeWorker, /kernel\.located\(part\.shapeHandle, part\.placement\)/);
 assert.match(largeWorker, /part\.shapeHandle/);
-assert.match(largeWorker, /postLargeMeshChunks\(mesh, message, requestId, part\)/);
+assert.match(largeWorker, /postLargeMeshChunks\(mesh, message, requestId, coloredPart\)/);
 assert.match(largeWorker, /segmented: true/);
 assert.match(largeWorker, /kernel\.importStep\(sourceBuffer\)/);
 assert.match(largeWorker, /kernel\.meshShape\(shape/);

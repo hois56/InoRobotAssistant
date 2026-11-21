@@ -3996,14 +3996,6 @@ const accessoriesList = [
         "target_models": "R4, R4H, R7H, R10(All), R11, R16, R25"
     },
     {
-        "code": "01660004",
-        "type": "break box",
-        "name": "Handheld motor break release box",
-        "description": "Used to manually release the break of the robot in emergencies",
-        "spec": "-",
-        "target_models": "R10-140, R16, R25"
-    },
-    {
         "code": "32020626",
         "type": "Zeroing tool",
         "name": "Homing J4 pin 1",
@@ -4033,7 +4025,15 @@ const accessoriesList = [
         "name": "Homing tool",
         "description": "Zero position calibration",
         "spec": "-",
-        "target_models": "R4, R4H, R7H, R10H, R10-110, R11"
+        "target_models": "R4, R4H, R10H, R10-110, R11"
+    },
+    {
+        "code": "32022076",
+        "type": "Zeroing tool",
+        "name": "R7H zero point calibration tool",
+        "description": "Zero position calibration",
+        "spec": "J1–J6",
+        "target_models": "R7H"
     },
     {
         "code": "01660015",
@@ -4154,33 +4154,33 @@ const accessoriesList = [
         "code": "98070385",
         "type": "Telescopic Cover",
         "name": "Upper Telescopic Cover",
-        "description": "J3 Upper Cover (IR-S4-Z12C)",
+        "description": "J3 Upper Cover (IR-S4-Z12C / IR-S4-Z15S)",
         "spec": "-",
-        "target_models": "S4C"
+        "target_models": "S4C, S4S"
     },
     {
         "code": "98070386",
         "type": "Telescopic Cover",
         "name": "Lower Telescopic Cover",
-        "description": "J3 Lower Cover (IR-S4-Z12C)",
+        "description": "J3 Lower Cover (IR-S4-Z12C / IR-S4-Z15S)",
         "spec": "-",
-        "target_models": "S4C"
+        "target_models": "S4C, S4S"
     },
     {
         "code": "98070355",
         "type": "Telescopic Cover",
         "name": "Upper Telescopic Cover",
-        "description": "J3 Upper Cover (IR-S7/10-Z17C)",
+        "description": "J3 Upper Cover (IR-S7/10-Z17C / IR-S7/10-Z20S)",
         "spec": "-",
-        "target_models": "S7C, S10C"
+        "target_models": "S7C, S7S, S10C, S10S"
     },
     {
         "code": "98070354",
         "type": "Telescopic Cover",
         "name": "Lower Telescopic Cover",
-        "description": "J3 Lower Cover (IR-S7/10-Z17C)",
+        "description": "J3 Lower Cover (IR-S7/10-Z17C / IR-S7/10-Z20S)",
         "spec": "-",
-        "target_models": "S7C, S10C"
+        "target_models": "S7C, S7S, S10C, S10S"
     },
     {
         "code": "98051249",

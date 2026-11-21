@@ -61,8 +61,7 @@ assert.match(html, /id="snap-face-orientation-actions"/);
 assert.match(html, /id="btn-snap-face-horizontal"/);
 assert.match(html, /id="btn-snap-face-vertical"/);
 assert.equal((html.match(/data-view-monitor[^>]*disabled/g) || []).length, 0);
-assert.match(css, /\.viewer-language-row \.inorobot-language-label\s*\{\s*display:\s*none;/);
-assert.match(css, /\.viewer-language-row \.inorobot-language-select\s*\{[\s\S]*?width:\s*76px;[\s\S]*?min-width:\s*76px;/);
+assert.match(html, /class="viewer-language-row"[^>]*data-i18n-language-slot/);
 assert.match(css, /\.snap-face-orientation-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,/);
 assert.match(html, /id="model-placement-section"/);
 assert.doesNotMatch(html, /id="model-placement-snap-radius"/);
@@ -71,7 +70,7 @@ assert.doesNotMatch(html, /id="measurement-placement-p1"/);
 assert.doesNotMatch(html, /id="measurement-placement-p2"/);
 assert.doesNotMatch(html, /id="measurement-placement-distance-input"/);
 assert.doesNotMatch(html, /id="measurement-placement-translation"/);
-assert.match(css, /\.measurement-placement-actions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+assert.ok(!/id="btn-measurement-(?:apply|cancel|reset)-placement"/.test(html), 'Model snap placement has no confirmation buttons');
 assert.doesNotMatch(html, /id="measurement-placement-current-distance"/);
 assert.doesNotMatch(html, /data-measurement-mode="placement"/);
 const placementIndex = html.indexOf('id="model-placement-section"');
@@ -94,17 +93,17 @@ assert.match(
 assert.match(main, /parent\.worldToLocal\(sourceWorldPoint\.clone\(\)\)/);
 assert.match(main, /function setPrimitiveShapeDimensionMode\(enabled\)/);
 assert.match(main, /button\.disabled = false;/);
-assert.match(main, /modelBrowserPanel\?\.classList\.toggle\('transform-mode-active', Boolean\(activeMode\)\)/);
+assert.match(main, /const transformModeActive = Boolean\(activeMode\);\s*el\.modelBrowserPanel\?\.classList\.toggle\('transform-mode-active', transformModeActive\)/);
 assert.match(main, /shapePanelVisible \|\| dimensionModeActive/);
-assert.match(main, /isPrimitiveShapeModel\(state\.selectedModel\) && mode === 'scale'[\s\S]*?setPrimitiveShapeDimensionMode\(true\)/);
+assert.match(main, /isDimensionEditableShapeModel\(state\.selectedModel\) && mode === 'scale'[\s\S]*?setPrimitiveShapeDimensionMode\(true\)/);
 assert.match(main, /function updatePlacementDimensionOverlay\(\)/);
 assert.match(main, /showExtensionLines = true/);
 assert.match(main, /function updatePlacementPreviewFromTranslation\(translation\)/);
 assert.match(main, /function exitActiveTransformMode\(\)/);
-assert.match(main, /event\.key === 'Escape' && exitActiveTransformMode\(\)/);
+assert.match(main, /event\.key === 'Escape'[^\n]*\{[\s\S]{0,200}?exitActiveTransformMode\(\)/);
 assert.match(main, /function capturePlacementDimensionOrigin\(\)/);
 assert.match(main, /function handlePlacementTransformObjectChange\(target\)/);
-assert.match(main, /state\.transformControls\.addEventListener\('objectChange', \(\) => \{\s*handlePlacementTransformObjectChange/s);
+assert.match(main, /state\.transformControls\.addEventListener\('objectChange', \(\) => \{[^}]*\}\s*handlePlacementTransformObjectChange\(state\.transformControls\.object\)/s);
 assert.match(main, /dimensionOriginWorldPoint/);
 assert.match(main, /dimensionTargetWorldPoint/);
 assert.match(main, /PLACEMENT_DIMENSION_DISPLAY_EPSILON/);
@@ -123,7 +122,8 @@ assert.match(main, /edit\.kind === 'placement'[\s\S]*?finishPlacementDimensionLa
 assert.match(main, /const translation = placement\.dimensionTranslation/);
 assert.match(main, /function applyPlacementDimensionTranslation\(translation\)/);
 assert.match(main, /input\.addEventListener\('input', \(\) => \{/);
-assert.match(css, /\.model-browser-panel\.transform-mode-active \.model-tree\s*\{[\s\S]*?max-height:\s*76px/);
+// The tree keeps a resizable split height while the transform panel is open.
+assert.match(css, /\.model-browser-panel\.transform-mode-active \.model-tree\s*\{[^}]*max-height:\s*var\(--model-tree-split-height/);
 assert.match(css, /\.model-browser-panel\.transform-mode-active \.model-transform-panel\s*\{[\s\S]*?flex:\s*1 1 auto/);
 assert.match(main, /const previewTranslation = placement\.previewTranslation\?\.clone\(\)/);
 assert.match(main, /applyWorldTranslationToModel\(\s*getPlacementTransformTarget\(\),\s*placement\.sourceWorldPoint,\s*previewTargetPoint/s);
@@ -157,7 +157,8 @@ assert.match(main, /for \(const candidate of targetCandidates\)/);
 const panelLauncherFunction = main.match(
     /function updatePanelLauncher\([\s\S]*?(?=\r?\nfunction togglePanelVisibility)/
 )?.[0] || '';
-assert.match(panelLauncherFunction, /panelId === 'jog-panel' && !getJogTargetRobot\(\)/);
+// Panel requirements (the JOG panel needs a target robot) live in the Rust panels module.
+assert.match(panelLauncherFunction, /panelAvailable\(panelId, getJogTargetRobot, getArticulatedRobots\)/);
 assert.doesNotMatch(panelLauncherFunction, /isPrimitiveShapeModel\(state\.selectedModel\)/);
 const sceneSelectionFunction = main.match(
     /function selectSceneModel\([\s\S]*?(?=\r?\nfunction beginNumericTransformHistory)/

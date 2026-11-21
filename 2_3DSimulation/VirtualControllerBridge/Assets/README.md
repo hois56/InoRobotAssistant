@@ -4,9 +4,8 @@
 32-bit PNG frames at 16, 20, 24, 32, 40, 48, 64, 128 and 256 pixels for Windows
 Explorer, the taskbar, the notification area and the bridge window. The robot
 fills the icon canvas so it remains readable in small taskbar and tray slots.
-The project embeds the ICO in the executable and as an application resource;
-no external image file is needed to run the published bridge. The window uses
-the 64-pixel resource and the tray uses the system's small-icon size.
+The published executable embeds the ICO as a Windows icon resource. The dialog,
+taskbar and tray use the embedded icon at the appropriate display size.
 
 Created with the built-in imagegen tool using this final prompt:
 

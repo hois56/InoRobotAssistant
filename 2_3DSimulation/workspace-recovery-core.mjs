@@ -642,6 +642,13 @@ export class WorkspaceRecoveryStore {
         return asset || null;
     }
 
+    async discardUnpublishedAsset(assetId) {
+        const db = await this.open();
+        const tx = db.transaction(WORKSPACE_ASSET_STORE_NAME, 'readwrite');
+        tx.objectStore(WORKSPACE_ASSET_STORE_NAME).delete(assetId);
+        await transactionDone(tx);
+    }
+
     async listAssets() {
         const db = await this.open();
         const tx = db.transaction(WORKSPACE_ASSET_STORE_NAME, 'readonly');

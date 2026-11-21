@@ -51,7 +51,7 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "virtual-controller-panel"),
         text("\n                    "),
         tag("div", &[("class", "virtual-controller-bridge-actions"), ("data-virtual-controller-source", "bridge")], &[
             text("\n                        "),
-            tag("a", &[("class", "virtual-controller-bridge-download"), ("href", "./bridge/InoRobotVirtualControllerBridge.zip?v=rust-2.0"), ("download", "InoRobotRustControllerBridge.zip")], &[
+            tag("a", &[("class", "virtual-controller-bridge-download"), ("href", "./bridge/InoRobotVirtualControllerBridge.zip?v=2.0-20261119"), ("download", "InoRobotVirtualControllerBridge.zip")], &[
                 text("\n                            "),
                 tag("i", &[("class", "fa-solid fa-download")], &[]),
                 text("\n                            "),
@@ -77,7 +77,7 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "virtual-controller-panel"),
             text("\n                    "),
         ]),
         text("\n                    "),
-        tag("a", &[("class", "virtual-controller-trace-download"), ("data-virtual-controller-source", "trace"), ("href", "../7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip"), ("download", "")], &[
+        tag("a", &[("class", "virtual-controller-trace-download"), ("data-virtual-controller-source", "trace"), ("href", "./trace-compat/InoRobotTrace_V1.5.zip"), ("download", "")], &[
             text("\n                        "),
             tag("i", &[("class", "fa-solid fa-chart-line")], &[]),
             text("\n                        "),

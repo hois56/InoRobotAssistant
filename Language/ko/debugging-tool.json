@@ -1,7 +1,7 @@
 {
   "pages": {
     "debugging": {
-      "title": "Debugging Tool | InoRobot Assistant",
+      "title": "디버깅 툴 | 이노로봇 어시스턴트",
       "description": "로봇 점검, 통신 시험, 데이터 비교와 영점 보정 도구를 제공합니다."
     },
     "zeroCalibration": {
@@ -26,7 +26,7 @@
     "Name": "이름",
     "Tool": "Tool",
     "Communication": "통신",
-    "Debugging Tool": "Debugging Tool",
+    "Debugging Tool": "디버깅 툴",
     "문제를 발견하셨나요?": "문제를 발견하셨나요?",
     "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "INOVANCE 로봇의 디버깅과 영점 보정을 위한 효율적인 도구를 제공합니다.",
     "Zero Calibration": "영점 보정",

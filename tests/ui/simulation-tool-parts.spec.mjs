@@ -9,9 +9,11 @@ for (const robotModel of ['IR-R10H-120', 'IR-S7-60Z20']) for (const placement of
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__toolParts = { state, THREE, equipmentApp, getImportedModelParts, ensureWorkspaceModelId, installSceneModelAsTool, getRobotToolMountFrame, syncActiveTcpFrame, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };` });
+        await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__toolParts = { state, THREE, equipmentApp, getImportedModelParts, ensureWorkspaceModelId, installSceneModelAsTool, getRobotToolMountFrame, syncActiveTcpFrame, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };` });
     });
     await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__toolParts);
+    await page.evaluate(() => window.__simulationReady);
     await page.waitForFunction(() => window.__toolParts?.state.workspaceRecovery.ready);
     await page.locator('#model-select').selectOption(`robot:${robotModel}`);
     await page.waitForFunction(() => window.__toolParts?.state.models.some(model => model.userData.tcpFrame));
@@ -77,9 +79,10 @@ for (const robotModel of ['IR-R10H-120', 'IR-S7-60Z20']) for (const placement of
         const a = window.__toolParts, model = a.state.models.find(model => model.userData.uploaded);
         return `equipment-model:${a.ensureWorkspaceModelId(model)}/10`;
     });
-    await expect(page.locator('[data-equipment-role="movingRef"] input:checked')).toHaveValue(selectedRef);
     await page.locator('#equipment-form button[type="submit"]').click();
     await expect(page.locator('#equipment-error')).toContainText('저장했습니다');
+    // The motion moves exactly the right-clicked rod part.
+    expect(await page.evaluate(() => window.__toolParts.state.equipmentDefinitions.find(def => def.type === 'CYLINDER').movingRefs)).toEqual([selectedRef]);
     await page.screenshot({ path: test.info().outputPath('step-tool-parts-motion-settings.png') });
     const result = await page.evaluate(async () => {
         const a = window.__toolParts;

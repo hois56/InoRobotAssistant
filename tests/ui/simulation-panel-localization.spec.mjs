@@ -6,6 +6,7 @@ test('simulation setup panels follow the selected language and keep edited value
     await page.waitForSelector('#btn-conveyor-tracking', { state: 'attached' });
     const language = locale => page.evaluate(value => window.InoRobotI18n.setLocale(value), locale);
     await page.locator('.inorobot-language-select').selectOption('en');
+    await expect(page.locator('[data-panel-toggle="workobject-panel"]')).toHaveAccessibleName(/Work object coordinate system/);
     await page.locator('#btn-test-model').click();
     const dialog = page.locator('#test-model-dialog');
     const quantity = dialog.locator('[data-test-quantity="conveyor"]');
@@ -31,6 +32,7 @@ test('simulation setup panels follow the selected language and keep edited value
     await language('en');
     await page.locator('#btn-conveyor-tracking').click();
     const belt = page.locator('#conveyor-tracking-dialog');
+    await expect(belt.locator('#conveyor-tracking-title svg')).toBeVisible();
     await belt.locator('[data-action="run"]').click();
     await expect(belt.locator('[data-test-status]')).not.toContainText(/[가-힣]/);
     await expect(belt).not.toContainText(/[가-힣]/);

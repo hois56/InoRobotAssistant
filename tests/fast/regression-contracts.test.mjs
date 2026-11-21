@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { inflateRawSync } from 'node:zlib';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const fixtureRoot = path.join(repoRoot, 'tests', 'fixtures');
@@ -129,22 +130,46 @@ test('주요 화면의 로컬 스크립트와 스타일 경로가 실제 파일�
   }
 });
 
-test('Communication Tester 다운로드는 실행 파일을 담은 ZIP 아카이브를 가리킨다', () => {
-  const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
-  const archivePath = path.join(repoRoot, '7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V4.0.zip');
+test('디버깅 도구 카드는 최신 Windows x64 실행 파일을 ZIP으로 제공한다', () => {
+  const directory = path.join(repoRoot, '7_DebuggingTool');
+  const html = fs.readFileSync(path.join(directory, 'index.html'), 'utf8');
+  const history = JSON.parse(fs.readFileSync(path.join(repoRoot, '0_Home/version-history.json'), 'utf8'));
+  const cards = [...html.matchAll(/data-debug-history="(\w+)" data-current-version="V([\d.]+)"[\s\S]*?<a href="([^"]+\.zip)"/g)];
+  const sections = history.locales.ko.debugVersionHistory.sections;
+  assert.equal(cards.length, sections.length);
 
-  const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'downloads/release-assets.json'), 'utf8'));
-  const asset = manifest.assets.find(asset => asset.fileName === 'InoRobot_Comm_Test_V4.0.zip');
-  assert.ok(asset);
-  assert.equal(asset.url, 'https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip');
-  assert.ok(html.includes('href="' + asset.url + '"'));
-  const archive = fs.readFileSync(archivePath);
-  assert.equal(archive.readUInt32LE(0), 0x04034b50, 'Communication Tester 다운로드 파일이 ZIP 아카이브가 아닙니다.');
-});
-
-test('CAD Lightweight 다운로드는 실제 ZIP을 제공하는 릴리스 첨부파일을 가리킨다', () => {
-  const html = fs.readFileSync(path.join(repoRoot, '7_DebuggingTool/index.html'), 'utf8');
-  const downloadUrl = 'https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.3/CAD_Lightweight_V1.3.zip';
-  assert.ok(html.includes(`href="${downloadUrl}"`), 'CAD Lightweight 다운로드는 릴리스 ZIP 첨부파일 주소를 사용해야 합니다.');
-  assert.match(html, /data-debug-history="cadLightweight" data-current-version="V1\.3"/);
+  for (const [, key, version, href] of cards) {
+    const section = sections.find(section => section.title === key);
+    assert.equal(section?.versions[0].title.split(' ')[1], version, key);
+    assert.ok(href.endsWith(`_V${version}.zip`), href);
+    const file = path.join(directory, href);
+    const zip = fs.readFileSync(file);
+    const end = zip.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+    assert.ok(end >= 0, href);
+    const entryCount = zip.readUInt16LE(end + 10);
+    let record = zip.readUInt32LE(end + 16);
+    const entries = new Map();
+    for (let i = 0; i < entryCount; i++) {
+      assert.equal(zip.readUInt32LE(record), 0x02014b50, href);
+      const nameLength = zip.readUInt16LE(record + 28);
+      const name = zip.toString('utf8', record + 46, record + 46 + nameLength);
+      entries.set(name, record);
+      record += 46 + nameLength + zip.readUInt16LE(record + 30) + zip.readUInt16LE(record + 32);
+    }
+    const exeRecord = entries.get(path.basename(file, '.zip') + '.exe');
+    assert.notEqual(exeRecord, undefined, href);
+    if (key === 'trace') assert.ok(entries.has('IMC100API.dll'), href);
+    const local = zip.readUInt32LE(exeRecord + 42);
+    assert.equal(zip.readUInt32LE(local), 0x04034b50, href);
+    const dataOffset = local + 30 + zip.readUInt16LE(local + 26) + zip.readUInt16LE(local + 28);
+    const data = zip.subarray(dataOffset, dataOffset + zip.readUInt32LE(exeRecord + 20));
+    const method = zip.readUInt16LE(exeRecord + 10);
+    assert.ok(method === 0 || method === 8, href);
+    const exe = method === 8 ? inflateRawSync(data) : data;
+    assert.equal(exe.readUInt16LE(0), 0x5a4d, href);
+    const pe = exe.readUInt32LE(0x3c);
+    assert.equal(exe.readUInt32LE(pe), 0x4550, href);
+    assert.equal(exe.readUInt16LE(pe + 4), 0x8664, href);
+    assert.deepEqual(fs.readdirSync(path.dirname(file)).filter(name => /\.(?:exe|zip)$/i.test(name)), [path.basename(file)]);
+  }
 });

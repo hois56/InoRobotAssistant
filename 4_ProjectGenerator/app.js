@@ -271,10 +271,16 @@ function initApp() {
 
     // Edit mode toggle
     document.getElementById('btnToggleEdit').onclick = toggleEditMode;
-    document.getElementById('codeEditor').oninput = (e) => {
+    const codeEditor = document.getElementById('codeEditor');
+    codeEditor.oninput = (e) => {
         const file = document.getElementById('fileSelector').value;
         state.userEdits[file] = e.target.value;
     };
+    codeEditor.addEventListener('input', () => {
+        highlightSourceCode(codeEditor.value);
+        syncSourceScroll();
+    });
+    codeEditor.addEventListener('scroll', syncSourceScroll);
 
     document.getElementById('fileSelector').onchange = updatePreview;
 
@@ -619,15 +625,6 @@ function toggleEditMode() {
     if (file === 'Remote_IO_mapping.dat') return;
 
     state.editMode = !state.editMode;
-    const btn = document.getElementById('btnToggleEdit');
-
-    if (state.editMode) {
-        btn.classList.replace('bg-slate-700', 'bg-blue-600');
-        btn.classList.add('shadow-lg', 'shadow-blue-600/20');
-    } else {
-        btn.classList.replace('bg-blue-600', 'bg-slate-700');
-        btn.classList.remove('shadow-lg', 'shadow-blue-600/20');
-    }
     updatePreview();
 }
 
@@ -665,7 +662,7 @@ function renderSteps() {
 
         el.innerHTML = `
             <div class="w-6 h-6 rounded bg-blue-600 flex-shrink-0 flex items-center justify-center font-bold text-xs">${s.No}</div>
-            <button onclick="window.openNameModal(${idx})" class="w-10 h-8 rounded bg-slate-800 border border-slate-600 flex items-center justify-center hover:bg-slate-700 flex-shrink-0"><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i></button>
+            <button type="button" onclick="window.openNameModal(${idx})" aria-label="Edit Process Name" title="Edit Process Name" class="w-10 h-8 rounded bg-slate-800 border border-slate-600 flex items-center justify-center hover:bg-slate-700 flex-shrink-0"><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i></button>
             <select data-i18n-skip onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t => `<option ${s.WorkType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
             <select data-i18n-skip onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${mOpts.map(m => `<option ${s.WorkMethod === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
             <select data-i18n-skip onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t => `<option ${s.ToolType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
@@ -733,34 +730,60 @@ function uSelector() {
 }
 
 // ── 표 렌더링 헬퍼 ──────────────────────────────────
-function buildTable(headers, rows) {
-    const th = headers.map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08);white-space:nowrap">${h}</th>`).join('');
+function buildTable(headers, rows, tableClass = '', colgroup = '') {
+    const th = headers.map(header => `<th scope="col">${header}</th>`).join('');
     const tr = rows.map(row =>
-        `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">${row.map(cell => `<td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:'Inter',monospace">${cell ?? '-'}</td>`).join('')}</tr>`
+        `<tr>${row.map(cell => `<td>${cell ?? '-'}</td>`).join('')}</tr>`
     ).join('');
-    return `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+    return `<div class="preview-table-scroll"><table class="${tableClass}">${colgroup}<thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+
+function highlightSourceCode(text) {
+    const output = document.getElementById('codeOutput');
+    output.textContent = text;
+    window.Prism?.highlightElement(output);
+}
+
+function syncSourceScroll() {
+    const preview = document.getElementById('prismContainer');
+    if (!preview.classList.contains('is-editing')) return;
+    const editor = document.getElementById('codeEditor');
+    preview.scrollTop = editor.scrollTop;
+    preview.scrollLeft = editor.scrollLeft;
+}
+
+function showSourceCode(text) {
+    const editor = document.getElementById('codeEditor');
+    const preview = document.getElementById('prismContainer');
+    preview.classList.remove('opacity-0');
+    preview.classList.toggle('pointer-events-none', state.editMode);
+    preview.classList.toggle('is-editing', state.editMode);
+    preview.inert = state.editMode;
+    editor.classList.toggle('opacity-0', !state.editMode);
+    editor.classList.toggle('pointer-events-none', !state.editMode);
+    editor.inert = !state.editMode;
+    editor.value = text;
+    highlightSourceCode(state.editMode ? editor.value : text);
+    syncSourceScroll();
 }
 
 function updatePreview() {
-    if (window.ProjectEditUI?.session) { window.ProjectEditUI.preview(); return; }
     const file = document.getElementById('fileSelector').value;
-    const editor = document.getElementById('codeEditor');
-    const prismCon = document.getElementById('prismContainer');
-    const codeOut = document.getElementById('codeOutput');
-    const tableCon = document.getElementById('tableContainer');
-
     const isReadOnly = file === 'Remote_IO_mapping.dat';
     const editBtn = document.getElementById('btnToggleEdit');
     editBtn.disabled = isReadOnly;
     editBtn.style.opacity = isReadOnly ? '0.3' : '1';
     editBtn.style.cursor = isReadOnly ? 'not-allowed' : 'pointer';
-    if (isReadOnly && state.editMode) { state.editMode = false; }
+    if (isReadOnly) state.editMode = false;
+    editBtn.setAttribute('aria-pressed', String(state.editMode));
+    if (window.ProjectEditUI?.session) { window.ProjectEditUI.preview(); return; }
 
     // 기본 상태 초기화
+    const editor = document.getElementById('codeEditor');
+    const prismCon = document.getElementById('prismContainer');
+    const tableCon = document.getElementById('tableContainer');
     tableCon.classList.add('opacity-0', 'pointer-events-none');
     tableCon.innerHTML = '';
-    prismCon.classList.remove('opacity-0', 'pointer-events-none');
-    editor.classList.add('opacity-0', 'pointer-events-none');
 
     let rawCode = '';
     let tableHtml = null;
@@ -795,25 +818,14 @@ function updatePreview() {
                         section.LabelsArray.forEach(item => allItems.push(item));
                     }
                 });
-                const rows = allItems.map((item, ri) => {
-                    const orig = item.sOriginalName || '';
+                const rows = allItems.map(item => {
                     const label = state.labelOverrides[item.sLabel] || item.sLabel || '';
-                    const desc = item.sDescription || '';
-                    if (state.editMode) {
-                        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                            <td style="padding:5px 8px;font-size:12px;color:#94a3b8;font-family:monospace">${orig}</td>
-                            <td style="padding:5px 8px"><input type="text" data-orig-label="${item.sLabel || ''}" value="${label}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updateLabelCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
-                            <td style="padding:5px 8px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
-                        </tr>`;
-                    }
-                    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                        <td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:monospace">${orig}</td>
-                        <td style="padding:7px 12px;font-size:12px;color:#38bdf8;font-family:monospace">${label}</td>
-                        <td style="padding:7px 12px;font-size:12px;color:#e2e8f0;font-family:monospace">${desc}</td>
-                    </tr>`;
-                }).join('');
-                const th = ['ID', 'Label', 'Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
-                tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+                    const labelCell = state.editMode
+                        ? `<input type="text" data-orig-label="${item.sLabel || ''}" value="${label}" onblur="updateLabelCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}">`
+                        : `<span class="preview-name">${label}</span>`;
+                    return [item.sOriginalName || '', labelCell, item.sDescription || ''];
+                });
+                tableHtml = buildTable(['ID', 'Label', 'Description'], rows, 'preview-labels');
 
                 window.updateLabelCell = function (input) {
                     const origLabel = input.dataset.origLabel;
@@ -857,7 +869,7 @@ function updatePreview() {
                     });
                 tableHtml = buildTable(['In / Out', 'Bit / Word', 'MemAddr', 'Name'], rows);
             } catch (e) {
-                tableHtml = `<div style="padding:20px;color:#ef4444">RemoteIO 파싱 오류: ${e.message}</div>`;
+                tableHtml = `<div class="preview-error">RemoteIO 파싱 오류: ${e.message}</div>`;
             }
         }
 
@@ -865,12 +877,13 @@ function updatePreview() {
         else if (file === 'P.pts' || (file && file.match(/^P\d+\.pts$/))) {
             const isScara = /^IR-(S|TS)/i.test(state.options.RobotName);
             const canEditName = (file === 'P.pts');
+            const axes = isScara ? ['x', 'y', 'z', 'a'] : ['x', 'y', 'z', 'a', 'b', 'c'];
             const lines = rawCode.split(/\r?\n/).filter(l => l.trim().startsWith('P['));
             const rows = lines.map((l, rowIdx) => {
                 const idMatch = l.match(/^P\[(\d+)\]/);
                 const id = idMatch ? idMatch[1] : '-';
 
-                let idCell = `<span style="color:#94a3b8;font-family:monospace;font-size:12px">${id}</span>`;
+                let idCell = id;
                 if (state.editMode && id !== '-') {
                     const numericId = parseInt(id, 10);
                     const stepNo = Math.floor(numericId / 100);
@@ -882,11 +895,11 @@ function updatePreview() {
                         const exCount = step.ExtraWaitCount || 0;
                         if (posType === 1) {
                             if (exCount < 8) {
-                                idCell = `<div style="display:flex;align-items:center;gap:4px"><button onclick="window.addExtraWait(${stepIdx})" style="background:#1e293b;border:1px solid rgba(34,197,94,0.3);color:#4ade80;cursor:pointer;padding:0 4px;border-radius:3px;font-size:11px;font-weight:bold">+</button>${idCell}</div>`;
+                                idCell = `<div class="preview-point-id"><button onclick="window.addExtraWait(${stepIdx})">+</button>${id}</div>`;
                             }
                         } else if (posType >= 2 && posType <= 9) {
                             if (posType === 1 + exCount) {
-                                idCell = `<div style="display:flex;align-items:center;gap:4px"><button onclick="window.removeExtraWait(${stepIdx})" style="background:#1e293b;border:1px solid rgba(239,68,68,0.3);color:#f87171;cursor:pointer;padding:0 4px;border-radius:3px;font-size:11px;font-weight:bold">-</button>${idCell}</div>`;
+                                idCell = `<div class="preview-point-id"><button class="remove-wait" onclick="window.removeExtraWait(${stepIdx})">-</button>${id}</div>`;
                             }
                         }
                     }
@@ -896,42 +909,21 @@ function updatePreview() {
                 const name = nameMatch ? nameMatch[1].trim() : '-';
                 const coordPart = l.replace(/^P\[\d+\]\s*=\s*/, '').split(';')[0];
                 const coords = coordPart.split(',').map(v => { const n = parseFloat(v); return isNaN(n) ? v.trim() : n.toFixed(3); });
-                const [x = '', y = '', z = '', a = '', b = '', c = ''] = coords;
+                const nameCell = state.editMode && canEditName
+                    ? `<input type="text" data-row="${rowIdx}" data-col="name" value="${name}" data-orig="${name}" onblur="updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}">`
+                    : `<span class="preview-name">${name}</span>`;
+                const coordCells = axes.map((axis, index) => {
+                    const value = coords[index] ?? '';
+                    return state.editMode
+                        ? `<input type="text" data-row="${rowIdx}" data-col="${axis}" value="${value}" onblur="updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}">`
+                        : value;
+                });
+                return [idCell, nameCell, ...coordCells];
+            });
 
-                function ec(ri, ci, val) {
-                    if (state.editMode) {
-                        return `<td style="padding:4px 6px"><input type="text" data-row="${ri}" data-col="${ci}" value="${val}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
-                    } else {
-                        return `<td style="padding:4px 6px;color:#e2e8f0;font-family:monospace;font-size:12px">${val}</td>`;
-                    }
-                }
-
-                let nameCell = '';
-                if (state.editMode && canEditName) {
-                    nameCell = `<td style="padding:4px 6px"><input type="text" data-row="${rowIdx}" data-col="name" value="${name}" data-orig="${name}" style="background:transparent;border:1px solid rgba(56,189,248,0.3);color:#38bdf8;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:2px 4px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(56,189,248,0.3)';updatePtsCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>`;
-                } else {
-                    nameCell = `<td style="padding:4px 6px;color:#38bdf8;font-family:monospace;font-size:12px">${name}</td>`;
-                }
-
-                let rowCode = `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                    <td style="padding:4px 6px">${idCell}</td>
-                    ${nameCell}
-                    ${ec(rowIdx, 'x', x)}${ec(rowIdx, 'y', y)}${ec(rowIdx, 'z', z)}${ec(rowIdx, 'a', a)}`;
-
-                if (!isScara) {
-                    rowCode += `${ec(rowIdx, 'b', b)}${ec(rowIdx, 'c', c)}`;
-                }
-                rowCode += `</tr>`;
-                return rowCode;
-            }).join('');
-
-            let thArr = ['ID', 'Name', 'X', 'Y', 'Z', 'A'];
-            if (!isScara) thArr.push('B', 'C');
-            const th = thArr.map(h => `<th style="padding:6px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
-
-            let colgroup = `<colgroup><col style="width:50px"><col style="width:90px"><col style="width:70px"><col style="width:70px"><col style="width:70px">${isScara ? '<col style="width:70px">' : '<col style="width:70px"><col style="width:70px"><col style="width:70px">'}</colgroup>`;
-
-            tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse">${colgroup}<thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+            const headers = ['ID', 'Name', ...axes.map(axis => axis.toUpperCase())];
+            const colgroup = `<colgroup><col style="width:50px"><col style="width:90px"><col span="${axes.length}" style="width:70px"></colgroup>`;
+            tableHtml = buildTable(headers, rows, 'preview-points', colgroup);
 
             window._ptsLines = lines.slice();
             window._ptsFile = file;
@@ -978,15 +970,15 @@ function updatePreview() {
                     items.push({ id: i, text: arr[i] || '', idx: i });
                 }
 
+                const rows = items.map(item => [
+                    item.id,
+                    state.editMode
+                        ? `<input type="text" data-idx="${item.idx}" value="${item.text}" onblur="updateWarningCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}">`
+                        : item.text
+                ]);
+                tableHtml = buildTable(['ID', 'Description'], rows);
+
                 if (state.editMode) {
-                    const rows = items.map(item => {
-                        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                            <td style="padding:5px 8px;font-size:12px;color:#94a3b8;font-family:monospace">${item.id}</td>
-                            <td style="padding:5px 8px"><input type="text" data-idx="${item.idx}" value="${item.text}" style="background:transparent;border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;font-family:monospace;font-size:12px;width:100%;box-sizing:border-box;outline:none;padding:3px 6px;border-radius:4px" onfocus="this.style.borderColor='#38bdf8'" onblur="this.style.borderColor='rgba(255,255,255,0.1)';updateWarningCell(this)" onkeydown="if(event.key==='Enter'){this.blur();}" /></td>
-                        </tr>`;
-                    }).join('');
-                    const th = ['ID', 'Description'].map(h => `<th style="padding:8px 12px;text-align:left;color:#94a3b8;font-size:11px;border-bottom:1px solid rgba(255,255,255,0.08)">${h}</th>`).join('');
-                    tableHtml = `<div style="overflow:auto;max-height:100%"><table style="width:100%;border-collapse:collapse"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
 
                     window._warningArr = [];
                     for (let i = 0; i < 16; i++) window._warningArr.push(arr[i] || "");
@@ -998,9 +990,6 @@ function updatePreview() {
                         state.warningOverrides[idx] = window._warningArr[idx];
                         delete state.userEdits['UserDefineWarning.jsn'];
                     };
-                } else {
-                    const rows = items.map(item => [item.id, item.text]);
-                    tableHtml = buildTable(['ID', 'Description'], rows);
                 }
             } catch (e) { /* fallback */ }
         }
@@ -1011,26 +1000,15 @@ function updatePreview() {
     if (tableHtml) {
         tableCon.innerHTML = tableHtml;
         tableCon.classList.remove('opacity-0', 'pointer-events-none');
+        prismCon.classList.remove('is-editing');
         prismCon.classList.add('opacity-0', 'pointer-events-none');
+        prismCon.inert = true;
         editor.classList.add('opacity-0', 'pointer-events-none');
+        editor.inert = true;
         return;
     }
 
-    // 일반 코드 파일: editMode 따라 전환
-    if (state.editMode) {
-        editor.value = rawCode;
-        tableCon.classList.add('opacity-0', 'pointer-events-none');
-        prismCon.classList.add('opacity-0', 'pointer-events-none');
-        editor.classList.remove('opacity-0', 'pointer-events-none');
-    } else {
-        tableCon.classList.add('opacity-0', 'pointer-events-none');
-        prismCon.classList.remove('opacity-0', 'pointer-events-none');
-        editor.classList.add('opacity-0', 'pointer-events-none');
-        codeOut.className = 'language-robot text-sm leading-relaxed';
-        codeOut.textContent = rawCode;
-        Prism.highlightElement(codeOut);
-        editor.value = rawCode;
-    }
+    showSourceCode(rawCode);
 }
 
 
@@ -1245,7 +1223,7 @@ function buildSimulationProjectFiles(name, input) {
 }
 
 async function exportSimulationProject() {
-    const name = `${document.getElementById('prjName').value || state.projectName}_SIM`;
+    const name = document.getElementById('prjName').value || state.projectName;
     const input = readSimulationForm();
     let built;
     try {

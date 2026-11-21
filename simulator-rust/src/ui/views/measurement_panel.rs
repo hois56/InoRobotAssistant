@@ -7,8 +7,6 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "measurement-panel"), ("clas
         text("\n                    "),
         tag("div", &[], &[
             text("\n                        "),
-            tag("span", &[], &[text("DIMENSION MEASUREMENT")]),
-            text("\n                        "),
             tag("h2", &[], &[
                 tag("i", &[("class", "fa-solid fa-ruler-combined"), ("aria-hidden", "true")], &[]),
                 text(" 치수"),

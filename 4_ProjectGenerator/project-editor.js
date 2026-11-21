@@ -183,21 +183,7 @@ const ProjectEditor = (() => {
 
     // LCS edit ranges against a common ancestor. Overlapping edits are never silently discarded.
     function edits(base, next) {
-        const a = base.split('\n'), b = next.split('\n');
-        if (a.length * b.length > 4000000) return [{ start: 0, end: a.length, lines: b }];
-        const rows = Array.from({ length: a.length + 1 }, () => new Uint32Array(b.length + 1));
-        for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) rows[i][j] = a[i] === b[j] ? rows[i + 1][j + 1] + 1 : Math.max(rows[i + 1][j], rows[i][j + 1]);
-        let i = 0, j = 0, pending = null; const result = [];
-        const flush = () => { if (pending) result.push(pending); pending = null; };
-        while (i < a.length || j < b.length) {
-            if (i < a.length && j < b.length && a[i] === b[j]) { flush(); i++; j++; }
-            else {
-                pending ||= { start: i, end: i, lines: [] };
-                if (j < b.length && (i === a.length || rows[i][j + 1] >= rows[i + 1][j])) pending.lines.push(b[j++]);
-                else { i++; pending.end = i; }
-            }
-        }
-        flush(); return result;
+        return InoSite.lineEdits(base.split('\n'), next.split('\n'));
     }
 
     function diffLines(before, after) {

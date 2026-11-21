@@ -80,8 +80,16 @@ test('모델 트리 이동에서 선택한 면의 모델 영점을 표시하고 
   const secondBox = await secondOrigin.boundingBox();
   await page.mouse.click(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height / 2);
   await expect.poll(() => page.evaluate(() => window.__originSnaps.state.placement.directionWorldPoint?.toArray())).toEqual([200, 0, 110]);
-  await page.locator('#btn-measurement-apply-placement').click();
-  const position = await page.evaluate(() => window.__originSnaps.state.models[0].position.toArray());
-  position.forEach((value, axis) => expect(value).toBeCloseTo([200, 0, 110][axis], 5));
+  await expect.poll(() => page.evaluate(() => window.__originSnaps.state.placement.applied)).toBe(true);
+  const position = () => page.evaluate(() => window.__originSnaps.state.models[0].position.toArray());
+  expect(await position()).toEqual([200, 0, 110]);
+  await expect(page.locator('#model-placement-section button')).toHaveCount(0);
+  await page.locator('[data-transform-mode="translate"]').click();
+  expect(await position()).toEqual([200, 0, 110]);
+
+  await page.locator('#btn-undo').click();
+  expect(await position()).toEqual([-180, 0, 80]);
+  await page.locator('#btn-redo').click();
+  expect(await position()).toEqual([200, 0, 110]);
   expect(errors).toEqual([]);
 });

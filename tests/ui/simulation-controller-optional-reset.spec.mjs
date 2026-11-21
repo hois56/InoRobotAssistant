@@ -3,10 +3,12 @@ import { test, expect } from '@playwright/test';
 async function setup(page) {
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    await route.fulfill({ response, body: await response.text() + '\nwindow.__optionalReset={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,ensureVirtualControllerCore,handleVirtualControllerMessage,readInterferenceZoneFromController,readInterferenceToolFromController,renderInterferenceZonePanel,refreshVirtualControllerUi,writeOlpAddress,setOlpInputFromIoSimulator,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,openIoFunctionMappingDialog};' });
+    // Expose init() so tests start after startup, which otherwise re-renders panels they prepared.
+    await route.fulfill({ response, body: (await response.text()).replace('init();\n', 'window.__simulationReady = init();\n') + '\nwindow.__optionalReset={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,getRobotToolMountFrame,ensureVirtualControllerCore,handleVirtualControllerMessage,readInterferenceZoneFromController,readInterferenceToolFromController,renderInterferenceZonePanel,refreshVirtualControllerUi,writeOlpAddress,setOlpInputFromIoSimulator,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,openIoFunctionMappingDialog};' });
   });
   await page.goto('/2_3DSimulation/index.html');
   await page.waitForFunction(() => window.__optionalReset);
+  await page.evaluate(() => window.__simulationReady);
 }
 
 test('가상컨트롤러의 간섭영역·Tool 설정과 IO를 가져오고 미지원 항목은 기존 값과 연결을 유지한다', async ({ page }) => {
@@ -111,23 +113,29 @@ test('IO 원위치는 흡착을 해제하고 선택하지 않은 오브젝트와
   await page.locator('#model-select').selectOption('robot:IR-R7H-90');
   await page.waitForFunction(() => window.__optionalReset.state.models.some(m => m.userData.tcpFrame));
   const result = await page.evaluate(() => {
-    const a = window.__optionalReset, app = a.equipmentApp;
-    const make = (name, z) => {
-      const model = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name });
-      model.position.z = z; a.state.scene.add(model); a.state.models.push(model); return model;
-    };
+    const a = window.__optionalReset, app = a.equipmentApp, T = a.THREE;
     const ref = model => 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
-    const pad = make('pad', 20), product = make('product', 0), other = make('other', 100);
     const robot = a.state.models.find(m => m.userData.tcpFrame);
-    const vacuum = app.save({ id: 'product', type: 'OBJECT', movingRef: ref(product), robotRef: ref(robot), feedbackGrip: 600 }, { forward: 512, reverse: null });
+    // A vacuum pad mounted on the robot holds the registered product.
+    const pad = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: 'pad' });
+    a.getRobotToolMountFrame(robot).add(pad); pad.userData.placement = 'tcp'; pad.userData.attachmentHost = robot; a.state.models.push(pad); pad.updateWorldMatrix(true, true);
+    const product = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: 'product' });
+    product.position.copy(pad.localToWorld(new T.Vector3(0, 0, 21))); product.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
+    a.state.scene.add(product); a.state.models.push(product);
+    const other = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: 'other' });
+    other.position.z = 100; a.state.scene.add(other); a.state.models.push(other);
+    const home = product.position.toArray();
+    app.save({ id: 'product', type: 'OBJECT', movingRef: ref(product) });
     app.save({ id: 'other', type: 'OBJECT', movingRef: ref(other) });
+    const vacuum = app.save({ id: 'product-vacuum', type: 'VACUUM', movingRef: ref(pad), vacuumMode: 'WHOLE', feedbackGrip: 600 }, { forward: 512, reverse: null });
     a.writeOlpAddress('Out[512]', 1); app.runtime.start(); app.runtime.applyVacuum(vacuum, true);
-    pad.position.x = 200; robot.position.x += 200; app.runtime.followVacuum(vacuum); other.position.x = 300;
-    if (Math.abs(product.getWorldPosition(new a.THREE.Vector3()).x - 200) > 1e-6 || !vacuum.runtime.heldRef) throw new Error('흡착 재현 실패');
+    robot.position.x += 200; robot.updateMatrixWorld(true); app.runtime.followVacuum(vacuum); other.position.x = 300;
+    const padX = pad.getWorldPosition(new T.Vector3()).x;
+    if (Math.abs(product.getWorldPosition(new T.Vector3()).x - home[0] - 200) > 1e-6 || !vacuum.runtime.heldRef) throw new Error('흡착 재현 실패');
     app.resetObjects('equipment:product');
     app.runtime.followVacuum(vacuum);
-    return { product: product.position.toArray(), other: other.position.x, pad: pad.position.x,
-      held: vacuum.runtime.heldRef, feedback: a.readOlpSimulatorBit('IN', 600) };
+    return { product: product.position.toArray().map((value, i) => Math.abs(value - home[i]) < 1e-6), other: other.position.x,
+      pad: Math.abs(pad.getWorldPosition(new T.Vector3()).x - padX) < 1e-6, held: vacuum.runtime.heldRef, feedback: a.readOlpSimulatorBit('IN', 600) };
   });
-  expect(result).toEqual({ product: [0, 0, 0], other: 300, pad: 200, held: '', feedback: 0 });
+  expect(result).toEqual({ product: [true, true, true], other: 300, pad: true, held: '', feedback: 0 });
 });

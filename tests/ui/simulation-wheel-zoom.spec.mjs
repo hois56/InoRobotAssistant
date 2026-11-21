@@ -3,10 +3,12 @@ import { test, expect } from '@playwright/test';
 async function setup(page) {
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    await route.fulfill({ response, body: `${await response.text()}\nwindow.__wheelTest = { state, THREE, setSelectedViewPivotEnabled, recreateMainOrbitControls };` });
+    await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__wheelTest = { state, THREE, setSelectedViewPivotEnabled, recreateMainOrbitControls };` });
   });
   await page.goto('/2_3DSimulation/index.html');
   await page.waitForFunction(() => window.__wheelTest?.state.controls);
+  // Startup can still replace the camera and controls; wait so tests act on the final ones.
+  await page.evaluate(() => window.__simulationReady);
 }
 
 for (const button of ['left', 'right']) {

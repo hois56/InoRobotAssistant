@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ConveyorTracking, sweptSensorInterval } from '../../2_3DSimulation/conveyor-tracking-core.mjs';
+import { ConveyorTracking, forEachConveyorTrackingStep, sweptSensorInterval } from '../../2_3DSimulation/conveyor-tracking-core.mjs';
 
 const box = (x, width = 2) => ({ min: { x, y: 0, z: 0 }, max: { x: x + width, y: 2, z: 2 } });
 const sensor = { id: 'photo', address: 512, bounds: box(10, 1) };
@@ -44,6 +44,26 @@ test('fast object generates both sensor edges and latches the crossing encoder',
     assert.deepEqual(frame.events.map(e => [e.value, e.encoder]), [[1, '8000'], [0, '11000']]);
     assert.equal(frame.sensors[0].value, 0);
     assert.equal(frame.events[0].time, 0.008);
+});
+
+test('throttled scene steps preserve distance and sensor capture at 440 mm/s', () => {
+    const tracking = create();
+    let position = 0;
+    forEachConveyorTrackingStep(0.75, seconds => {
+        const distance = 440 * seconds;
+        tracking.sample({
+            seconds,
+            distance,
+            objects: [{ before: box(position), after: box(position + distance) }],
+            sensorCapture: { distance: 5, capture: () => [{ id: 'part', type: 0, pose: [13, 0, 2, 0, 0, 0] }] }
+        });
+        position += distance;
+    });
+    assert.equal(position, 330);
+    assert.equal(tracking.lastFrame.encoder, '330000');
+    assert.equal(tracking.lastFrame.velocity, 440);
+    assert.deepEqual(tracking.lastFrame.events.map(event => [event.kind, event.encoder]),
+        [['sensor', '8000'], ['sensor', '11000'], ['vision', '13000']]);
 });
 
 test('overlapping objects form one sensor pulse; stopping preserves occupied level', () => {
@@ -140,4 +160,39 @@ test('reconnecting discards obsolete capture results and retains a current delay
     tracking.sample({ seconds: .25, distance: 0 });
     const frame = tracking.sample({ seconds: .25, distance: 0 });
     assert.deepEqual(frame.events.map(event => [event.id, event.requestId]), [[1, 0], [2, 8]]);
+});
+
+for (const direction of [1, -1]) test('sensor-triggered exposure waits for the configured distance along travel (' + direction + ')', () => {
+    const tracking = create();
+    const exposures = [];
+    const sensorCapture = { distance: 15, capture: fraction => { exposures.push(fraction); return []; } };
+    const crossing = direction > 0 ? { before: box(0), after: box(20) } : { before: box(20), after: box(0) };
+    const initial = tracking.sample({ seconds: .02, distance: direction * 20, objects: [crossing], sensorCapture, captureDelaySeconds: .05 });
+    assert.deepEqual(initial.events.map(event => event.kind), ['sensor', 'sensor']);
+    tracking.acknowledge({ session: tracking.session, eventId: 2 });
+    tracking.sample({ seconds: .15, distance: 0, sensorCapture, captureDelaySeconds: .05 });
+    assert.deepEqual(exposures, []);
+    const next = tracking.sample({ seconds: .02, distance: direction * 10, sensorCapture, captureDelaySeconds: .05 });
+    assert.equal(next.events.length, 0);
+    assert.deepEqual(exposures, [direction > 0 ? .3 : .4]);
+    const delivered = tracking.sample({ seconds: .08, distance: direction * 20, sensorCapture, captureDelaySeconds: .05 });
+    assert.deepEqual(delivered.events.map(event => [event.kind, event.requestId, event.encoder]),
+        [['vision', 0, direction > 0 ? '23000' : '-24000']]);
+});
+
+test('zero-distance automatic capture uses one rising edge, including when a request coincides', () => {
+    const tracking = create();
+    let exposed = 0;
+    const mode = { distance: 0, capture: () => { exposed++; return []; } };
+    const moving = { before: box(0), after: box(10) };
+    const first = tracking.sample({ seconds: .02, distance: 10, objects: [moving], sensorCapture: mode });
+    assert.deepEqual(first.events.map(event => [event.kind, event.encoder]), [['sensor', '8000'], ['vision', '8000']]);
+    tracking.acknowledge({ session: tracking.session, eventId: 2 });
+    const occupied = { before: box(10), after: box(10) };
+    assert.deepEqual(tracking.sample({ seconds: .02, distance: 0, objects: [occupied], sensorCapture: mode }).events, []);
+    assert.equal(exposed, 1);
+    const second = create().sample({ seconds: .02, distance: 10, objects: [moving], sensorCapture: mode,
+        captures: [{ requestId: 7, objects: [] }] });
+    assert.deepEqual(second.events.filter(event => event.kind === 'vision').map(event => event.requestId), [7]);
+    assert.equal(exposed, 1);
 });

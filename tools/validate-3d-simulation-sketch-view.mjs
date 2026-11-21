@@ -139,9 +139,10 @@ assert.match(source, /function renderSketchDimensionAnnotations\([\s\S]*?const l
 const sketchPreviewDimensionBlock = source.match(/function updateSketchPreview\(\)[\s\S]*?function updateSketchDimension\(/)?.[0] || '';
 assert.match(sketchPreviewDimensionBlock, /SKETCH_DIMENSION_GREEN/);
 assert.doesNotMatch(sketchPreviewDimensionBlock, /0xf87171/);
-assert.match(styles, /\.sketch-dimension-label\[data-axis="x"\][\s\S]*?\.sketch-dimension-label\[data-axis="y"\][\s\S]*?color: #86efac/);
-assert.match(styles, /\.sketch-dimension-annotation \{ color: #86efac;/);
-assert.match(styles, /\.sketch-workbench-dimension-axis \{[\s\S]*?color: #86efac;/);
+// Dimension text uses the shared success colour token of the light theme.
+assert.match(styles, /\.sketch-dimension-label\[data-axis="x"\],\s*\.sketch-dimension-label\[data-axis="y"\] \{ color: var\(--success-ink\);/);
+assert.match(styles, /\.sketch-dimension-annotation \{ color: var\(--success-ink\);/);
+assert.match(styles, /\.sketch-workbench-dimension-axis \{[^}]*color: var\(--success-ink\);/);
 assert.doesNotMatch(source, /normalized\.axis\.toUpperCase\(\)\} = \$\{formatJogValue/);
 assert.doesNotMatch(source, /`X = \$\{formatJogValue\(dimensions\.x\)/);
 assert.doesNotMatch(source, /`Y = \$\{formatJogValue\(dimensions\.y\)/);

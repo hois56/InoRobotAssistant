@@ -162,6 +162,24 @@ test('언어를 바꿔도 선택한 필터와 결과를 유지하고 행 버튼�
     await expect(page.locator('#manualList .manual-item').first().locator('button')).toHaveText(['미리보기', '다운로드']);
 });
 
+test('휴대폰 폭에서도 행 버튼 글자가 잘리지 않고 긴 CAD 버튼은 한 줄씩 놓인다', async ({page}) => {
+    await page.setViewportSize({width: 375, height: 800});
+    await openDocuments(page);
+    for (const locale of ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru']) {
+        await page.locator('.inorobot-language-select').selectOption(locale);
+        const clipped = await page.locator('#manualList .manual-action').evaluateAll(buttons => buttons
+            .flatMap(button => [...button.querySelectorAll('span')])
+            .filter(span => span.scrollWidth > span.clientWidth + 1)
+            .map(span => span.textContent.trim()));
+        expect(clipped, locale).toEqual([]);
+    }
+    // English "2D Download" does not fit beside "3D Download" at this width.
+    await page.locator('.inorobot-language-select').selectOption('en');
+    const cad =page.locator('#manualList .manual-item', {hasText: '2D Download'}).first().locator('.manual-action');
+    const [first, second] = await cad.evaluateAll(buttons => buttons.map(button => button.getBoundingClientRect().top));
+    expect(second).toBeGreaterThan(first);
+});
+
 test('밝은 화면은 외부 UI CDN 없이 동작하고 글자 크기·대비·버튼 크기가 모바일에서도 유지된다', async ({page}) => {
     const errors = [];
     const requested = [];
@@ -171,7 +189,7 @@ test('밝은 화면은 외부 UI CDN 없이 동작하고 글자 크기·대비·
     await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, route => route.abort());
     await openDocuments(page);
     await page.locator('#expandAllFilters').click();
-    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(243, 244, 239)');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(242, 246, 250)');
     expect(requested.filter(url => /tailwind|unpkg|lucide|jsdelivr|cdnjs/i.test(url))).toEqual([]);
 
     const measured = await page.evaluate(() => {

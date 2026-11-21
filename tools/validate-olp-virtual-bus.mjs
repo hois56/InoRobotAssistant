@@ -178,6 +178,18 @@ const startSource = sourceBetween(
         requestRender: () => { },
         updateOlpBusStatus: () => { },
         connectOlpVirtualBus: (...args) => { connectCalls.push(args); },
+        // Later runtime options and per-robot controller memory.
+        olpProjectMemoryBanks: new Map(),
+        hasRapidDynamicsModel: () => false,
+        getRobotRapidMoveOptions: () => ({}),
+        readOlpTorqueFeedback: () => 0,
+        getRobotOlpSocketService: () => null,
+        handleOlpSavedPoints: () => { },
+        getOlpRuntimeRobot: () => null,
+        finishOlpJointMotion: () => { },
+        delayOlpWithSignal: () => Promise.resolve(),
+        noteOlpTactChange: () => { },
+        updateOlpProgramPanelUi: () => { },
         window: { setTimeout }
     });
     vm.runInContext(startSource, context);

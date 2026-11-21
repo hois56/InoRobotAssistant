@@ -26,11 +26,20 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "view-presets-panel"), ("cla
     text("\n                "),
     tag("div", &[("class", "view-presets-content")], &[
         text("\n                    "),
-        tag("p", &[("class", "view-presets-help")], &[
-            text("카메라를 원하는 위치로 조정한 뒤 슬롯의 저장 버튼을 누르세요. 저장하지 않은 뷰도 화면 버튼으로 실행할 수 있으며, 이 경우 현재 메인 뷰의 각도에서 시작합니다. 뷰 버튼은 페이지 안의 고정 뷰 창으로 열리고, 다른 뷰를 누르면 같은 창에 분할되어 추가됩니다. 패널 헤더의 새 창 버튼은 패널을 화면 밖의 별도 창으로 엽니다."),
+        tag("div", &[("class", "view-record-actions")], &[
+            tag("button", &[("id", "view-record"), ("type", "button"), ("aria-pressed", "false")], &[
+                tag("span", &[("class", "record-symbol"), ("aria-hidden", "true")], &[]),
+                tag("span", &[("data-record-label", "")], &[text("녹화 시작")]),
+            ]),
+            tag("button", &[("id", "view-record-edit"), ("type", "button"), ("aria-haspopup", "dialog"), ("aria-controls", "recording-editor")], &[
+                tag("i", &[("class", "fa-solid fa-scissors"), ("aria-hidden", "true")], &[]),
+                text("편집"),
+            ]),
         ]),
-        text("\n                    "),
-        tag("p", &[("class", "view-presets-help")], &[text("각 뷰 이름 옆에 전환 시간(초)을 입력하고 저장하세요. IO 매핑과 프로그램의 View 명령은 해당 뷰에 저장된 시간으로 전환합니다. 0초는 즉시 전환합니다.")]),
+        tag("div", &[("class", "view-record-actions")], &[
+            tag("button", &[("id", "view-record-end"), ("type", "button"), ("disabled", "")], &[text("녹화 종료")]),
+            tag("button", &[("id", "view-record-save"), ("type", "button"), ("disabled", "")], &[text("녹화 저장")]),
+        ]),
         text("\n                    "),
         super::view_presets_list::VIEW,
         text("\n                "),

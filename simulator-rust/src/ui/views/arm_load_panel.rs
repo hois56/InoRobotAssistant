@@ -7,8 +7,6 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "arm-load-panel"), ("class",
         text("\n                    "),
         tag("div", &[], &[
             text("\n                        "),
-            tag("span", &[("data-i18n", "legacy.암 로드")], &[text("암 로드")]),
-            text("\n                        "),
             tag("h2", &[], &[
                 tag("i", &[("class", "fa-solid fa-gears"), ("aria-hidden", "true")], &[]),
                 text(" "),

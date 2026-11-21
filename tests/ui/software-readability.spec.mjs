@@ -54,7 +54,7 @@ test('밝은 화면은 외부 UI CDN 없이 동작하고 모바일에서도 읽�
     await page.emulateMedia({colorScheme: 'light'});
     await page.route(/^https?:\/\/(?!127\.0\.0\.1)/, route => route.abort());
     await page.goto(softwarePage);
-    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(243, 244, 239)');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(242, 246, 250)');
     await expect(page.locator('.software-card:visible')).toHaveCount(6);
     const contrast = await page.evaluate(() => {
         function luminance(color) {

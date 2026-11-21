@@ -1,11 +1,20 @@
-/* The simulation uses the home page's paper, ink and green selection colours. */
+/* Workspace controls and detached panels use the shared brand palette. */
 :root {
     --bg-card: var(--surface);
     --border-color: var(--border);
     --inorobot-language-bg: var(--surface);
     --inorobot-language-border: var(--border);
     --inorobot-language-text: var(--text-1);
-    --panel-shadow: 0 5px 18px rgba(39, 51, 38, .10);
+    --panel-shadow: 0 5px 18px rgba(22, 55, 82, .10);
+    --panel-heading-font: "Noto Sans", "Noto Sans KR", "Noto Sans SC", sans-serif;
+}
+
+:root:lang(ko) {
+    --panel-heading-font: "Noto Sans KR", "Noto Sans", sans-serif;
+}
+
+:root:lang(zh-CN) {
+    --panel-heading-font: "Noto Sans SC", "Noto Sans", sans-serif;
 }
 
 #topbar, #stats-bar {
@@ -19,10 +28,7 @@
 #topbar .logo-link:hover { transform: none; }
 #topbar .app-title {
     margin-right: 0;
-    padding-left: 16px;
-    font-size: .92rem;
-    font-weight: 650;
-    letter-spacing: -.025em;
+    padding-left: 24px;
 }
 .topbar-left { gap: clamp(5px, .7vw, 12px); }
 #topbar :is(.ui-btn, .simulation-reset-btn, .inorobot-language-switcher, .viewer-fps-limit) {
@@ -43,14 +49,14 @@
 #topbar .ui-btn.active { background: var(--selected-fill); border-color: var(--focus-line); }
 #topbar #model-select {
     border-radius: 7px;
-    background: #2f4435;
-    border-color: #2f4435;
+    background: var(--tool-action);
+    border-color: var(--tool-action);
     color: white;
     font-size: .9rem;
 }
-#topbar .select-icon { color: #d9f2ac; }
-#topbar .arrow-icon { color: #eaf2e1; }
-#topbar #model-select:hover { background: #3c5542; }
+#topbar .select-icon { color: var(--tool-selected); }
+#topbar .arrow-icon { color: white; }
+#topbar #model-select:hover { background: var(--tool-action-hover); }
 #topbar #model-select:focus-visible { outline-offset: 2px; }
 body :is(select option, select optgroup), #topbar #model-select option {
     color: var(--text-1);
@@ -75,15 +81,32 @@ body :is(input, select, textarea) { accent-color: var(--accent); }
     .virtual-controller-header, .collaboration-header, .view-presets-header,
     .measurement-panel-header, .shape-panel-header, .interference-zone-header,
     .position-points-header, .vision-header, .trace-panel-header, .equipment-header) {
+    min-height: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    padding-block: 2px;
     background: var(--bar-bg);
     border-bottom: 1px solid var(--border);
 }
-.model-browser-header h2, .jog-panel-header h2 { font-size: .97rem; letter-spacing: -.025em; }
-.model-browser-header { padding-block: .7rem; }
+:is(.model-browser-header, .jog-panel-header, .program-panel-header, .io-simulator-header,
+    .tcp-profile-panel-header, .arm-load-panel-header, .tool-load-info-panel-header,
+    .virtual-controller-header, .collaboration-header, .view-presets-header,
+    .measurement-panel-header, .shape-panel-header, .interference-zone-header,
+    .position-points-header, .vision-header, .trace-panel-header, .equipment-header,
+    .work-origin-dialog-header, .io-function-mapping-header, .interference-zone-dialog-header) h2 {
+    color: var(--accent);
+    font: 700 1rem/1.4 var(--panel-heading-font);
+    letter-spacing: normal;
+}
+
+.jog-panel { padding-block-start: 0; }
+.jog-panel-header { margin-bottom: .5rem; }
 .panel-header-actions button, .viewer-control-dock button {
     color: var(--button-text);
-    border: 1px solid var(--border);
     border-radius: 6px;
+}
+.panel-header-actions button {
+    border: 1px solid var(--border);
     background: var(--surface);
 }
 .panel-header-actions button:hover:not(:disabled), .viewer-control-dock button:hover:not(:disabled) {
@@ -96,11 +119,10 @@ body :is(input, select, textarea) { accent-color: var(--accent); }
 .model-tree-group-name.active, .program-robot-row.active, .program-step-row.active {
     color: var(--accent);
     background: var(--selected-fill);
-    border-color: #9aac8c;
+    border-color: var(--focus-line);
 }
-.model-tree-button.active, .model-tree-part-button.active { box-shadow: inset 3px 0 var(--accent); }
 .model-tree-count { border-color: var(--border); background: var(--inset); color: var(--accent); }
-.model-tree-icon { background: #e1ead7; }
+.model-tree-icon { background: var(--selected-fill); }
 .numeric-position-editor, .jog-mode-tabs { background: var(--inset); }
 .model-transform-panel { border-color: var(--border); }
 .numeric-position-grid label, .base-jog-value input, .base-step-settings input, .jog-frame-setting select { background: #fff; }
@@ -146,9 +168,9 @@ body :is(input, select, textarea) { accent-color: var(--accent); }
     background: var(--surface);
     color: var(--text-1);
     border-radius: 10px;
-    box-shadow: 0 16px 50px rgba(35, 46, 34, .2);
+    box-shadow: 0 16px 50px rgba(22, 55, 82, .2);
 }
-dialog::backdrop { background: rgba(31, 40, 32, .33); }
+dialog::backdrop { background: rgba(20, 37, 53, .33); }
 button.primary:not(:disabled), .shape-primary-button:not(:disabled), .import-primary-btn:not(:disabled),
 #curve-trajectory-panel button.primary { color: white; background: var(--accent); }
 #simulation-reset-dialog .primary { background: #a33d35; color: white; }
@@ -167,8 +189,7 @@ button.primary:not(:disabled), .shape-primary-button:not(:disabled), .import-pri
         padding: 0;
         flex: 0 0 32px;
     }
-    #topbar .viewer-language-row { flex: 0 0 auto; }
-    #topbar .inorobot-language-select { width: 76px; min-width: 0; }
+    #topbar .viewer-language-row { flex: 0 0 auto; order: -1; }
     #canvas-container > .model-browser-panel:not(.panel-edge-resized) {
         top: 8px;
         height: auto;
@@ -186,6 +207,7 @@ button.primary:not(:disabled), .shape-primary-button:not(:disabled), .import-pri
     }
     #topbar .topbar-center { grid-column: 2; grid-row: 1; }
     #topbar .topbar-right { grid-row: 2; }
+    #topbar .inorobot-language-switcher { padding-block: 1px; }
     #topbar .workspace-list-btn, #topbar .simulation-reset-btn { width: 32px; padding: 0; }
     #topbar .workspace-list-btn span { display: none; }
 }

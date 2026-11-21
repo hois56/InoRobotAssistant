@@ -4,6 +4,8 @@ test('Simulation downloads a separate PLC-free project and leaves the controller
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/4_ProjectGenerator/index.html');
+    const project = 'ProjectName12345';
+    await page.locator('#prjName').fill(project);
     await page.locator('#btnAdd').click();
     await page.locator('#stepsList > div').nth(1).locator('select').first().selectOption('Stage');
     await page.locator('#stepsList > div').nth(1).locator('select').nth(1).selectOption('Put');
@@ -20,7 +22,9 @@ test('Simulation downloads a separate PLC-free project and leaves the controller
     await modal.screenshot({ path: test.info().outputPath('simulation-modal.png') });
 
     // An unknown process number is reported and nothing is downloaded.
-    await page.evaluate(() => { window.saveAs = blob => { window.exportedBlob = blob; }; });
+    await page.evaluate(() => {
+        window.saveAs = (blob, name) => { window.exportedBlob = blob; window.exportedName = name; };
+    });
     await page.locator('#simSequence').fill('1, 7');
     let alertText = '';
     page.once('dialog', async dialog => { alertText = dialog.message(); await dialog.dismiss(); });
@@ -41,6 +45,7 @@ test('Simulation downloads a separate PLC-free project and leaves the controller
         const names = Object.keys(zip.files).filter(name => !zip.files[name].dir);
         const read = suffix => zip.file(names.find(name => name.endsWith(suffix))).async('string');
         return {
+            downloadName: window.exportedName,
             names,
             main: await read('/main.pro'),
             offset: await read('/s02_offset.pro'),
@@ -49,13 +54,12 @@ test('Simulation downloads a separate PLC-free project and leaves the controller
             controllerAfter: getFinalFileContent('main.pro')
         };
     });
-    const project = result.names[0].split('/')[0];
-    expect(project).toMatch(/_SIM$/);
-    expect(result.names.map(name => name.slice(project.length + 1)).sort()).toEqual([
+    expect(result.downloadName).toBe(`${project}.zip`);
+    expect(result.names.sort()).toEqual([
         `${project}.prj`, 'Data/BreakPoints.jsn', 'Data/JP.pts', 'Data/Labels.jsn', 'Data/MonitorGlobalVars.jsn', 'Data/MonitorVars.jsn',
         'Data/P.pts', 'Data/UserDefineWarning.jsn', 'main.pro', 's01_initial.pro', 's02_offset.pro',
         'sP01_Tray_Get.pro', 'sP02_Stage_Put.pro'
-    ].sort());
+    ].map(name => `${project}/${name}`).sort());
     expect(result.prj.MultiTaskCount).toBe(0);
     expect(result.main).toContain('Velset Rate[80];');
     expect(result.main).toContain('For cycle=1,cycle<=2,Step[1]');

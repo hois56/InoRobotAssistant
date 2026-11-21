@@ -1,14 +1,15 @@
 import * as THREE from 'three';
-import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261118-request-capture-1';
+import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261119-sensor-capture-1';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
 
 export function normalizeSensorSettings(value) {
     const { capture: _legacyCapture, ...settings } = value;
     const result = { ...settings, channel: Number(value.channel ?? 0), scale: Number(value.scale ?? 1000),
         address: Number(value.address ?? 512), position: Number(value.position ?? 0), width: Number(value.width ?? 2),
-        height: value.height == null ? null : Number(value.height), objectType: Number(value.objectType ?? 0) };
+        height: value.height == null ? null : Number(value.height), objectType: Number(value.objectType ?? 0),
+        autoCapture: value.autoCapture === true, captureDistance: Number(value.captureDistance ?? 0) };
     for (const [key, min, max, integer] of [['channel',0,3,true],['scale',.00001,1e9],
-        ['position',-1e6,1e6],['width',.1,1000],['objectType',0,15,true]]) {
+        ['position',-1e6,1e6],['width',.1,1000],['objectType',0,15,true],['captureDistance',0,1e6]]) {
         if (!Number.isFinite(result[key]) || result[key] < min || result[key] > max || (integer && !Number.isInteger(result[key])))
             throw new Error('센서 설정값을 확인하세요: ' + key);
     }

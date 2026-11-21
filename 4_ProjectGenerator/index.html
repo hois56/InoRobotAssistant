@@ -7,8 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Generate an INOVANCE robot project from the selected process and options.">
     <title>INOVANCE Robot Project Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@0.468.0"></script>
+    <script src="icons.js?v=20261121-1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link
@@ -93,14 +92,104 @@
             min-width: 0;
         }
 
-        #prismContainer {
-            min-width: 0;
-            max-width: 100%;
+        .generator-preview-toolbar {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--tool-line);
         }
+
+        .generator-preview:has(#btnToggleEdit[aria-pressed="true"]) {
+            border-color: var(--tool-action);
+            box-shadow: 0 0 0 1px var(--tool-action), var(--tool-shadow);
+        }
+
+        .generator-preview:has(#btnToggleEdit[aria-pressed="true"]) .generator-preview-toolbar {
+            background: var(--tool-selected);
+            border-bottom-color: var(--tool-action);
+        }
+
+        body[data-design-page="project"] #btnToggleEdit[aria-pressed="true"] {
+            background: var(--tool-action);
+            border-color: var(--tool-action);
+            color: var(--tool-surface);
+            font-weight: 700;
+        }
+
+        body[data-design-page="project"] #btnToggleEdit[aria-pressed="true"]:hover {
+            background: var(--tool-action-hover);
+            border-color: var(--tool-action-hover);
+            color: var(--tool-surface);
+        }
+
+        #btnToggleEdit .edit-mode-check,
+        #btnToggleEdit[aria-pressed="true"] [data-lucide="edit-3"] {
+            display: none;
+        }
+
+        #btnToggleEdit[aria-pressed="true"] .edit-mode-check {
+            display: block;
+            width: 12px;
+            line-height: 1;
+        }
+
+        #tableContainer .preview-table-scroll { overflow: auto; max-height: 100%; }
+        #tableContainer table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--tool-ink);
+        }
+        #tableContainer tr { border-bottom: 1px solid var(--tool-line); }
+        #tableContainer th {
+            padding: 8px 12px;
+            color: var(--tool-muted);
+            text-align: left;
+            white-space: nowrap;
+            font-size: 11px;
+        }
+        #tableContainer td { padding: 7px 12px; font-size: 12px; }
+        #tableContainer table:has(input) td { padding: 5px 8px; }
+        #tableContainer .preview-points th { padding: 6px; }
+        #tableContainer .preview-points td { padding: 4px 6px; }
+        #tableContainer :is(.preview-labels, .preview-points) td,
+        #tableContainer input { font-family: monospace; }
+        #tableContainer .preview-name { color: var(--tool-accent); }
+        #tableContainer input { width: 100%; box-sizing: border-box; }
+        #tableContainer input:focus { outline: 2px solid var(--tool-accent); outline-offset: -2px; }
+        #tableContainer .preview-point-id { display: flex; align-items: center; gap: 4px; }
+        #tableContainer .preview-point-id button {
+            padding: 0 4px;
+            border: 1px solid var(--tool-border-strong);
+            border-radius: 3px;
+            background: var(--tool-inset);
+            color: var(--tool-accent);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        #tableContainer .preview-point-id .remove-wait { color: var(--tool-danger); }
+        #tableContainer .preview-error { padding: 20px; color: var(--tool-danger); }
 
         #fileSelector {
             min-width: 0;
             max-width: 100%;
+        }
+
+        /* Long translated headings (for example Russian) leave less room beside the preview
+           title; move the actions to the next line, as the narrower layout does, instead of
+           running past the panel edge. */
+        @media (min-width: 1301px) {
+            .generator-preview-toolbar {
+                flex-wrap: wrap;
+            }
+
+            .generator-preview-toolbar-actions {
+                min-width: 0;
+                margin-left: auto;
+            }
+
+            .generator-preview-toolbar-actions > #fileSelector {
+                flex: 0 1 auto;
+                min-width: 7.5rem;
+            }
         }
 
         @media (max-width: 1300px) {
@@ -140,15 +229,49 @@
             }
         }
 
-        pre[class*="language-"] {
-            background: transparent !important;
-            margin: 0 !important;
-            padding: 0 !important;
+        #prismContainer pre,
+        #codeEditor {
+            margin: 0;
+            padding: 8px 10px;
+            font-family: Consolas, "Liberation Mono", monospace;
+            tab-size: 4;
         }
 
         #codeOutput {
-            font-family: Consolas, "Liberation Mono", monospace;
-            tab-size: 4;
+            font-family: inherit;
+        }
+
+        #prismContainer.is-editing {
+            overflow: hidden;
+        }
+
+        #prismContainer.is-editing,
+        #codeEditor {
+            scrollbar-gutter: stable;
+        }
+
+        #prismContainer.is-editing pre {
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+
+        /* Match the textarea's final empty line without modifying the displayed source. */
+        #prismContainer.is-editing pre::after {
+            content: "\200b";
+        }
+
+        #codeEditor {
+            background-color: transparent;
+            caret-color: var(--tool-ink);
+            -webkit-text-fill-color: transparent;
+        }
+
+        @media (forced-colors: active) {
+            #codeEditor {
+                background: Canvas;
+                caret-color: CanvasText;
+                -webkit-text-fill-color: CanvasText;
+            }
         }
 
         #prismContainer #codeOutput .token.comment {
@@ -161,720 +284,12 @@
         #prismContainer #codeOutput .token.function { color: #145aa1; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js" defer></script>
+    <link rel="stylesheet" href="/Language/runtime/i18n.css?v=20261121-header-font">
+    <script src="/Language/runtime/locales-data.js?v=5fc7759e7500" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/4_ProjectGenerator/">
@@ -888,8 +303,11 @@
     <meta name="twitter:title" content="INOVANCE Robot Project Generator">
     <meta name="twitter:description" content="Generate an INOVANCE robot project from the selected process and options.">
     <!-- SUBPAGE-SEO:END -->
-    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261118-tools-1">
-    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261118-1">
+    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261121-project-layout">
+    <link rel="stylesheet" href="/shared/brand-colors.css?v=20261120-blue">
+    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261121-project-layout">
+    <!-- Prebuilt Tailwind utilities; kept last like the former runtime-generated style. -->
+    <link rel="stylesheet" href="tailwind.css?v=20261121-1">
 </head>
 
 <body data-design-page="project" class="p-0">
@@ -900,18 +318,17 @@
                 <img id="appLogo" src="../1_RobotModelSelect/INOVANCE_Logo.png" class="logo-img" alt="Inovance">
             </a>
             <div class="header-divider">
-                <h1 class="text-xl font-bold font-[Outfit] text-white">
-                    Inovance Robot Project Generator</h1>
-                <p class="text-sm text-slate-400 font-mono tracking-wide">Based on R24.C4</p>
+                <h1 class="text-white" data-i18n="legacy.Inovance Robot Project Generator">프로젝트 생성기</h1>
+                <p class="text-sm text-slate-400 tracking-wide">Based on R24.C4</p>
             </div>
         </div>
         <div class="inorobot-header-actions flex flex-row items-center gap-3 flex-shrink-0">
             <div data-i18n-language-slot class="flex items-center flex-shrink-0"></div>
-            <button id="btnGuide"
+            <button id="btnGuide" type="button"
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
-                <i data-lucide="book-open" class="w-4 h-4 text-emerald-400"></i> Guide
+                <i data-lucide="book-open" class="w-4 h-4"></i> Guide
             </button>
-            <button id="btnOption"
+            <button id="btnOption" type="button"
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
                 <i data-lucide="settings" class="w-4 h-4"></i> Options
             </button>
@@ -929,7 +346,7 @@
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors text-sm h-10">New project</button>
             <button id="btnSimulation" type="button"
                 class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition-colors flex items-center gap-2 text-sm h-10">
-                <i data-lucide="timer" class="w-4 h-4 text-amber-300"></i> Simulation
+                <i data-lucide="timer" class="w-4 h-4"></i> Simulation
             </button>
             <button id="btnGenerate"
                 class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2 text-sm h-10">
@@ -938,15 +355,15 @@
         </div>
     </header>
     <div class="max-w-[1500px] mx-auto space-y-6 p-4 md:p-8">
-        <div class="generator-main-grid grid grid-cols-1 xl:grid-cols-12 gap-6 h-auto xl:h-[760px]">
-            <div class="min-w-0 xl:col-span-6 flex flex-col space-y-4 h-auto xl:h-full">
+        <div class="generator-main-grid grid grid-cols-1 xl:grid-cols-12 gap-4 h-auto xl:h-[760px]">
+            <div class="min-w-0 xl:col-span-6 flex flex-col gap-4 h-auto xl:h-full">
                 <!-- Project Settings -->
                 <div class="generator-settings-row flex gap-4">
                     <div class="glass p-5 rounded-2xl flex-shrink-0 space-y-3 flex-1">
                         <div class="flex items-center gap-2 text-slate-200"><i data-lucide="folder" class="w-5 h-5"></i>
-                            <h2 class="font-semibold px-1">Project Name</h2>
+                            <h2 id="prjNameHeading" class="font-semibold px-1">Project Name</h2>
                         </div>
-                        <input type="text" id="prjName" maxlength="16"
+                        <input type="text" id="prjName" maxlength="16" aria-labelledby="prjNameHeading" aria-describedby="projectNameHint"
                             class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500 transition-all font-mono">
                         <script>
                             (function () {
@@ -956,14 +373,14 @@
                                 document.getElementById('prjName').value = "InoProject_" + mm + dd;
                             })();
                         </script>
-                        <p class="text-xs text-slate-500">영문, 숫자, 언더바(_)만 사용 가능합니다. 최대 16자.</p>
+                        <p id="projectNameHint" class="text-xs text-slate-500">영문, 숫자, 언더바(_)만 사용 가능합니다. 최대 16자.</p>
                     </div>
 
                     <div class="glass p-5 rounded-2xl flex-shrink-0 space-y-3 flex-1">
                         <div class="flex items-center gap-2 text-slate-200"><i data-lucide="cpu" class="w-5 h-5"></i>
-                            <h2 class="font-semibold px-1">Robot Model</h2>
+                            <h2 id="robotModelHeading" class="font-semibold px-1">Robot Model</h2>
                         </div>
-                        <select id="cmbRobotModel"
+                        <select id="cmbRobotModel" aria-labelledby="robotModelHeading"
                             class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-300"></select>
                         <p class="text-xs text-slate-500">생성할 로봇 모델을 선택해주세요.</p>
                     </div>
@@ -976,7 +393,7 @@
                                 class="w-5 h-5"></i>
                             <h2 class="font-semibold">Processes (<span id="processCount">0</span>)</h2>
                         </div>
-                        <button id="btnAdd"
+                        <button id="btnAdd" type="button" aria-label="Add Process" title="Add Process"
                             class="p-2 bg-white/10 text-white hover:bg-white/20 rounded-lg transition-colors"><i
                                 data-lucide="plus" class="w-6 h-6"></i></button>
                     </div>
@@ -1070,32 +487,33 @@
             </div>
 
             <!-- Preview -->
-            <div class="xl:col-span-6 glass rounded-2xl p-5 flex flex-col h-full min-h-[600px]">
-                <div class="generator-preview-toolbar flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div class="generator-preview xl:col-span-6 glass rounded-2xl flex flex-col min-h-[600px] overflow-hidden">
+                <div class="generator-preview-toolbar flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <div class="flex items-center gap-2 text-slate-200"><i data-lucide="code" class="w-5 h-5"></i>
-                        <h2 class="font-semibold">Live Source Preview</h2>
+                        <h2 id="sourcePreviewTitle" class="font-semibold">Live Source Preview</h2>
                     </div>
                     <div class="generator-preview-toolbar-actions flex flex-row gap-2 w-full sm:w-auto">
-                        <button id="btnToggleEdit"
-                            class="flex-1 sm:flex-none justify-center text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded text-slate-200 transition-colors flex items-center gap-1">
-                            <i data-lucide="edit-3" class="w-3 h-3"></i> <span>Edit Mode</span>
+                        <button id="btnToggleEdit" type="button" aria-pressed="false"
+                            class="flex-1 sm:flex-none justify-center text-xs px-3 py-1.5 rounded transition-colors flex items-center gap-1">
+                            <i data-lucide="edit-3" class="w-3 h-3" aria-hidden="true"></i>
+                            <span class="edit-mode-check" aria-hidden="true">✓</span>
+                            <span>Edit Mode</span>
                         </button>
                         <select id="fileSelector"
                             class="flex-1 sm:flex-none bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-300 min-w-[120px]"></select>
                     </div>
                 </div>
-                <!-- The contenteditable logic or textarea -->
-                <div class="bg-slate-950/80 rounded-xl p-4 flex-grow overflow-hidden relative">
+                <div class="generator-preview-content relative flex-1 min-h-0">
                     <div id="tableContainer"
-                        class="absolute inset-0 w-full h-full overflow-auto scroll-custom p-4 transition-opacity duration-200 opacity-0 pointer-events-none">
+                        class="absolute inset-0 w-full h-full overflow-auto scroll-custom transition-opacity duration-200 opacity-0 pointer-events-none">
                     </div>
                     <div id="prismContainer"
-                        class="w-full h-full overflow-auto scroll-custom transition-opacity duration-200">
-                        <pre><code id="codeOutput" class="language-robot text-sm leading-relaxed"></code></pre>
+                        class="absolute inset-0 w-full h-full overflow-auto scroll-custom transition-opacity duration-200">
+                        <pre class="text-sm leading-relaxed"><code id="codeOutput" class="language-robot"></code></pre>
                     </div>
                     <textarea id="codeEditor"
-                        class="absolute inset-0 w-full h-full bg-slate-900/90 text-slate-200 font-mono text-sm leading-relaxed p-4 outline-none resize-none scroll-custom opacity-0 pointer-events-none transition-opacity duration-200"
-                        spellcheck="false"></textarea>
+                        class="absolute inset-0 w-full h-full text-sm leading-relaxed outline-none resize-none scroll-custom opacity-0 pointer-events-none transition-opacity duration-200"
+                        aria-labelledby="sourcePreviewTitle" spellcheck="false" inert></textarea>
                 </div>
             </div>
         </div>
@@ -2176,14 +1594,14 @@
                         <h3 class="guide-section-title"><span class="guide-num">1</span> InoRobotLab - Work origin 설정</h3>
                         <p class="guide-desc">컨트롤러 파라미터 설정 창에서 Work origin 항목과 출력 트리거 설정을 확인하는 참고 이미지입니다.</p>
                         <div class="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.25)]">
-                            <img src="Work_origin.png" alt="Work origin 설정 참고 이미지" class="block w-full h-auto">
+                            <img src="Work_origin.png" alt="Work origin 설정 참고 이미지" class="block w-full h-auto" loading="lazy" decoding="async">
                         </div>
                     </div>
                     <div class="guide-section">
                         <h3 class="guide-section-title"><span class="guide-num">2</span> TP - Work origin 설정</h3>
                         <p class="guide-desc">TP 화면에서 Work origin 탭과 이동, 조회, 저장 버튼 구성을 확인하는 참고 이미지입니다.</p>
                         <div class="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.25)]">
-                            <img src="TP_Work_origin.png" alt="TP Work origin 설정 참고 이미지" class="block w-full h-auto">
+                            <img src="TP_Work_origin.png" alt="TP Work origin 설정 참고 이미지" class="block w-full h-auto" loading="lazy" decoding="async">
                         </div>
                     </div>
                 </div><!-- /work origin tab -->
@@ -2526,6 +1944,7 @@
     <!-- Background text watermark removed per request -->
 
     <!-- Scripts -->
+    <script src="/shared/site-engine.js"></script>
     <script src="assets.js"></script>
     <script src="vendor/prism-1.30.0/prism-core.min.js" data-manual></script>
     <script src="vendor/prism-1.30.0/prism-clike.min.js"></script>
@@ -2541,11 +1960,11 @@
         });
     </script>
     <link rel="stylesheet" href="project-editor.css?v=20261114-edit-2&amp;palette=20261118-1">
-    <script src="generator.js?v=20261114-sim-1"></script>
-    <script src="project-editor.js?v=20261114-edit-2"></script>
-    <script src="app.js?v=20261114-sim-1"></script>
-    <script src="project-editor-ui.js?v=20261114-edit-2"></script>
-    <script src="/0_Home/tool-guide-embed.js?v=20261118-guide-light"></script>
+    <script src="generator.js?v=20261119-rust"></script>
+    <script src="project-editor.js?v=20261119-rust"></script>
+    <script src="app.js?v=20261121-edit-indicator"></script>
+    <script src="project-editor-ui.js?v=20261121-edit-colors"></script>
+    <script src="/0_Home/tool-guide-embed.js?v=20261120-blue"></script>
 </body>
 
 </html>

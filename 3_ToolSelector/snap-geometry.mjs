@@ -392,6 +392,92 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
   if (rawPositions.length < 3) return { candidates: [], stats: {} };
   const rawBounds = boundsOf(rawPositions);
   const weldTolerance = options.weldTolerance || Math.max(rawBounds.diagonal * 1e-7, 1e-6);
+  const brepFaces = Array.isArray(meshDefinition.brep_faces) ? meshDefinition.brep_faces : [];
+  const sharpCosine = Math.cos((options.sharpAngleDegrees || 28) * Math.PI / 180);
+  const topologyInput = {
+    flatPositions, rawPositions, selectedSourceIds, sourceVertexIds, sourceIndices,
+    triangleRanges, brepFaces, weldTolerance, sharpCosine
+  };
+  const { positions, triangleCount, featureEdges, faceCenters } = nativeTopology(topologyInput) || jsTopology(topologyInput);
+  return snapCandidatesFromTopology({
+    positions, triangleCount, featureEdges, faceCenters, brepFaces, rawBounds, weldTolerance, disabledTypes, options
+  });
+}
+
+// Pages that load shared/site-engine.js compute the topology in Rust/WebAssembly
+// (site-rust/src/snap.rs). It mirrors jsTopology step for step, and any input the
+// JavaScript path would treat unusually falls back to that path.
+function nativeTopology({
+  flatPositions, rawPositions, selectedSourceIds, sourceVertexIds, sourceIndices,
+  triangleRanges, brepFaces, weldTolerance, sharpCosine
+}) {
+  const engine = globalThis.InoSite;
+  if (typeof engine?.snapTopology !== 'function') return null;
+  const vertexCount = rawPositions.length;
+  let coordinates;
+  if (!selectedSourceIds && (flatPositions instanceof Float32Array || flatPositions instanceof Float64Array)) {
+    coordinates = flatPositions;
+  } else {
+    coordinates = new Float64Array(vertexCount * 3);
+    for (let index = 0; index < vertexCount; index += 1) {
+      const point = rawPositions[index];
+      for (let axis = 0; axis < 3; axis += 1) {
+        if (typeof point[axis] !== 'number') return null;
+        coordinates[index * 3 + axis] = point[axis];
+      }
+    }
+  }
+  const triangleLimit = Math.floor(sourceIndices.length / 3);
+  const ranges = triangleRanges?.length ? triangleRanges : [{ first: 0, last: triangleLimit - 1 }];
+  let triangleCount = 0;
+  for (const { first, last } of ranges) triangleCount += Math.max(0, Math.min(last, triangleLimit - 1) - first + 1);
+  const rawIndexOf = selectedSourceIds ? new Map(sourceVertexIds.map((source, index) => [source, index])) : null;
+  const triangles = new Uint32Array(triangleCount * 4);
+  let at = 0;
+  for (const { first, last } of ranges) {
+    const end = Math.min(last, triangleLimit - 1);
+    for (let triangleIndex = first; triangleIndex <= end; triangleIndex += 1) {
+      for (let corner = 0; corner < 3; corner += 1) {
+        const source = sourceIndices[triangleIndex * 3 + corner];
+        const raw = rawIndexOf ? rawIndexOf.get(source) : source;
+        if (!Number.isInteger(raw) || raw < 0 || raw >= vertexCount) return null;
+        triangles[at++] = raw;
+      }
+      triangles[at++] = triangleIndex;
+    }
+  }
+  const faces = new Uint32Array(brepFaces.length * 2);
+  for (let index = 0; index < brepFaces.length; index += 1) {
+    const face = brepFaces[index];
+    if (!Number.isInteger(face?.first) || !Number.isInteger(face?.last)) return null;
+    const first = Math.max(face.first, 0);
+    const last = Math.min(face.last, 0xfffffffe);
+    // An empty range is encoded as (1, 0).
+    faces[index * 2] = first <= last ? first : 1;
+    faces[index * 2 + 1] = first <= last ? last : 0;
+  }
+  const result = engine.snapTopology(coordinates, weldTolerance, triangles, faces, sharpCosine);
+  if (!result) return null;
+  const featureEdges = [];
+  for (let index = 0; index < result.edges.length; index += 2) {
+    featureEdges.push({ a: result.edges[index], b: result.edges[index + 1] });
+  }
+  return {
+    positions: Array.from(result.firstRaw, (index) => rawPositions[index]),
+    triangleCount: result.triangleCount,
+    featureEdges,
+    faceCenters: Array.from(result.faceIndices, (faceIndex, index) => ({
+      type: 'face-center',
+      point: Array.from(result.faceCenters.subarray(index * 3, index * 3 + 3)),
+      source: { faceIndex }
+    }))
+  };
+}
+
+function jsTopology({
+  rawPositions, selectedSourceIds, sourceVertexIds, sourceIndices,
+  triangleRanges, brepFaces, weldTolerance, sharpCosine
+}) {
   const { positions, sourceToWelded: weldedSourceToWelded } = weldPositions(rawPositions, weldTolerance);
   const sourceToWelded = selectedSourceIds
     ? new Map(sourceVertexIds.map((sourceIndex, index) => [sourceIndex, weldedSourceToWelded[index]]))
@@ -424,7 +510,6 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
 
   const featureEdgeMap = new Map();
   const faceCenters = [];
-  const brepFaces = Array.isArray(meshDefinition.brep_faces) ? meshDefinition.brep_faces : [];
 
   if (brepFaces.length) {
     const trianglesBySourceIndex = new Map(triangles.map((triangle) => [triangle.sourceIndex, triangle]));
@@ -466,7 +551,6 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
         allEdges.set(key, entry);
       });
     });
-    const sharpCosine = Math.cos((options.sharpAngleDegrees || 28) * Math.PI / 180);
     allEdges.forEach((edge, key) => {
       const adjacent = edge.triangles;
       if (adjacent.length !== 2 || dot(triangles[adjacent[0]].normal, triangles[adjacent[1]].normal) < sharpCosine) {
@@ -474,8 +558,12 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
       }
     });
   }
+  return { positions, triangleCount: triangles.length, featureEdges: [...featureEdgeMap.values()], faceCenters };
+}
 
-  const featureEdges = [...featureEdgeMap.values()];
+function snapCandidatesFromTopology({
+  positions, triangleCount, featureEdges, faceCenters, brepFaces, rawBounds, weldTolerance, disabledTypes, options
+}) {
   const graph = new Map();
   featureEdges.forEach(({ a, b }) => addGraphEdge(graph, a, b));
   const endpointIds = new Set();
@@ -622,7 +710,7 @@ export function buildStepSnapCandidates(meshDefinition, options = {}) {
     candidates: limitedCandidates,
     stats: {
       weldedVertexCount: positions.length,
-      triangleCount: triangles.length,
+      triangleCount,
       featureEdgeCount: featureEdges.length,
       faceCount: brepFaces.length,
       candidateCount: limitedCandidates.length

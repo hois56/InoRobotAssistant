@@ -4,7 +4,7 @@ import {
   createCoordinateFrame,
   integrateStepMesh,
   pointInFrame
-} from '../3_ToolSelector/mass-properties.mjs';
+} from '../3_ToolSelector/tool-mass.mjs';
 
 function createBoxMesh(x, y, z, offset = [0, 0, 0]) {
   const [ox, oy, oz] = offset;

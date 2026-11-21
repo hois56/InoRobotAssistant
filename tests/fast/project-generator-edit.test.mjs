@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import '../../shared/site-engine.js';
 import vm from 'node:vm';
 import test from 'node:test';
 import { generateOlpGeneratorCases } from '../support/generated-olp-projects.mjs';
 
+test('the standalone generator works in a VM without browser codecs or Uint8Array.fromBase64', () => {
+    const context = vm.createContext({});
+    vm.runInContext('Uint8Array.fromBase64 = undefined', context);
+    vm.runInContext(fs.readFileSync('4_ProjectGenerator/generator.js', 'utf8'), context);
+    const project = vm.runInContext("Generator.DataPrj([{ No: 1, ProcessName: '공정_一' }], {})", context);
+    assert.ok(JSON.parse(project).ProgramFiles.includes('공정_一.pro'));
+});
+
 function api() {
-    const ctx = vm.createContext({ console, Date, TextDecoder, Uint8Array, window: {}, document: { addEventListener() {}, getElementById() { return {}; } } });
+    const ctx = vm.createContext({ console, Date, InoSite: globalThis.InoSite, TextDecoder, Uint8Array, window: {}, document: { addEventListener() {}, getElementById() { return {}; } } });
     for (const file of ['assets.js', 'generator.js', 'app.js', 'project-editor.js']) vm.runInContext(fs.readFileSync(`4_ProjectGenerator/${file}`, 'utf8'), ctx);
     return vm.runInContext('({ E: ProjectEditor, G: Generator, ProcessStep, defaults: state.options, handleGeneratedContent, state })', ctx);
 }

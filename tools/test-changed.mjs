@@ -38,7 +38,7 @@ if (options.has('--list')) {
   process.exit(0);
 }
 
-console.log(`[changed] 파일 ${files.length}개: 빠른 검사 ${plan.fast.length}개, 구문 ${plan.syntax.length}개, UI ${plan.ui.length}개${plan.bridge ? ', C# 브리지' : ''}${plan.generator ? ', 외부 생성기' : ''}`);
+console.log(`[changed] 파일 ${files.length}개: 빠른 검사 ${plan.fast.length}개, 구문 ${plan.syntax.length}개, UI ${plan.ui.length}개${plan.bridge ? ', 컨트롤러 브리지' : ''}${plan.generator ? ', 외부 생성기' : ''}`);
 function run(label, command, args) {
   const start = performance.now();
   console.log(`\n[changed] ${label}`);
@@ -51,8 +51,9 @@ function run(label, command, args) {
 if (plan.syntax.length) run('변경 파일 구문 검사', process.execPath, ['tools/check-js-syntax.mjs', ...plan.syntax]);
 if (plan.fast.length) run('관련 빠른 검사', process.execPath, ['--test', ...plan.fast]);
 if (plan.bridge) {
-  run('C# 브리지 동작 검사', process.execPath, ['--test', 'tests/dotnet/bridge-output-scheduling.test.mjs']);
-  run('C# 브리지 빌드', 'dotnet', ['build', '2_3DSimulation/VirtualControllerBridge/InoRobotVirtualControllerBridge.csproj']);
+  const project = ['--locked', '--manifest-path', '2_3DSimulation/VirtualControllerBridge/Cargo.toml'];
+  run('컨트롤러 브리지 동작 검사', 'cargo', ['test', ...project]);
+  run('컨트롤러 브리지 빌드', 'cargo', ['build', '--release', ...project]);
 }
 if (plan.generator) run('외부 C# 생성 결과 검사', process.execPath, ['tools/test-generator.mjs']);
 if (plan.ui.length) run('관련 브라우저 검사', process.execPath, ['node_modules/@playwright/test/cli.js', 'test', ...plan.ui]);

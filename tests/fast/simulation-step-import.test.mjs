@@ -187,6 +187,40 @@ test('STEP 메시 분할은 좌표·법선·삼각형 순서와 면 정보를 �
     assert.deepEqual([...next.positions], [0, 0, 0, 0, 0, 10, 10, 0, 0]);
 });
 
+test('STEP 면 범위는 입력 형식, 여러 메시 병합과 대용량 분할에서 삼각형 번호를 유지한다', () => {
+    const { context } = fixture();
+    const plain = value => JSON.parse(JSON.stringify(value));
+    // OCCT face groups arrive as flat (start, count, face) triples, objects or nested triples.
+    assert.deepEqual(plain(context.modernFaceRanges(new Uint32Array([0, 6, 0, 6, 9, 1]))), [{ first: 0, last: 1 }, { first: 2, last: 4 }]);
+    assert.deepEqual(plain(context.modernFaceRanges([{ first: 0, last: 1 }, { start: 2, count: 3 }])), [{ first: 0, last: 1 }, { first: 2, last: 4 }]);
+    assert.deepEqual(plain(context.modernFaceRanges([[0, 3, 0], [3, 6, 1]])), [{ first: 0, last: 0 }, { first: 1, last: 2 }]);
+
+    const bucket = context.createBucket([0.5, 0.5, 0.5]);
+    const entry = () => ({ positions: new Float32Array(18), indices: new Uint16Array(6), normals: new Float32Array(18),
+        brepFaces: [{ first: 0, last: 1 }], positionLength: 18, indexLength: 6, normalLength: 18, vertexCount: 6 });
+    context.appendEntry(bucket, entry());
+    context.appendEntry(bucket, entry());
+    assert.deepEqual(plain(bucket.brepFaces), [{ first: 0, last: 1 }, { first: 2, last: 3 }]);
+
+    const square = {
+        positions: new Float32Array([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]), indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
+        normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+        faceGroups: vm.runInContext('new Int32Array([0, 3, 0, 3, 3, 0])', context)
+    };
+    const grouping = context.groupLargeMeshTriangleRanges(square);
+    assert.equal(grouping.preservesFaces, true);
+    assert.equal(grouping.groups.length, 1);
+    const chunk = context.createLargeMeshChunk(square, grouping.groups[0], grouping.preservesFaces);
+    assert.deepEqual([...chunk.indices], [0, 1, 2, 0, 2, 3]);
+    assert.deepEqual(plain(chunk.brepFaces), [{ first: 0, last: 0 }, { first: 1, last: 1 }]);
+
+    // Without face groups a large mesh is split into ordered, non-overlapping triangle ranges.
+    const fallback = context.groupLargeMeshTriangleRanges({ positions: new Float32Array(9), indices: new Uint32Array(60000 * 3), normals: new Float32Array(9), faceGroups: null });
+    assert.equal(fallback.preservesFaces, false);
+    assert.equal(fallback.groups.length, 2);
+    assert.ok(fallback.groups[0][0].last < fallback.groups[1][0].first);
+});
+
 test('동시에 전달된 STEP 요청도 하나의 엔진에서 순서대로 처리한다', async () => {
     const { parse, calls, messages } = fixture();
     await Promise.all([parse(1), parse(2), parse(3)]);

@@ -1,22 +1,18 @@
 import { readSimulationMarkup } from './read-simulation-markup.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { loadCollisionSystem } from '../tests/support/load-collision-system.mjs';
 
 const collisionModuleUrl = new URL('../2_3DSimulation/collision-system.mjs', import.meta.url);
 const viewerModuleUrl = new URL('../2_3DSimulation/main.js', import.meta.url);
 const threeModuleUrl = new URL('../3_ToolSelector/vendor/three/three.module.js', import.meta.url);
 const threeModuleSpecifier = threeModuleUrl.href;
 const collisionSource = await readFile(collisionModuleUrl, 'utf8');
-const testableCollisionSource = collisionSource.replace(
-    "from 'three';",
-    `from '${threeModuleSpecifier}';`
-);
 
-assert.notEqual(testableCollisionSource, collisionSource, 'Collision module must retain its browser Three.js import.');
+assert.match(collisionSource, /from 'three';/, 'Collision module must retain its browser Three.js import.');
 
-const { MeshCollisionSystem } = await import(
-    `data:text/javascript;base64,${Buffer.from(testableCollisionSource).toString('base64')}`
-);
+// The shared loader also anchors the module's relative imports (such as its WASM engine).
+const { MeshCollisionSystem } = await loadCollisionSystem(threeModuleSpecifier, collisionModuleUrl);
 const THREE = await import(threeModuleSpecifier);
 
 function createBoxRoot(x) {
@@ -82,12 +78,9 @@ assert.ok(
         && hit.meshA === robotLinks[1] && hit.meshB === toolBodyMesh),
     'A flange-mounted Tool must still be checked against another robot-body link.'
 );
-assert.equal(
-    allHits.some((hit) => hit.objectA === robot && hit.objectB === tool
-        && hit.meshA === robotLinks[2] && hit.meshB === toolMountMesh),
-    false,
-    'The attached Tool/J6 mounting interface must not be reported as a collision.'
-);
+// Flange and base mounting contact is now allowed only on the exact mounting plane
+// (no blanket Tool/J6, wrist-collar or SCARA J3 exemptions); that policy is covered
+// by tests/fast/simulation-mount-contact.test.mjs.
 
 const wristRobot = new THREE.Group();
 wristRobot.userData.joints = Array.from({ length: 4 }, () => ({}));
@@ -103,33 +96,11 @@ collarTool.userData.collisionIgnoreHostWristJointCount = 2;
 collarTool.add(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshBasicMaterial()));
 wristRobot.add(collarTool);
 collarTool.position.x = 7.5;
-[wristRobot, collarTool].forEach((root) => root.updateMatrixWorld(true));
-assert.equal(
-    new MeshCollisionSystem().check([wristRobot, collarTool]),
-    null,
-    'A Test Tool flange collar may overlap the final two wrist-link meshes without a false self-collision.'
-);
 collarTool.position.x = 3;
 [wristRobot, collarTool].forEach((root) => root.updateMatrixWorld(true));
 assert.ok(
     new MeshCollisionSystem().check([wristRobot, collarTool]),
-    'The Test Tool collision exemption must not hide contact with an earlier arm link.'
-);
-
-const scaraRobot = new THREE.Group();
-const scaraScrew = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
-scaraScrew.name = 'J3 ballscrew';
-scaraScrew.userData.collisionIgnoreAttachedToolContact = true;
-scaraRobot.add(scaraScrew);
-const scaraTool = new THREE.Group();
-scaraTool.userData.attachmentHost = scaraRobot;
-scaraTool.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
-scaraRobot.add(scaraTool);
-[scaraRobot, scaraTool].forEach((root) => root.updateMatrixWorld(true));
-assert.equal(
-    new MeshCollisionSystem().check([scaraRobot, scaraTool]),
-    null,
-    'A SCARA J3 ballscrew/Tool mounting interface must not report a collision.'
+    'A Tool must still report contact with an earlier arm link.'
 );
 
 const repeatedCad = new THREE.Group();
@@ -789,13 +760,8 @@ assert.match(
 );
 assert.match(
     viewerSource,
-    /part\.visible = nextVisible;\s*if \(nextVisible && state\.collision\.enabled\) state\.collision\.system\?\.prepare\(\[model\]\);\s*markSceneCollisionDirty\(model\);/,
+    /part\.visible = nextVisible; \}\);\s*if \(nextVisible && state\.collision\.enabled\) state\.collision\.system\?\.prepare\(\[model\]\);\s*markSceneCollisionDirty\(model\);/,
     'A part made visible again must rebuild any evicted BVH before the next collision frame.'
-);
-assert.match(
-    viewerSource,
-    /const isAttachedToolMountAssembly = index === manifest\.joints\.length - 1\s*\|\|\s*\(manifest\.robotType === 'scara' && jointDefinition\.name === 'J3'\);/,
-    'Every robot type must exclude its final Tool mount, and SCARA must also exclude its J3 ballscrew interface.'
 );
 assert.match(viewerSource, /ignoredMotionCollisionKeys:\s*new Set\(\)/, 'Motion restart must track every existing collision pair.');
 assert.match(viewerSource, /const currentCollisionResults = checkSceneCollisions\(\{ force: true \}\)/, 'Restart must accept the current collision pose.');
@@ -803,4 +769,4 @@ const animateSource = viewerSource.slice(viewerSource.indexOf('function animate(
 const programStopSource = animateSource.slice(0, animateSource.indexOf('} else if (collisionFresh && asCollisionResults(collision).length && isVirtualControllerActive())'));
 assert.doesNotMatch(programStopSource, /restoreCollisionSafeRobotPoses\(movingRobots\)/, 'Program collision stops must retain the detected pose.');
 
-console.log('Mesh collision validation passed: transform-cache refresh, all-hit reporting, Tool/body detection, J6 mount exclusion, false-containment protection, BVH prewarming/reuse, cached-triangle rechecks, visual exit debounce, root-pair caching, and collision breakpoint flow.');
+console.log('Mesh collision validation passed: transform-cache refresh, all-hit reporting, Tool/body detection, false-containment protection, BVH prewarming/reuse, cached-triangle rechecks, visual exit debounce, root-pair caching, and collision breakpoint flow.');

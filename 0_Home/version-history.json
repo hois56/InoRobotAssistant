@@ -34,11 +34,20 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[개선]` 홈의 도구 모음에서 여덟 가지 도구를 바로 열거나 설계·개발, 자료·지원으로 나누어 찾을 수 있습니다.",
+                  "`[개선]` 모든 화면이 처음 열릴 때 내려받는 번역 데이터 용량을 절반 가까이 줄여 화면이 더 빨리 표시됩니다.",
+                  "`[수정]` 서보 시스템 솔루션 화면이 중국어·터키어·러시아어에서 한국어로 표시되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[개선]` 홈과 도구 화면의 버튼, 아이콘, 선택 표시를 INOVANCE 로고의 파란색 계열로 통일했습니다. 로고 옆 제목은 선택한 언어로 표시하며 모든 화면에 같은 글꼴과 크기를 적용했습니다.",
+                  "`[개선]` 홈의 도구 모음에서 전체 도구 8개를 보거나 선정·설계·제어·자료별로 필요한 도구를 찾을 수 있습니다.",
                   "`[개선]` 홈의 사용 방법 가이드 5종을 밝은 화면으로 개편했습니다. 현재 단계를 강조하고 자막으로 조작 방법과 이유를 설명하며, 원하는 단계로 앞뒤 이동할 수 있습니다.",
-                  "`[개선]` 각 도구 화면에 홈과 같은 아이보리 헤더와 밝은 작업 영역을 적용했습니다."
+                  "`[개선]` 모델 필터와 문서 검색이 빨라졌습니다. 큰 STEP 모델의 질량 특성과 프로젝트 파일의 변경 사항도 더 빠르게 계산합니다.",
+                  "`[개선]` 홈과 디버깅 도구의 버전 기록을 밝은 화면으로 통일하고, 작은 화면에서도 버전과 변경 내용을 읽기 쉽게 정리했습니다."
                 ]
               },
               {
@@ -110,10 +119,15 @@
             "title": "Robot Model Select",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다.",
-                  "`[추가]` 모델별 고유 주소와 검색 가능한 상세 페이지를 제공하고, 주소 공유·새로고침·뒤로 가기로 해당 모델의 구성을 다시 열 수 있습니다."
+                  "`[개선]` SCARA 일반형과 클린형의 Z축 길이와 표준 사이클 시간을 나란히 비교하고, 형식별 형번과 상세 사양을 확인할 수 있습니다. 클린형에는 ISO Class 4를 표시합니다. 다관절 카드에 반복 정밀도를, 상세 사양에 축별 허용 토크를 추가했습니다.",
+                  "`[개선]` 상세 구성에서 로봇 수량이 적용되는 본체·기본 케이블과 수량을 따로 지정하는 옵션을 구분했습니다. 다관절 I/O 케이블은 선택한 경우에만 구성에 포함됩니다. PROFINET이나 CC-Link를 선택하면 해당 확장 카드가 자동으로 체크되고 두 곳의 수량이 연동됩니다.",
+                  "`[개선]` 타입을 선택하지 않으면 모델 아래에 유료 하드웨어 옵션이 표시됩니다. 로봇 없이도 옵션을 구성 목록에 담고 수량을 조정할 수 있습니다. 각 카드의 품목을 용도별로 묶고 확장 카드는 통신·입출력·안전 확장으로 구분했습니다. R7H 전용 영점 보정 툴의 구매 코드를 반영했습니다. 펜던트 연장 케이블은 펜던트와 기타 액세서리 두 카드에서 담을 수 있습니다. 품목 행을 눌러 선택할 수 있고, SCARA J3 보호 커버는 S4·S7·S10의 일반형과 클린형에 맞춰 표시됩니다.",
+                  "`[개선]` 엑셀 구성서에 구성 수와 로봇 대수를 표시하고, 같은 구매 코드의 주문 수량을 한 줄로 합산합니다.",
+                  "`[개선]` 밝은 패널에 파란색으로 버튼과 선택 항목을 표시합니다.",
+                  "`[추가]` 모델별 고유 주소와 검색 가능한 상세 페이지를 제공하고, 주소 공유·새로고침·뒤로 가기로 해당 모델의 구성을 다시 열 수 있습니다.",
+                  "`[개선]` 큰 모델 이미지의 용량을 줄여 모델 목록과 상세 창이 더 빨리 열립니다. 상세 창의 사양 표에는 행 구분선을 표시하고, 축별 반복 정밀도도 선택한 언어로 표시합니다."
                 ]
               },
               {
@@ -300,6 +314,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[개선]` 모델 이동 스냅에서 두 번째 점을 선택하면 새 위치가 바로 확정됩니다. 배치 패널의 적용·취소·다시 선택 버튼을 제거했습니다.",
+                  "`[추가]` 로봇 이외의 모델을 선택하고 스페이스바를 누르는 동안 이동 핸들이 표시됩니다.",
+                  "`[개선]` 큰 STEP 모델에서 스냅 점과 곡선 경로 티칭에 쓰는 모델 외곽선을 더 빠르게 계산합니다.",
+                  "`[개선]` 자동 품질에서 20MB 이상 50MB 미만 STEP의 첫 변환을 빠르게 처리합니다. 50MB 이상 STEP은 변환된 부품부터 화면에 표시합니다. 테스트 버튼의 STEP 모델은 사전 변환한 형상으로 더 빠르게 불러옵니다.",
+                  "`[수정]` 스케치 텍스트 입력란과 빈 포인트 목록에 안내 문구 대신 내부 키 이름이 표시되던 문제와, 컨베이어 버튼·창의 도움말, 일부 상태 표시줄 안내와 되돌리기 버튼 설명이 다른 언어에서 한국어로 표시되던 문제를 수정했습니다.",
+                  "`[수정]` 모델 트리에서 이미 동작을 지정한 부품 묶음을 다시 열면 기존 동작 대신 새 설정이 열리던 문제를 수정했습니다. 이제 기존 동작을 바로 편집합니다.",
+                  "`[수정]` 3D 모델이 있는 장면에 로봇을 추가할 때 로봇의 기본 위치가 Y축으로 밀리던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[추가]` 뷰 패널에서 모델 트리와 보조 창을 제외한 3D 장면을 16:9, 60fps WebM 영상으로 녹화할 수 있습니다. 화면이 더 넓으면 위아래를 유지하고 좌우를 같은 폭으로 자릅니다.",
+                  "`[추가]` 한 버튼으로 녹화를 시작·정지·재개하고, 종료와 저장은 따로 할 수 있습니다. 현재 또는 마지막 녹화의 재생바에서 클립을 분할하거나 삭제하고, 양끝을 끌어 길이를 조절하고 스톱워치의 시작·종료 지점을 지정할 수 있습니다.",
+                  "`[수정]` 직교 JOG에서 이동 화살표와 회전 고리 옆의 빈 공간을 눌렀을 때 축이 선택되던 문제를 수정했습니다. 마우스를 올려 잡을 수 있는 화살표나 회전 고리는 주황색으로 강조됩니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[개선]` 3D 작업 공간과 모델 트리, JOG 패널을 밝게 바꾸고, 작은 화면에서는 하단 도구 모음에서 패널을 열 수 있도록 했습니다.",
@@ -317,7 +351,7 @@
                   "`[추가]` K14 가상 컨트롤러에 웹 컨베이어의 엔코더·센서·비전 검출을 연결하고, 로봇 프로그램의 컨베이어 추종에 사용할 수 있습니다.",
                   "`[개선]` 촬영 시점의 엔코더값으로 비전 처리 지연을 보정하고, 연동 설정을 작업 파일에 저장합니다.",
                   "`[추가]` 컨베이어 창에서 속도와 정·역방향을 선택해 테스트 운전하고, 버튼을 누르는 동안만 움직이는 JOG와 정지를 사용할 수 있습니다. 브리지 없이 장면에서 시험하며, 트래킹 연동 시 같은 이동이 엔코더 입력에 반영됩니다. 테스트 Conveyor 모델의 벨트 무늬도 속도와 방향에 맞춰 끝단을 돌아 순환하며, JOG 해제·정지 시 함께 멈춥니다.",
-                  "`[추가]` 테스트 창에서 컨베이어·시험 물체·레이저 센서·하향 비전 카메라를 설정된 상태로 함께 생성합니다. 레이저의 감지 위치와 ON/OFF 색상을 컨트롤러 연결 전에도 확인하고 센서 설정을 저장·복원할 수 있습니다. 웹 컨베이어 비전은 로봇 프로그램의 CnvTrigVis 요청과 웹의 현재 화면 촬영 버튼으로 촬영합니다. 컨베이어 모듈 아래 컨베이어·비전 카메라·센서 하위 그룹을 구성해 전체 또는 개별 선택·이동이 가능합니다. 벨트는 길이 2.5배·폭 1.5배로 확대하고 센서와 카메라는 이송 시작부에 배치합니다.",
+                  "`[추가]` 테스트 창에서 컨베이어·시험 물체·레이저 센서·하향 비전 카메라를 설정된 상태로 함께 생성합니다. 레이저의 감지 위치와 ON/OFF 색상을 컨트롤러 연결 전에도 확인하고 센서 설정을 저장·복원할 수 있습니다. 웹 컨베이어 비전에서 센서 감지와 벨트 이동 거리를 기준으로 자동 촬영할 수 있으며, 프로그램의 CnvTrigVis와 현재 화면 촬영도 지원합니다. 컨베이어 모듈 아래 컨베이어·비전 카메라·센서 하위 그룹을 구성해 전체 또는 개별 선택·이동이 가능합니다. 벨트는 길이 2.5배·폭 1.5배로 확대하고 센서와 카메라는 이송 시작부에 배치합니다.",
                   "`[추가]` IO 테스트의 In[0]–In[64] ON/OFF를 선택한 K14 가상 컨트롤러의 DI0–DI64에 전달하고 실제 입력 상태를 표시합니다. 연결 끊김·읽기 실패는 미확인 상태로 구분합니다.",
                   "`[추가]` 가상 비전 기능을 추가했습니다. 상·하향 촬상과 컬러 라이브 영상을 지원하며, 테스트 비전 모듈의 Camera 부품에는 상향 촬상이 자동으로 연결됩니다. 9점·회전 중심 캘리브레이션 후 촬상 버튼으로 기준 위치 대비 X·Y·각도 보정값을 한 번 측정할 수 있습니다. K12 가상컨트롤러용 보정값 내보내기와 CALRAW·PIXEL 영상 좌표 TCP 명령, 로봇 BASE 좌표 변환 예제를 지원합니다. 비전 영상에서는 로봇 좌표축과 3D 조작 핸들을 제외합니다. 로봇랩 비전 보정의 기본 끝 문자 V에 맞춘 TCP 통신을 지원합니다.",
                   "`[추가]` 작업물 오브젝트를 선택해 기존 모델을 기준 위치 주변에서 무작위로 이동·회전할 수 있습니다. 기본 편차는 X·Y 각각 ±50 mm, 각도 ±180°이며, 기본 형상 작업물 생성도 지원합니다.",
@@ -747,9 +781,16 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다."
+                  "`[개선]` 큰 STEP 모델을 불러올 때 꼭짓점·원 중심·면 중심 등 스냅 점을 더 빠르게 계산합니다.",
+                  "`[수정]` 작은 화면에서 판정 결과 표가 화면 밖으로 넘치던 문제를 수정했습니다. 표를 좌우로 스크롤해 모든 열을 확인할 수 있습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[개선]` 밝은 패널에 파란색으로 버튼과 선택 항목을 표시합니다."
                 ]
               },
               {
@@ -822,9 +863,16 @@
             "title": "Project Generator",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다. 실시간 소스 미리보기에서 주석은 초록색으로 표시하고 명령어·문자열·숫자·함수도 색으로 구분합니다.",
+                  "`[개선]` 화면 스타일과 아이콘을 사이트에 포함하고 가이드 이미지는 가이드를 열 때 불러와, 첫 화면이 외부 스크립트 없이 더 빨리 열립니다. 프로젝트 옵션 창의 설명 영역과 가이드 창의 배경을 다른 창과 같은 밝은 화면으로 표시합니다.",
+                  "`[수정]` 중국어·베트남어·터키어·러시아어에서 프로세스 목록의 번호 열 이름이 '없음'을 뜻하는 단어로 표시되던 문제를 수정했습니다."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[개선]` 밝은 패널에 파란색으로 버튼과 선택 항목을 표시합니다. 실시간 소스 미리보기에서 주석은 초록색으로 표시하고 명령어·문자열·숫자·함수도 색으로 구분합니다.",
                   "`[추가]` 기존 프로젝트 ZIP·폴더에서 프로세스와 옵션을 불러와 수정하고, 사용자 코드·티칭 좌표를 보존하며 충돌을 검토한 뒤 수정 프로젝트 ZIP으로 내보낼 수 있습니다.",
                   "`[추가]` 3D 시뮬레이션용 프로젝트를 따로 내려받을 수 있습니다. PLC 신호·IO 대기·티칭·레시피·모니터링 태스크를 빼고, 툴과 비전 응답은 지정한 시간으로 대신하며, 공정 순서와 반복 횟수를 정해 사이클 단위로 실행합니다.",
                   "`[수정]` Socket 방식의 Tray Get 등과 Vision Calibration에서 비전 IO 보정 대신 Socket 수신값을 공정 기본 보정에 합산하도록 수정하고, 캘리브레이션 공정 프로그램도 Shot 수신 후 보정을 적용하도록 개선했습니다.",
@@ -1063,6 +1111,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[수정]` 일부 문서 제목과 CAD 2D·3D 다운로드 버튼이 다른 언어에서 한국어로 표시되던 문제를 수정했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[개선]` 밝은 화면에서 문서를 검색하고 필터별 문서 수와 검색 결과 수를 확인할 수 있습니다.",
@@ -1224,9 +1278,17 @@
             "title": "Debugging Tool",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[개선]` 아이보리 헤더와 밝은 패널, 짙은 글자색으로 화면을 정리했습니다."
+                  "`[업데이트]` 디버깅 도구 6종을 업데이트했습니다. 각 ZIP에는 Windows에서 실행할 EXE 파일 하나가 들어 있습니다. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[개선]` 디버깅 툴과 영점 보정 화면의 스타일과 아이콘을 사이트에 포함해 외부 스크립트 없이 더 빨리 열립니다. 영점 보정 입력칸은 축과 항목 이름으로 읽힙니다."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[개선]` 밝은 패널에 파란색으로 버튼과 선택 항목을 표시합니다.",
+                  "`[수정]` 영점 보정 입력칸에 커서를 놓으면 안내 숫자 0이 사라지고, 입력해 둔 0은 선택되어 바로 덮어쓸 수 있습니다."
                 ]
               },
               {
@@ -1388,6 +1450,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 5.0 (2026.11.21)",
+                "items": [
+                  "`[개선]` Windows용 Rust 버전으로 전환하고, 로봇 통신·HMI·프레임 모니터 화면을 파란색 계열로 정리했습니다."
+                ]
+              },
+              {
                 "title": "Ver 4.0 (2026.11.04)",
                 "items": [
                   "`[개선]` 가상판과 실제 연결판을 하나로 통합하고, 컨트롤러별로 가상·실제 연결을 선택하여 함께 사용할 수 있도록 개선했습니다.",
@@ -1514,6 +1582,12 @@
             "title": "labelGenerator",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[개선]` Windows용 Rust 버전으로 전환했습니다. Excel과 JSN을 변환하고, 네 가지 라벨 양식에서 저장 전 라벨을 확인·편집할 수 있습니다."
+                ]
+              },
+              {
                 "title": "Ver 2.2.0",
                 "items": [
                   "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
@@ -1562,6 +1636,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[개선]` 밝은 파형 화면을 적용했습니다. A/B 커서를 실선과 점선으로 구분하고, 선택한 구간의 채널별 최솟값과 최댓값을 표시합니다."
+                ]
+              },
               {
                 "title": "Ver 1.5 (2026.07.25)",
                 "items": [
@@ -1622,6 +1702,12 @@
             "title": "projectCompare",
             "versions": [
               {
+                "title": "Ver 3.0 (2026.11.21)",
+                "items": [
+                  "`[개선]` Windows용 Rust 버전으로 전환했습니다. 코드 비교 화면에서 Ctrl 키를 누른 채 휠을 돌려 양쪽 코드와 줄 번호의 크기를 조절할 수 있습니다."
+                ]
+              },
+              {
                 "title": "Ver 2.2",
                 "items": [
                   "`[신규]` 동시 스크롤을 켜거나 끄고, 양쪽의 현재 위치를 기준으로 스크롤을 맞출 수 있는 기능을 추가했습니다.",
@@ -1659,9 +1745,63 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[개선]` 알람별 로봇 모드와 축 상태, 연관 로그를 한곳에서 확인할 수 있습니다. 프로그램 탭에 태스크 현황과 라벨·위치 데이터 표를 추가했습니다."
+                ]
+              },
+              {
                 "title": "Ver 1.1 (2026.11.04)",
                 "items": [
                   "`[추가]` 시스템 진단 ZIP·폴더 분석, 오류·서보 알람 조회, 트레이스 그래프·A/B 측정 및 보고서·CSV 저장을 지원합니다."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "cadLightweight",
+            "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[개선]` SolidWorks 설치 없이 SLDPRT와 SLDASM을 직접 열 수 있습니다. STEP으로 저장할 때 부품 배치와 부품별·면별 색상을 유지하고, GLB에도 표시 색상을 반영합니다."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.11.03)",
+                "items": [
+                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
+                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
+                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.10.30)",
+                "items": [
+                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
+                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
+                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
+                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
+                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
+                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
+                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
+                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
+                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.10.23)",
+                "items": [
+                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
+                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.07.25)",
+                "items": [
+                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
+                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
+                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
                 ]
               }
             ]
@@ -1678,11 +1818,20 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Improved]` Open all eight tools from the tool library on the home page, or filter them by design and development or resources and support.",
+                  "`[Improved]` Every page downloads about half as much translation data when it first opens, so pages appear sooner.",
+                  "`[Fixed]` The Servo System Solution page now appears in Chinese, Turkish and Russian instead of Korean."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Improved]` Buttons, icons and selected items on the home and tool pages now use the blue of the INOVANCE logo. Titles next to the logo use the selected language and the same font and size across pages.",
+                  "`[Improved]` The home page shows all eight tools. Use Selection, Design, Control or Resources to find the tools for your task.",
                   "`[Improved]` All five home guides now use a light player. Each step highlights the relevant control and explains what to do and why. You can move to any step.",
-                  "`[Improved]` Tool pages now share the home page’s ivory header and light workspace."
+                  "`[Improved]` Model filters and document searches respond faster. Calculating mass properties for large STEP models and comparing project files also takes less time.",
+                  "`[Improved]` Release notes on the home and debugging pages now share a light layout that keeps versions and changes readable on small screens."
                 ]
               },
               {
@@ -1708,6 +1857,12 @@
                 "title": "Ver 26.10.14",
                 "items": [
                   "`[Added]` Added a Servo System Solution card to the homepage and a servo motion control guide available in English and Vietnamese."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Fixed]` Communication Tester now downloads as a ZIP file, fixing the executable that could not be downloaded."
                 ]
               },
               {
@@ -1748,10 +1903,15 @@
             "title": "Robot Model Select",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text.",
-                  "`[Added]` Each robot now has a searchable detail page and unique address that supports sharing, reload and browser history while preserving configuration."
+                  "`[Improved]` SCARA cards compare Z-axis stroke and standard cycle time side by side for standard and cleanroom versions. Each version opens its own model and specifications, with ISO Class 4 shown for cleanroom models. Articulated robot cards show repeatability, and the detail view lists allowable wrist torque by axis.",
+                  "`[Improved]` The robot body and standard cable use the robot quantity. Optional components have their own quantities, and articulated robot I/O cables are included only when selected. Selecting PROFINET or CC-Link also selects its expansion card and keeps both quantities in sync.",
+                  "`[Improved]` When no type is selected, hardware options appear below the robot models. They can be added to the configuration list on their own, with editable quantities. Each card groups its items by function. Expansion cards are grouped by communication, I/O and safety, and the R7H calibration tool has its own order code. Teach pendant extension cables can be added from both the Pendant and Other Accessories cards. Click a hardware item row to select it. SCARA J3 covers are available for standard and clean S4, S7 and S10 models.",
+                  "`[Improved]` Excel exports show configuration and robot totals and combine order quantities into one row per purchase code.",
+                  "`[Improved]` Buttons and selected items appear in blue on light panels.",
+                  "`[Added]` Each robot now has a searchable detail page and unique address that supports sharing, reload and browser history while preserving configuration.",
+                  "`[Improved]` Large model images are smaller, so the model list and detail window open faster. Specification rows in the detail window are separated by lines, and per-axis repeatability appears in the selected language."
                 ]
               },
               {
@@ -1938,6 +2098,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Improved]` Model move snapping commits the new position when you select the second point. The Apply, Cancel, and Select Again buttons were removed from the placement panel.",
+                  "`[Added]` Hold Space with a non-robot model selected to show its move handle.",
+                  "`[Improved]` Snap points and the model edges used for curve-path teaching are calculated faster for large STEP models.",
+                  "`[Improved]` Auto quality speeds up first-time conversion of STEP files from 20 MB to under 50 MB. Files of 50 MB or more show parts as they finish converting. STEP models under the Test button load faster using preconverted meshes.",
+                  "`[Fixed]` The sketch text box and an empty point list show their hint text instead of an internal key name, and tooltips on the conveyor button and window, some status bar messages and undo button descriptions appear in the selected language instead of Korean.",
+                  "`[Fixed]` Reopening the motion of a part group from the model tree now edits the existing motion instead of opening new settings.",
+                  "`[Fixed]` Adding a robot to a scene with 3D models no longer shifts its default position along the Y axis."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Added]` Record the 3D scene from the View panel as a 16:9 WebM video at 60 fps, with the model tree and floating panels excluded. Wider views keep their full height and are cropped equally on both sides.",
+                  "`[Added]` Start, pause and resume recording with one button. Finish and save separately. Review the current or last recording on the timeline, split or delete clips, drag their edges to trim them, and set the stopwatch start and end points.",
+                  "`[Fixed]` Clicking empty space beside a Cartesian jog arrow or rotation ring no longer starts a robot drag. Hover over a draggable arrow or rotation ring to highlight it in orange."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Improved]` The 3D workspace, model tree and JOG panel now use a light palette. On small screens, open panels from the bottom toolbar.",
@@ -1955,7 +2135,7 @@
                   "`[Added]` Connect web conveyor encoders, sensors and vision detections to a K14 virtual controller for conveyor tracking in robot programs.",
                   "`[Improved]` Exposure-time encoder latches compensate for vision processing delay, and conveyor settings are saved with the workspace.",
                   "`[Added]` Test conveyors with adjustable speed, forward/reverse direction, continuous run, hold-to-run JOG and stop controls. Scene tests work without a bridge; when tracking is linked, the same motion drives encoder input. The test Conveyor model also shows belt markings circulating around its ends at the selected speed and direction, stopping when JOG is released or Stop is pressed.",
-                  "`[Added]` Create a configured conveyor tracking test scene with workpieces, a laser sensor and a downward-facing vision camera. Before connecting a controller, inspect the laser position and detection colors, and save or restore the sensor settings. Conveyor vision captures on a CnvTrigVis request from the robot program or when the web capture button is pressed. The conveyor module contains Conveyor, Vision camera and Sensor subgroups for collective or individual selection and movement. The belt is 2.5 times longer and 1.5 times wider, with the sensor and camera near the infeed.",
+                  "`[Added]` Create a configured conveyor tracking test scene with workpieces, a laser sensor and a downward-facing vision camera. Before connecting a controller, inspect the laser position and detection colors, and save or restore the sensor settings. Conveyor vision supports optional automatic capture based on sensor detection and belt travel, as well as CnvTrigVis requests and manual capture. The conveyor module contains Conveyor, Vision camera and Sensor subgroups for collective or individual selection and movement. The belt is 2.5 times longer and 1.5 times wider, with the sensor and camera near the infeed.",
                   "`[Added]` IO Test In[0]–In[64] switches DI0–DI64 on the selected K14 virtual controller and displays confirmed input feedback. Disconnected or failed reads are shown as unavailable.",
                   "`[Added]` Added Virtual Vision with upward/downward capture and color live images. The test Vision module automatically uses its Camera parts for upward capture. After 9-point and rotation-center calibration, Capture measures X, Y and angle offsets from the master position once. Supports K12 virtual-controller calibration export, CALRAW/PIXEL raw-coordinate TCP commands and a robot BASE coordinate conversion example. Vision images exclude robot coordinate axes and 3D manipulation handles. Supports TCP communication with RobotLab calibration using its default V terminator.",
                   "`[Added]` Select a work object to move and rotate the existing model randomly around its reference position. Default deviations are ±50 mm in X/Y and ±180° in angle; basic work-shape generation is also supported.",
@@ -2138,6 +2318,23 @@
                   "`[Improved]` Vacuum pads now acquire objects when the surface gap is within 0.1 mm.",
                   "`[Fixed]` Fixed simulation endpoint differences by using received TCP position and rotation, including TCP and Wobj, and improved screen updates during controller position synchronization.",
                   "`[Added]` Reset all now restores registered objects to their initial positions and rotations."
+                ]
+              },
+              {
+                "title": "Ver 26.10.05",
+                "items": [
+                  "`[Added]` The model tree supports part and model group folders, Shift multi-selection, drag reordering and renaming. Select a group to move or rotate everything in it together.",
+                  "`[Added]` Motion settings for cylinders, linear and rotary external axes, grippers, vacuum and conveyors. Link several parts and IO/completion sensors; equipment follows the robot Tool or its parent equipment.",
+                  "`[Added]` Object registration and vacuum pick and release. Grippers, vacuum and conveyors act only on registered objects, and the previous grab/release actions are replaced by motion settings and IO control.",
+                  "`[Added]` A peeling motion: the gripper grabs the tab and pulls off a single film. After the film is fully removed, open the gripper to drop it.",
+                  "`[Added]` IO output and wait-for-input commands in programs. IO Test can map equipment motions to signals and control them.",
+                  "`[Added]` Previews of test models and tools, loading by quantity, and one-click placement of the training layout. Loaded parts appear in prepared group folders.",
+                  "`[Improved]` SCARA test tools mount their adapter automatically, and the training layout adds a raised base. Short-reach robots are placed so they reach the work positions while keeping module spacing.",
+                  "`[Added]` An overall speed control in the Program panel applies a 1–100% ratio to the speed of every move command.",
+                  "`[Added]` A selection-centered view that pans and orbits around the selected model.",
+                  "`[Improved]` Collision detection now focuses on contact between the robot's Tools/objects and surrounding models, so contact between fixed equipment no longer stops the simulation.",
+                  "`[Improved]` Faster STEP model import and better outline display on curved robot surfaces.",
+                  "`[Fixed]` Wobj no longer becomes disabled after a project is loaded."
                 ]
               },
               {
@@ -2368,9 +2565,16 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text."
+                  "`[Improved]` Snap points such as vertices, circle centers and face centers are calculated faster when a large STEP model is loaded.",
+                  "`[Fixed]` On small screens the judgment table no longer runs off the page; scroll it sideways to see every column."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Improved]` Buttons and selected items appear in blue on light panels."
                 ]
               },
               {
@@ -2443,9 +2647,16 @@
             "title": "Project Generator",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text. The live source preview shows comments in green and distinguishes commands, strings, numbers and functions by color.",
+                  "`[Improved]` Styles and icons are now part of the site and guide images load only when the guide opens, so the generator opens faster without external scripts. The Project Options description area and the guide backdrop match the other light dialogs.",
+                  "`[Fixed]` The number column in the process list no longer shows a word meaning \"none\" in Chinese, Vietnamese, Turkish and Russian."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Improved]` Buttons and selected items appear in blue on light panels. The live source preview shows comments in green and distinguishes commands, strings, numbers and functions by color.",
                   "`[Added]` Import an existing project ZIP or folder to modify processes and options, preserve custom code and taught points, review conflicts, and export the complete modified project as a ZIP.",
                   "`[Added]` A separate project for the 3D simulation can be downloaded. It removes PLC signals, IO waits, teaching, recipes and monitoring tasks, replaces tool and vision replies with set times, and runs the chosen process order for a set number of cycles.",
                   "`[Fixed]` Socket-based Tray Get and other processes, including Vision Calibration, now add received Socket data to the process base offset instead of using vision IO offsets. Calibration process programs receive Shot data before applying the offset.",
@@ -2684,6 +2895,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Fixed]` Some document titles and the CAD 2D/3D download buttons now appear in the selected language instead of Korean."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Improved]` Search the light document catalogue and see counts for each filter and for your results.",
@@ -2845,9 +3062,17 @@
             "title": "Debugging Tool",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Improved]` Updated the workspace with an ivory header, light panels and dark text."
+                  "`[Updated]` Updated six debugging tools. Each ZIP contains one Windows executable. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Improved]` The Debugging Tool and Zero Calibration pages include their styles and icons, so they open faster without external scripts. Zero Calibration inputs are announced with their axis and column names."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Improved]` Buttons and selected items appear in blue on light panels.",
+                  "`[Fixed]` In the Zero Calibration Tool, focusing an empty field hides the 0 hint. Focusing a field that contains zero selects it for replacement."
                 ]
               },
               {
@@ -2868,6 +3093,12 @@
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Changed]` Updated CAD Lightweight from `V1.1` to `V1.2`."
+                ]
+              },
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "`[Changed]` Updated CAD Lightweight: `V1.0 → V1.1`."
                 ]
               },
               {
@@ -3003,6 +3234,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 5.0 (2026.11.21)",
+                "items": [
+                  "`[Improved]` Moved to Rust for Windows and applied a blue theme to the robot communication, HMI, and frame monitor views."
+                ]
+              },
+              {
                 "title": "Ver 4.0 (2026.11.04)",
                 "items": [
                   "`[Improved]` Combined virtual and physical connections in one program, with an independent connection mode for each controller.",
@@ -3025,6 +3262,12 @@
                   "`[Fixed]` Fixed UDP port conflicts preventing IO exchange with multiple virtual EIP targets.",
                   "`[Fixed]` Fixed delayed IO reflection in the HMI and function blocks, and sluggish screen interaction.",
                   "`[Fixed]` Fixed saved empty HMI layouts hiding the default screens."
+                ]
+              },
+              {
+                "title": "Ver 3.2 (2026.10.07)",
+                "items": [
+                  "`[Fixed]` While connected through Virtual Bus, value changes from word inputs and word buttons newly added or configured in the HMI are now applied to the robot."
                 ]
               },
               {
@@ -3123,6 +3366,12 @@
             "title": "labelGenerator",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Improved]` Moved to Rust for Windows. Convert between Excel and JSN and review or edit labels before saving in any of the four layouts."
+                ]
+              },
+              {
                 "title": "Ver 2.2.0",
                 "items": [
                   "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
@@ -3171,6 +3420,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Improved]` Added a light waveform view. Solid and dashed lines distinguish the A/B cursors, and the selected interval shows minimum and maximum values for each channel."
+                ]
+              },
               {
                 "title": "Ver 1.5 (2026.07.25)",
                 "items": [
@@ -3231,6 +3486,12 @@
             "title": "projectCompare",
             "versions": [
               {
+                "title": "Ver 3.0 (2026.11.21)",
+                "items": [
+                  "`[Improved]` Moved to Rust for Windows. Hold Ctrl and scroll in the comparison view to resize the code and line numbers in both panes."
+                ]
+              },
+              {
                 "title": "Ver 2.2",
                 "items": [
                   "**[New]** Added an option to enable or disable synchronized scrolling and align scrolling based on the current positions of both sides.",
@@ -3268,9 +3529,63 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Improved]` View robot mode, axis status, and related logs for each alarm in one place. The Program tab now shows task status and tables for label and position data."
+                ]
+              },
+              {
                 "title": "Ver 1.1 (2026.11.04)",
                 "items": [
                   "`[Added]` Diagnostic ZIP/folder analysis, error and servo alarm lookup, trace graphs, A/B measurements, and report/CSV export."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "cadLightweight",
+            "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Improved]` Open SLDPRT and SLDASM directly without installing SolidWorks. STEP export preserves component placement and component and face colors. GLB export retains the display colors."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.11.03)",
+                "items": [
+                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
+                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
+                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.10.30)",
+                "items": [
+                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
+                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
+                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
+                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
+                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
+                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
+                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
+                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
+                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.10.23)",
+                "items": [
+                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
+                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.07.25)",
+                "items": [
+                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
+                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
+                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
                 ]
               }
             ]
@@ -3287,11 +3602,20 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[改进]` 在主页工具库中可直接打开八种工具，也可按“设计与开发”或“资料与支持”筛选。",
+                  "`[改进]` 所有页面首次打开时下载的翻译数据量减少近一半，页面显示更快。",
+                  "`[修复]` 修复了伺服系统解决方案页面在中文、土耳其语和俄语下显示为韩语的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[改进]` 首页和工具页面的按钮、图标和选中状态统一采用与汇川标志一致的蓝色系。标志旁的页面标题使用所选语言，字体和字号保持一致。",
+                  "`[改进]` 首页工具库可查看全部八种工具，也可按“选型”“设计”“控制”或“资料”筛选。",
                   "`[改进]` 主页上的五个使用指南采用浅色界面。每一步都会突出显示相关控件，通过字幕说明操作和原因，并支持前后切换步骤。",
-                  "`[改进]` 各工具页面采用与首页一致的象牙白页眉和浅色工作区。"
+                  "`[改进]` 模型筛选和文档搜索响应更快。大型 STEP 模型的质量属性计算和项目文件比较也更快。",
+                  "`[改进]` 首页和调试工具的版本记录采用统一的浅色布局，在小屏幕上也能清楚查看各版本的变更。"
                 ]
               },
               {
@@ -3317,6 +3641,12 @@
                 "title": "Ver 26.10.14",
                 "items": [
                   "`[新增]` 在主页添加了伺服系统解决方案卡片，并支持以英语和越南语查看伺服运动控制介绍。"
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[修复]` 将 Communication Tester 改为 ZIP 文件下载，解决了可执行文件无法下载的问题。"
                 ]
               },
               {
@@ -3357,10 +3687,15 @@
             "title": "Robot Model Select",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。",
-                  "`[新增]` 每个机器人型号均提供独立地址及可搜索的详情页，支持分享、刷新和浏览器历史记录，并保留原有配置流程。"
+                  "`[改进]` SCARA 卡片并列显示标准型和洁净型的 Z 轴行程及标准循环时间。选择版本可查看对应型号和详细规格，洁净型标注为 ISO Class 4。多关节机器人卡片新增重复定位精度，详细规格新增各腕轴的允许扭矩。",
+                  "`[改进]` 配置详情中，机器人本体和基本电缆使用机器人数量，各选配件可单独设置数量。多关节机器人仅在选中时才添加 I/O 电缆。选择 PROFINET 或 CC-Link 时会自动勾选对应的扩展卡，两处的数量同步更新。",
+                  "`[改进]` 未选择类型时，付费硬件选件显示在机器人型号下方。可单独将选件加入配置列表并调整数量。各卡片内的选件按用途分组，其中扩展卡分为通信、输入/输出和安全扩展，并更新了 R7H 专用零点校准工具的订货代码。示教器延长电缆可在“示教器”和“其他附件”两张卡片中选购。点击硬件行即可选择该项。SCARA J3 防护罩适用于 S4、S7 和 S10 的标准型和洁净型。",
+                  "`[改进]` Excel 配置清单显示配置总数和机器人总数，并将相同订货代码的数量合并到一行。",
+                  "`[改进]` 浅色面板上的按钮和选中项以蓝色突出显示。",
+                  "`[新增]` 每个机器人型号均提供独立地址及可搜索的详情页，支持分享、刷新和浏览器历史记录，并保留原有配置流程。",
+                  "`[改进]` 缩小了大尺寸型号图片，型号列表和详情窗口打开更快。详情窗口的规格表显示行分隔线，各轴重复定位精度也以所选语言显示。"
                 ]
               },
               {
@@ -3547,6 +3882,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[改进]` 使用吸附移动模型时，选中第二个点即确认新位置。模型放置面板已移除应用、取消和重新选择按钮。",
+                  "`[新增]` 选中非机器人模型后，按住空格键即可显示移动手柄。",
+                  "`[改进]` 大型 STEP 模型的捕捉点及曲线路径示教所用的模型轮廓计算更快。",
+                  "`[改进]` 自动质量模式可加快 20 MB 至不足 50 MB 的 STEP 文件的首次转换。50 MB 及以上的 STEP 文件会逐步显示已转换的部件。测试按钮中的 STEP 模型使用预转换网格加快加载。",
+                  "`[修复]` 修复了草图文本输入框和空点位列表显示内部键名而非提示文字的问题，以及输送带按钮和窗口的提示、部分状态栏提示和撤销按钮说明在其他语言下显示为韩语的问题。",
+                  "`[修复]` 修复了在模型树中重新打开已设置动作的部件组时，打开新设置而非现有动作的问题。现在可直接编辑现有动作。",
+                  "`[修复]` 修复了在已有 3D 模型的场景中添加机器人时，其默认位置沿 Y 轴偏移的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[新增]` 可在视图面板将 3D 场景录制为 16:9、60 fps 的 WebM 视频，画面中不包含模型树和浮动窗口。宽于 16:9 的画面保留完整高度，左右等量裁剪。",
+                  "`[新增]` 同一个按钮可开始、暂停或继续录像，结束和保存可单独操作。在时间轴上可查看当前或上次录像，分割或删除片段，拖动片段两端调整长度，并设置秒表的起止位置。",
+                  "`[修复]` 修复了点击直角坐标点动箭头或旋转环旁的空白区域时误触发机器人拖动的问题。鼠标悬停在可拖动的箭头或旋转环上时，手柄会以橙色高亮显示。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[改进]` 3D 工作区、模型树和 JOG 面板现采用浅色界面。在小屏幕上可从底部工具栏打开面板。",
@@ -3564,7 +3919,7 @@
                   "`[新增]` 将网页传送带的编码器、传感器和视觉检测连接到 K14 虚拟控制器，用于机器人程序的传送带跟踪。",
                   "`[改进]` 使用曝光时的编码器值补偿视觉处理延迟，并将连接设置保存在工作区中。",
                   "`[新增]` 输送机窗口支持速度、正反方向、连续试运行、按住运行的 JOG 和停止操作。无需桥接即可在场景中测试，跟踪联动时相同运动会反映到编码器输入。 测试 Conveyor 模型的皮带纹理也会按所选速度和方向绕端部循环，松开 JOG 或停止时同步停止。",
-                  "`[新增]` 测试窗口可一键生成已配置的输送机、测试工件、激光传感器和下视视觉相机。连接控制器前可检查激光位置及其检测颜色，并保存或恢复传感器设置。传送带视觉由机器人程序的 CnvTrigVis 请求或网页的当前画面拍摄按钮触发。 输送机模块包含输送机、视觉相机和传感器子组，可整体或分别选择和移动。皮带长度扩大为2.5倍、宽度为1.5倍，传感器和相机位于进料端附近。",
+                  "`[新增]` 测试窗口可一键生成已配置的输送机、测试工件、激光传感器和下视视觉相机。连接控制器前可检查激光位置及其检测颜色，并保存或恢复传感器设置。传送带视觉支持基于传感器检测和皮带移动距离的可选自动拍摄，也支持 CnvTrigVis 请求和手动拍摄。 输送机模块包含输送机、视觉相机和传感器子组，可整体或分别选择和移动。皮带长度扩大为2.5倍、宽度为1.5倍，传感器和相机位于进料端附近。",
                   "`[新增]` IO 测试的 In[0]–In[64] 可切换所选 K14 虚拟控制器的 DI0–DI64，并显示实际输入状态；断开连接或读取失败时显示状态不可用。",
                   "`[新增]` 新增虚拟视觉功能，支持向上或向下拍摄和彩色实时图像。测试视觉模块的 Camera 部件自动启用向上拍摄。完成9点与旋转中心标定后，可单次测量相对基准位置的 X、Y 与角度补偿值。 支持导出 K12 虚拟控制器标定参数、CALRAW/PIXEL 像素坐标 TCP 命令及机器人 BASE 坐标转换示例。 视觉图像不显示机器人坐标轴和三维操作手柄。 支持使用 RobotLab 视觉标定默认结束符 V 进行 TCP 通信。",
                   "`[新增]` 可选择工件对象，在基准位置周围随机移动和旋转现有模型。默认 X、Y 偏差各为 ±50 mm，角度偏差为 ±180°，也支持生成基本形状工件。",
@@ -3747,6 +4102,23 @@
                   "`[改进]` 真空吸盘与物体表面间距在 0.1 mm 以内时也可吸附。",
                   "`[修复]` 连接实际控制器时使用已包含 TCP 和 Wobj 的接收位置及姿态，修复了仿真末端与控制器位置不一致的问题，并改善了位置同步时的画面更新。",
                   "`[新增]` 全部归位功能现在可将已注册对象的位置和姿态一次恢复到初始状态。"
+                ]
+              },
+              {
+                "title": "Ver 26.10.05",
+                "items": [
+                  "`[新增]` 模型树新增零件/模型分组文件夹、Shift 多选、拖动排序和重命名。选择分组即可整体移动或旋转。",
+                  "`[新增]` 新增气缸、直线/旋转外部轴、夹爪、真空和输送带的动作设置。可关联多个零件及 IO/完成传感器，并随机器人 Tool 或上级设备一起运动。",
+                  "`[新增]` 新增对象登记及真空吸附/破坏功能。夹爪、真空和输送带仅对已登记对象动作，原有的抓取/放置改为通过动作设置和 IO 控制实现。",
+                  "`[新增]` 新增剥离动作：夹爪夹住拉手并拉动以剥下一张薄膜。薄膜完全剥离后可打开夹爪放下。",
+                  "`[新增]` 程序中新增 IO 输出和输入等待指令，并可在 IO 测试中映射和控制设备动作。",
+                  "`[新增]` 新增测试模型/工具预览、按数量载入以及教学用模型一键布置。载入的零件显示在预先整理好的分组文件夹中。",
+                  "`[改进]` SCARA 测试工具自动安装适配器，教学配置新增加高底座。短臂展机器人的布置经过调整，可在保持模块间距的同时到达作业位置。",
+                  "`[新增]` 程序面板新增整体速度调节，可对各移动指令的速度应用 1~100% 的比例。",
+                  "`[新增]` 新增以所选模型为中心平移和旋转视图的选择中心功能。",
+                  "`[改进]` 碰撞检测改为以机器人下属 Tool/对象与周围模型的接触为主，解决了固定设备之间接触导致停止的问题。",
+                  "`[改进]` 提升了 STEP 模型载入速度，并改进了机器人曲面的轮廓线显示。",
+                  "`[修复]` 修复了载入项目后 Wobj 被禁用的问题。"
                 ]
               },
               {
@@ -3977,9 +4349,16 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。"
+                  "`[改进]` 载入大型 STEP 模型时，顶点、圆心、面中心等捕捉点的计算更快。",
+                  "`[修复]` 修复了小屏幕上判定结果表超出页面的问题，可左右滚动表格查看所有列。"
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[改进]` 浅色面板上的按钮和选中项以蓝色突出显示。"
                 ]
               },
               {
@@ -4052,9 +4431,16 @@
             "title": "Project Generator",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。 实时源码预览以绿色显示注释，并用不同颜色区分指令、字符串、数字和函数。",
+                  "`[改进]` 页面样式和图标已内置于网站，指南图片在打开指南时才加载，生成器无需外部脚本即可更快打开。项目选项窗口的说明区域和指南窗口的背景与其他浅色对话框保持一致。",
+                  "`[修复]` 修复了中文、越南语、土耳其语和俄语中流程列表的序号列标题显示为“无”的问题。"
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[改进]` 浅色面板上的按钮和选中项以蓝色突出显示。 实时源码预览以绿色显示注释，并用不同颜色区分指令、字符串、数字和函数。",
                   "`[新增]` 支持导入现有项目 ZIP 或文件夹，修改工序及选项，保留用户代码和示教坐标，检查冲突后将完整修改项目导出为 ZIP。",
                   "`[新增]` 可单独下载用于 3D 仿真的项目。去除 PLC 信号、IO 等待、示教、配方和监控任务，工具和视觉的应答改为设定时间，并按指定的工序顺序和次数循环运行。",
                   "`[修复]` 采用 Socket 的 Tray Get 等工序及 Vision Calibration 现在将 Socket 接收值与工序基本补偿相加，不再使用视觉 IO 补偿。校准工序程序先接收 Shot 数据，再应用补偿。",
@@ -4293,6 +4679,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[修复]` 修复了部分文档标题和 CAD 2D/3D 下载按钮在其他语言下显示为韩语的问题。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[改进]` 在浅色文档目录中搜索，并查看各筛选项和搜索结果的文档数量。",
@@ -4454,9 +4846,17 @@
             "title": "Debugging Tool",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[改进]` 工作区采用象牙白页眉、浅色面板和深色文字。"
+                  "`[更新]` 更新了六款调试工具。每个 ZIP 仅包含一个 Windows 可执行文件。 Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[改进]` 调试工具和零点校准页面已内置样式和图标，无需外部脚本即可更快打开。零点校准输入框会以轴名和列名进行朗读。"
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[改进]` 浅色面板上的按钮和选中项以蓝色突出显示。",
+                  "`[修复]` 在零点校准工具中，空输入框获得焦点时会隐藏提示数字 0。已输入的零会被选中，可直接输入新值。"
                 ]
               },
               {
@@ -4477,6 +4877,12 @@
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[变更]` CAD Lightweight 从 `V1.1` 更新至 `V1.2`。"
+                ]
+              },
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "`[变更]` CAD Lightweight 已更新：`V1.0 → V1.1`。"
                 ]
               },
               {
@@ -4612,6 +5018,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 5.0 (2026.11.21)",
+                "items": [
+                  "`[改进]` 切换到 Windows Rust 版本，并为机器人通信、HMI 和帧监视界面应用了蓝色主题。"
+                ]
+              },
+              {
                 "title": "Ver 4.0 (2026.11.04)",
                 "items": [
                   "`[改进]` 将虚拟连接和实体连接合并到同一程序，可为每个控制器单独选择连接模式并混合使用。",
@@ -4634,6 +5046,12 @@
                   "`[修复]` 修复连接多个虚拟 EIP 目标时 UDP 端口冲突导致 IO 无法传输的问题。",
                   "`[修复]` 修复 IO 变化在 HMI 和功能块中显示延迟，以及界面操作缓慢的问题。",
                   "`[修复]` 修复已保存的空 HMI 布局导致默认画面不显示的问题。"
+                ]
+              },
+              {
+                "title": "Ver 3.2 (2026.10.07)",
+                "items": [
+                  "`[修复]` 修复了通过 Virtual Bus 连接时，在 HMI 中新增或设置的字输入和字按钮的数值变更未应用到机器人的问题。"
                 ]
               },
               {
@@ -4732,6 +5150,12 @@
             "title": "labelGenerator",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[改进]` 切换到 Windows Rust 版本。支持 Excel 和 JSN 互转，并可在保存前检查和编辑四种格式的标签。"
+                ]
+              },
+              {
                 "title": "Ver 2.2.0",
                 "items": [
                   "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
@@ -4780,6 +5204,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[改进]` 新增浅色波形界面。A/B 游标以实线和虚线区分，并显示所选区间内各通道的最小值和最大值。"
+                ]
+              },
               {
                 "title": "Ver 1.5 (2026.07.25)",
                 "items": [
@@ -4840,6 +5270,12 @@
             "title": "projectCompare",
             "versions": [
               {
+                "title": "Ver 3.0 (2026.11.21)",
+                "items": [
+                  "`[改进]` 切换到 Windows Rust 版本。在代码比较界面按住 Ctrl 并滚动鼠标滚轮，可同时调整两侧代码和行号的字号。"
+                ]
+              },
+              {
                 "title": "Ver 2.2",
                 "items": [
                   "`[New]` 增加开启或关闭同步滚动，并根据两侧当前位置对齐滚动位置的功能。",
@@ -4877,9 +5313,63 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[改进]` 可集中查看每条报警的机器人模式、轴状态和关联日志。程序选项卡新增任务状态以及标签和位置数据表。"
+                ]
+              },
+              {
                 "title": "Ver 1.1 (2026.11.04)",
                 "items": [
                   "`[新增]` 支持诊断ZIP与文件夹分析、错误与伺服报警查询、轨迹曲线、A/B测量及报告和CSV导出。"
+                ]
+              }
+            ]
+          },
+          {
+            "title": "cadLightweight",
+            "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[改进]` 无需安装 SolidWorks 即可直接打开 SLDPRT 和 SLDASM。导出 STEP 时保留零部件位置及零部件和面颜色，导出 GLB 时保留显示颜色。"
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.11.03)",
+                "items": [
+                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
+                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
+                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.10.30)",
+                "items": [
+                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
+                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
+                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
+                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
+                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
+                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
+                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
+                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
+                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.10.23)",
+                "items": [
+                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
+                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.07.25)",
+                "items": [
+                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
+                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
+                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
                 ]
               }
             ]
@@ -4896,11 +5386,20 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cải thiện]` Mở cả tám công cụ từ thư viện trên trang chủ hoặc lọc theo nhóm thiết kế và phát triển hay tài liệu và hỗ trợ.",
+                  "`[Cải tiến]` Dữ liệu bản dịch tải về khi mở mỗi trang lần đầu giảm gần một nửa, giúp trang hiển thị nhanh hơn.",
+                  "`[Sửa lỗi]` Trang Giải pháp hệ thống servo không còn hiển thị tiếng Hàn khi chọn tiếng Trung, tiếng Thổ Nhĩ Kỳ hoặc tiếng Nga."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Cải thiện]` Các nút, biểu tượng và mục đang chọn trên trang chủ và các trang công cụ dùng tông xanh dương của logo INOVANCE. Tiêu đề bên cạnh logo hiển thị bằng ngôn ngữ đã chọn và dùng cùng phông chữ, cỡ chữ trên mọi trang.",
+                  "`[Cải thiện]` Trang chủ hiển thị cả tám công cụ. Bạn có thể lọc theo Lựa chọn, Thiết kế, Điều khiển hoặc Tài liệu.",
                   "`[Cải thiện]` Cả năm hướng dẫn trên trang chủ đều có giao diện sáng. Mỗi bước làm nổi bật vị trí cần thao tác và có phụ đề giải thích cách làm, lý do. Bạn có thể chuyển đến bất kỳ bước nào.",
-                  "`[Cải thiện]` Các trang công cụ dùng đầu trang màu ngà và vùng làm việc sáng đồng bộ với trang chủ."
+                  "`[Cải tiến]` Bộ lọc mẫu robot và chức năng tìm tài liệu phản hồi nhanh hơn. Thời gian tính đặc tính khối lượng của mô hình STEP lớn và so sánh tệp dự án cũng giảm.",
+                  "`[Cải tiến]` Lịch sử phiên bản trên trang chủ và trang công cụ gỡ lỗi dùng chung giao diện sáng, giúp dễ đọc các thay đổi theo phiên bản trên màn hình nhỏ."
                 ]
               },
               {
@@ -4926,6 +5425,12 @@
                 "title": "Ver 26.10.14",
                 "items": [
                   "`[Thêm]` Đã thêm thẻ Giải pháp hệ thống servo trên trang chủ và hỗ trợ xem hướng dẫn điều khiển chuyển động servo bằng tiếng Anh và tiếng Việt."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Sửa lỗi]` Communication Tester được tải dưới dạng tệp ZIP, khắc phục lỗi không tải được tệp thực thi."
                 ]
               },
               {
@@ -4966,10 +5471,15 @@
             "title": "Robot Model Select",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu.",
-                  "`[Thêm]` Mỗi mẫu robot có địa chỉ và trang chi tiết có thể tìm kiếm, hỗ trợ chia sẻ, tải lại và lịch sử trình duyệt với quy trình cấu hình hiện có."
+                  "`[Cải tiến]` Thẻ SCARA hiển thị song song hành trình trục Z và thời gian chu kỳ tiêu chuẩn của phiên bản tiêu chuẩn và phòng sạch. Khi chọn phiên bản, thẻ mở đúng mã mẫu và thông số. Các mẫu phòng sạch được ghi là ISO Class 4. Thẻ robot khớp nối hiển thị độ lặp lại và phần thông số chi tiết có mô-men xoắn cho phép của từng trục cổ tay.",
+                  "`[Cải tiến]` Thân robot và cáp tiêu chuẩn dùng số lượng robot đã nhập. Các tùy chọn có số lượng riêng. Cáp I/O của robot khớp nối chỉ được thêm khi được chọn. Khi chọn PROFINET hoặc CC-Link, card mở rộng tương ứng cũng được chọn và số lượng ở hai mục được đồng bộ.",
+                  "`[Cải tiến]` Khi chưa chọn loại, các tùy chọn phần cứng trả phí xuất hiện bên dưới danh sách mẫu robot. Có thể thêm riêng từng tùy chọn vào danh sách cấu hình và điều chỉnh số lượng. Các mục trong mỗi thẻ được nhóm theo chức năng. Card mở rộng được chia thành truyền thông, I/O và an toàn. Dụng cụ hiệu chuẩn điểm 0 cho R7H có mã đặt hàng riêng. Có thể thêm cáp nối dài tay dạy từ cả hai thẻ Tay dạy và Phụ kiện khác. Nhấn vào hàng để chọn phụ kiện. Vỏ bảo vệ J3 cho SCARA dùng được với cả bản tiêu chuẩn và bản phòng sạch của S4, S7 và S10.",
+                  "`[Cải tiến]` Bảng Excel hiển thị tổng số cấu hình và robot, đồng thời cộng số lượng đặt hàng có cùng mã vào một dòng.",
+                  "`[Cải thiện]` Các nút và mục đang chọn được tô xanh dương trên nền sáng.",
+                  "`[Thêm]` Mỗi mẫu robot có địa chỉ và trang chi tiết có thể tìm kiếm, hỗ trợ chia sẻ, tải lại và lịch sử trình duyệt với quy trình cấu hình hiện có.",
+                  "`[Cải tiến]` Ảnh mẫu robot dung lượng lớn đã được thu nhỏ để danh sách mẫu và cửa sổ chi tiết mở nhanh hơn. Bảng thông số trong cửa sổ chi tiết có đường phân cách hàng và độ lặp lại theo từng trục hiển thị theo ngôn ngữ đã chọn."
                 ]
               },
               {
@@ -5156,6 +5666,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Cải tiến]` Khi di chuyển mô hình bằng điểm bắt dính, vị trí mới được xác nhận ngay khi chọn điểm thứ hai. Đã bỏ các nút Áp dụng, Hủy và Chọn lại trong bảng đặt mô hình.",
+                  "`[Thêm mới]` Giữ phím Space khi chọn một mô hình không phải robot để hiện tay nắm di chuyển.",
+                  "`[Cải tiến]` Điểm bắt dính và các cạnh mô hình dùng để dạy đường cong được tính nhanh hơn với mô hình STEP lớn.",
+                  "`[Cải tiến]` Chế độ chất lượng tự động rút ngắn thời gian chuyển đổi lần đầu các tệp STEP từ 20 MB đến dưới 50 MB. Tệp STEP từ 50 MB hiển thị từng chi tiết khi chuyển đổi xong. Các mô hình STEP ở nút Thử nghiệm tải nhanh hơn nhờ lưới chuyển đổi sẵn.",
+                  "`[Sửa lỗi]` Ô nhập văn bản phác thảo và danh sách điểm trống hiển thị đúng nội dung hướng dẫn thay vì tên khóa nội bộ; chú thích của nút và cửa sổ băng tải, một số thông báo trên thanh trạng thái và mô tả nút hoàn tác hiển thị theo ngôn ngữ đã chọn thay vì tiếng Hàn.",
+                  "`[Sửa lỗi]` Mở lại chuyển động của một nhóm chi tiết từ cây mô hình giờ sẽ chỉnh sửa chuyển động hiện có thay vì mở thiết lập mới.",
+                  "`[Sửa lỗi]` Robot được thêm vào cảnh đã có mô hình 3D không còn bị lệch vị trí mặc định theo trục Y."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Thêm]` Ghi cảnh 3D từ bảng góc nhìn thành video WebM 16:9 ở 60 fps. Cây mô hình và các cửa sổ nổi không xuất hiện trong video. Khung hình rộng hơn được giữ nguyên chiều cao và cắt đều hai bên.",
+                  "`[Thêm]` Dùng một nút để bắt đầu, tạm dừng và tiếp tục ghi. Có thể kết thúc và lưu riêng. Trên dòng thời gian của bản ghi hiện tại hoặc gần nhất, bạn có thể tách hoặc xóa đoạn, kéo hai đầu để chỉnh độ dài và đặt điểm bắt đầu, kết thúc của đồng hồ bấm giờ.",
+                  "`[Sửa]` Đã khắc phục lỗi bắt đầu kéo robot khi nhấn vào khoảng trống cạnh mũi tên di chuyển hoặc vòng xoay trong chế độ Jog tọa độ Đề-các. Mũi tên hoặc vòng xoay sẽ chuyển sang màu cam khi con trỏ nằm ở vị trí có thể kéo."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Cải thiện]` Không gian 3D, cây mô hình và bảng JOG có giao diện sáng. Trên màn hình nhỏ, bạn có thể mở các bảng từ thanh công cụ dưới cùng.",
@@ -5173,7 +5703,7 @@
                   "`[Thêm]` Kết nối bộ mã hóa, cảm biến và kết quả thị giác của băng tải web với bộ điều khiển ảo K14 để chương trình robot bám theo băng tải.",
                   "`[Cải tiến]` Giá trị bộ mã hóa tại thời điểm chụp bù độ trễ xử lý thị giác; cài đặt liên kết được lưu cùng không gian làm việc.",
                   "`[Thêm]` Cửa sổ băng tải hỗ trợ chọn tốc độ, chiều thuận/nghịch, chạy thử liên tục, JOG khi giữ nút và dừng. Có thể thử trong cảnh mà không cần bridge; khi liên kết tracking, chuyển động cũng được phản ánh vào đầu vào encoder. Các vạch trên băng tải của mô hình Conveyor thử nghiệm cũng chuyển động vòng qua hai đầu theo tốc độ và chiều đã chọn, dừng khi nhả JOG hoặc nhấn Dừng.",
-                  "`[Thêm]` Tạo cảnh thử nghiệm tracking đã cấu hình gồm băng tải, phôi, cảm biến laser và camera nhìn xuống. Trước khi kết nối bộ điều khiển, có thể kiểm tra vị trí và màu phát hiện của laser, đồng thời lưu hoặc khôi phục cài đặt cảm biến. Thị giác băng tải chụp theo yêu cầu CnvTrigVis của chương trình robot hoặc khi nhấn nút chụp trên web. Mô-đun băng tải có các nhóm con Băng tải, Camera và Cảm biến để chọn và di chuyển chung hoặc riêng. Băng tải dài gấp 2,5 lần và rộng gấp 1,5 lần, với cảm biến và camera gần đầu cấp liệu.",
+                  "`[Thêm]` Tạo cảnh thử nghiệm tracking đã cấu hình gồm băng tải, phôi, cảm biến laser và camera nhìn xuống. Trước khi kết nối bộ điều khiển, có thể kiểm tra vị trí và màu phát hiện của laser, đồng thời lưu hoặc khôi phục cài đặt cảm biến. Thị giác băng tải hỗ trợ chụp tự động tùy chọn theo cảm biến và quãng đường di chuyển, cũng như yêu cầu CnvTrigVis và chụp thủ công. Mô-đun băng tải có các nhóm con Băng tải, Camera và Cảm biến để chọn và di chuyển chung hoặc riêng. Băng tải dài gấp 2,5 lần và rộng gấp 1,5 lần, với cảm biến và camera gần đầu cấp liệu.",
                   "`[Thêm]` In[0]–In[64] trong IO Test bật/tắt DI0–DI64 của bộ điều khiển ảo K14 đã chọn và hiển thị trạng thái thực tế. Mất kết nối hoặc lỗi đọc được hiển thị là không xác định.",
                   "`[Thêm]` Đã thêm Thị giác ảo với hướng chụp lên/xuống và ảnh màu trực tiếp. Bộ phận Camera của mô-đun thị giác thử nghiệm tự động dùng hướng chụp lên. Sau hiệu chuẩn 9 điểm và tâm xoay, nút Chụp ảnh đo một lần giá trị bù X, Y và góc so với vị trí chuẩn. Hỗ trợ xuất hiệu chuẩn cho bộ điều khiển ảo K12, lệnh TCP tọa độ điểm ảnh CALRAW/PIXEL và ví dụ chuyển đổi tọa độ BASE của robot. Ảnh thị giác không hiển thị trục tọa độ robot và tay nắm thao tác 3D. Hỗ trợ giao tiếp TCP với hiệu chuẩn RobotLab dùng ký tự kết thúc V mặc định.",
                   "`[Thêm]` Chọn đối tượng phôi để di chuyển và xoay ngẫu nhiên mô hình có sẵn quanh vị trí chuẩn. Độ lệch mặc định là ±50 mm cho X/Y và ±180° cho góc; vẫn hỗ trợ tạo phôi hình cơ bản.",
@@ -5356,6 +5886,23 @@
                   "`[Cải thiện]` Đệm hút chân không có thể hút vật thể khi khoảng cách giữa các bề mặt không quá 0,1 mm.",
                   "`[Sửa lỗi]` Đã sửa sai lệch điểm cuối bằng vị trí và góc quay nhận được có TCP và Wobj, đồng thời cải thiện cập nhật màn hình khi đồng bộ vị trí bộ điều khiển thực.",
                   "`[Thêm]` Chức năng đưa tất cả về vị trí ban đầu khôi phục vị trí và góc quay ban đầu của các đối tượng đã đăng ký."
+                ]
+              },
+              {
+                "title": "Ver 26.10.05",
+                "items": [
+                  "`[Thêm]` Cây mô hình có thêm thư mục nhóm chi tiết và mô hình, chọn nhiều bằng Shift, kéo để sắp xếp và đổi tên. Chọn một nhóm để di chuyển hoặc xoay toàn bộ cùng lúc.",
+                  "`[Thêm]` Thêm thiết lập chuyển động cho xi lanh, trục ngoài tịnh tiến và quay, gripper, chân không và băng tải. Có thể liên kết nhiều chi tiết với IO và cảm biến hoàn thành; thiết bị chuyển động theo Tool của robot hoặc thiết bị cấp trên.",
+                  "`[Thêm]` Thêm đăng ký đối tượng và chức năng hút/nhả chân không. Gripper, chân không và băng tải chỉ tác động lên đối tượng đã đăng ký; thao tác gắp/thả cũ được thay bằng thiết lập chuyển động và điều khiển IO.",
+                  "`[Thêm]` Thêm thao tác bóc màng: gripper kẹp tay cầm và kéo để bóc một lớp màng. Sau khi bóc hết màng, có thể mở gripper để thả xuống.",
+                  "`[Thêm]` Thêm lệnh xuất IO và chờ đầu vào IO trong chương trình; có thể ánh xạ và điều khiển chuyển động thiết bị trong IO Test.",
+                  "`[Thêm]` Thêm xem trước mô hình và Tool thử nghiệm, tải theo số lượng và bố trí hàng loạt mô hình đào tạo. Các chi tiết đã tải hiển thị trong thư mục nhóm được sắp xếp sẵn.",
+                  "`[Cải tiến]` Tool thử nghiệm SCARA tự gắn bộ chuyển đổi và cấu hình đào tạo có thêm đế nâng. Robot tầm với ngắn được bố trí để chạm tới vị trí làm việc mà vẫn giữ khoảng cách giữa các mô-đun.",
+                  "`[Thêm]` Bảng Chương trình có điều chỉnh tốc độ tổng, áp dụng tỷ lệ 1~100% cho tốc độ của mọi lệnh di chuyển.",
+                  "`[Thêm]` Thêm chức năng lấy tâm theo lựa chọn để di chuyển và xoay khung nhìn quanh mô hình đã chọn.",
+                  "`[Cải tiến]` Phát hiện va chạm tập trung vào tiếp xúc giữa Tool/đối tượng của robot và các mô hình xung quanh, nên tiếp xúc giữa các thiết bị cố định không còn làm dừng mô phỏng.",
+                  "`[Cải tiến]` Tải mô hình STEP nhanh hơn và hiển thị đường viền trên bề mặt cong của robot tốt hơn.",
+                  "`[Sửa lỗi]` Wobj không còn bị vô hiệu hóa sau khi tải dự án."
                 ]
               },
               {
@@ -5586,9 +6133,16 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu."
+                  "`[Cải tiến]` Khi tải mô hình STEP lớn, các điểm bắt dính như đỉnh, tâm đường tròn và tâm mặt được tính nhanh hơn.",
+                  "`[Sửa lỗi]` Trên màn hình nhỏ, bảng kết quả đánh giá không còn tràn ra ngoài trang; có thể cuộn ngang để xem mọi cột."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Cải thiện]` Các nút và mục đang chọn được tô xanh dương trên nền sáng."
                 ]
               },
               {
@@ -5661,9 +6215,16 @@
             "title": "Project Generator",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu. Bản xem trước mã nguồn trực tiếp hiển thị chú thích bằng màu xanh lá và dùng các màu khác nhau cho lệnh, chuỗi, số và hàm.",
+                  "`[Cải tiến]` Kiểu hiển thị và biểu tượng nay có sẵn trong trang, hình ảnh hướng dẫn chỉ tải khi mở hướng dẫn, nên trình tạo mở nhanh hơn mà không cần script bên ngoài. Vùng mô tả của cửa sổ Tùy chọn dự án và nền cửa sổ hướng dẫn đồng bộ với các hộp thoại sáng khác.",
+                  "`[Sửa lỗi]` Cột số thứ tự của danh sách quy trình không còn hiển thị từ mang nghĩa “không” trong tiếng Trung, tiếng Việt, tiếng Thổ Nhĩ Kỳ và tiếng Nga."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Cải thiện]` Các nút và mục đang chọn được tô xanh dương trên nền sáng. Bản xem trước mã nguồn trực tiếp hiển thị chú thích bằng màu xanh lá và dùng các màu khác nhau cho lệnh, chuỗi, số và hàm.",
                   "`[Thêm]` Nhập ZIP hoặc thư mục dự án hiện có để sửa quy trình và tùy chọn, giữ mã tùy chỉnh và điểm đã dạy, kiểm tra xung đột rồi xuất toàn bộ dự án đã sửa thành ZIP.",
                   "`[Thêm]` Có thể tải riêng dự án dùng cho mô phỏng 3D. Dự án bỏ tín hiệu PLC, chờ IO, dạy điểm, công thức và tác vụ giám sát, thay phản hồi dụng cụ và thị giác bằng thời gian đặt sẵn, và chạy theo thứ tự công đoạn với số chu kỳ đã chọn.",
                   "`[Sửa lỗi]` Tray Get và các công đoạn dùng Socket, bao gồm Vision Calibration, cộng dữ liệu nhận từ Socket vào bù cơ bản của công đoạn thay cho bù thị giác IO. Chương trình hiệu chuẩn nhận dữ liệu Shot trước khi áp dụng bù.",
@@ -5902,6 +6463,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Sửa lỗi]` Một số tiêu đề tài liệu và nút tải CAD 2D/3D hiển thị theo ngôn ngữ đã chọn thay vì tiếng Hàn."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Cải thiện]` Tìm tài liệu trong giao diện sáng và xem số lượng theo bộ lọc và kết quả tìm kiếm.",
@@ -6063,9 +6630,17 @@
             "title": "Debugging Tool",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cải thiện]` Vùng làm việc có đầu trang màu ngà, bảng sáng và chữ đậm màu."
+                  "`[Cập nhật]` Đã cập nhật sáu công cụ gỡ lỗi. Mỗi tệp ZIP chứa một tệp thực thi Windows. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Cải tiến]` Trang Công cụ gỡ lỗi và Hiệu chỉnh điểm 0 đã có sẵn kiểu hiển thị và biểu tượng nên mở nhanh hơn mà không cần script bên ngoài. Các ô nhập hiệu chỉnh điểm 0 được đọc kèm tên trục và tên cột."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Cải thiện]` Các nút và mục đang chọn được tô xanh dương trên nền sáng.",
+                  "`[Sửa lỗi]` Trong công cụ hiệu chỉnh điểm không, số 0 gợi ý biến mất khi chọn ô trống. Nếu ô đã chứa số 0, số đó được chọn để nhập giá trị mới."
                 ]
               },
               {
@@ -6086,6 +6661,12 @@
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Thay đổi]` Đã cập nhật CAD Lightweight từ `V1.1` lên `V1.2`."
+                ]
+              },
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "`[Thay đổi]` Đã cập nhật CAD Lightweight: `V1.0 → V1.1`."
                 ]
               },
               {
@@ -6221,6 +6802,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 5.0 (2026.11.21)",
+                "items": [
+                  "`[Cải tiến]` Chuyển sang phiên bản Rust cho Windows và áp dụng giao diện xanh dương cho các màn hình truyền thông robot, HMI và giám sát khung dữ liệu."
+                ]
+              },
+              {
                 "title": "Ver 4.0 (2026.11.04)",
                 "items": [
                   "`[Cải tiến]` Hợp nhất kết nối ảo và kết nối thực trong một chương trình, cho phép chọn chế độ riêng cho từng bộ điều khiển và sử dụng kết hợp.",
@@ -6243,6 +6830,12 @@
                   "`[Sửa lỗi]` Sửa xung đột cổng UDP làm gián đoạn IO khi kết nối nhiều đối tượng EIP ảo.",
                   "`[Sửa lỗi]` Sửa độ trễ cập nhật IO trong HMI và khối chức năng, cùng tình trạng thao tác màn hình chậm.",
                   "`[Sửa lỗi]` Sửa lỗi bố cục HMI trống đã lưu làm ẩn màn hình mặc định."
+                ]
+              },
+              {
+                "title": "Ver 3.2 (2026.10.07)",
+                "items": [
+                  "`[Sửa lỗi]` Khi kết nối qua Virtual Bus, thay đổi giá trị từ ô nhập word và nút word mới thêm hoặc thiết lập trong HMI nay được áp dụng cho robot."
                 ]
               },
               {
@@ -6341,6 +6934,12 @@
             "title": "labelGenerator",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Cải tiến]` Chuyển sang phiên bản Rust cho Windows. Có thể chuyển đổi giữa Excel và JSN, đồng thời xem và sửa nhãn trước khi lưu theo một trong bốn mẫu."
+                ]
+              },
+              {
                 "title": "Ver 2.2.0",
                 "items": [
                   "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
@@ -6389,6 +6988,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Cải tiến]` Bổ sung giao diện dạng sóng nền sáng. Hai con trỏ A/B dùng nét liền và nét đứt. Khoảng được chọn hiển thị giá trị nhỏ nhất và lớn nhất của từng kênh."
+                ]
+              },
               {
                 "title": "Ver 1.5 (2026.07.25)",
                 "items": [
@@ -6449,6 +7054,12 @@
             "title": "projectCompare",
             "versions": [
               {
+                "title": "Ver 3.0 (2026.11.21)",
+                "items": [
+                  "`[Cải tiến]` Chuyển sang phiên bản Rust cho Windows. Giữ Ctrl và cuộn chuột trong màn hình so sánh để đổi cỡ chữ mã và số dòng ở cả hai khung."
+                ]
+              },
+              {
                 "title": "Ver 2.2",
                 "items": [
                   "**[Mới]** Thêm chức năng bật/tắt cuộn đồng bộ và căn chỉnh cuộn theo vị trí hiện tại của hai bên.",
@@ -6486,9 +7097,63 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Cải tiến]` Xem chế độ robot, trạng thái trục và nhật ký liên quan của từng cảnh báo tại cùng một nơi. Tab Chương trình có thêm trạng thái tác vụ và bảng dữ liệu nhãn, vị trí."
+                ]
+              },
+              {
                 "title": "Ver 1.1 (2026.11.04)",
                 "items": [
                   "`[Thêm]` Phân tích ZIP/thư mục chẩn đoán, tra cứu lỗi và cảnh báo servo, đồ thị trace, đo A/B và xuất báo cáo/CSV."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "cadLightweight",
+            "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Cải tiến]` Mở trực tiếp SLDPRT và SLDASM mà không cần cài SolidWorks. Khi xuất STEP, vị trí và màu của chi tiết và các mặt được giữ lại. Khi xuất GLB, màu hiển thị được giữ lại."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.11.03)",
+                "items": [
+                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
+                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
+                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.10.30)",
+                "items": [
+                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
+                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
+                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
+                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
+                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
+                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
+                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
+                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
+                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.10.23)",
+                "items": [
+                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
+                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.07.25)",
+                "items": [
+                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
+                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
+                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
                 ]
               }
             ]
@@ -6505,11 +7170,20 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[İyileştirildi]` Ana sayfadaki araç kitaplığından sekiz araca erişebilir, araçları tasarım ve geliştirme ya da kaynaklar ve destek kategorisine göre filtreleyebilirsiniz.",
+                  "`[İyileştirildi]` Her sayfa ilk açılışta yaklaşık yarı yarıya daha az çeviri verisi indirir; sayfalar daha hızlı görüntülenir.",
+                  "`[Düzeltildi]` Servo Sistem Çözümü sayfası artık Çince, Türkçe ve Rusçada Korece yerine seçilen dilde görüntülenir."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[İyileştirildi]` Ana sayfadaki ve araç sayfalarındaki düğmeler, simgeler ve seçili öğeler artık INOVANCE logosunun mavi tonlarını kullanıyor. Logonun yanındaki sayfa başlıkları seçilen dilde gösterilir ve tüm sayfalarda aynı yazı tipini ve boyutunu kullanır.",
+                  "`[İyileştirildi]` Ana sayfada sekiz aracın tümünü görebilir veya Seçim, Tasarım, Kontrol ve Kaynaklar kategorilerine göre filtreleyebilirsiniz.",
                   "`[İyileştirildi]` Ana sayfadaki beş kullanım kılavuzu açık renkli bir oynatıcıda sunuluyor. Her adımda ilgili kontrol vurgulanıyor ve altyazılar ne yapılacağını ve nedenini açıklıyor. Adımlar arasında ileri geri geçebilirsiniz.",
-                  "`[İyileştirildi]` Araç sayfaları ana sayfadaki fildişi üst çubuğu ve açık çalışma alanını kullanıyor."
+                  "`[İyileştirme]` Model filtreleri ve belge araması daha hızlı yanıt veriyor. Büyük STEP modellerinin kütle özelliklerini hesaplamak ve proje dosyalarını karşılaştırmak da daha az zaman alıyor.",
+                  "`[İyileştirildi]` Ana sayfa ve hata ayıklama araçlarındaki sürüm notları ortak bir açık renkli düzene geçirildi. Küçük ekranlarda da her sürümün değişiklikleri kolayca okunabiliyor."
                 ]
               },
               {
@@ -6535,6 +7209,12 @@
                 "title": "Ver 26.10.14",
                 "items": [
                   "`[Eklendi]` Ana sayfaya Servo Sistem Çözümü kartı eklendi ve servo hareket kontrolü kılavuzu İngilizce ve Vietnamca olarak sunuldu."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Düzeltildi]` Communication Tester artık ZIP dosyası olarak indirilir; yürütülebilir dosyanın indirilememesi sorunu giderildi."
                 ]
               },
               {
@@ -6575,10 +7255,15 @@
             "title": "Robot Model Select",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi.",
-                  "`[Eklendi]` Her robot modeli için aranabilir ayrıntı sayfası ve paylaşma, yenileme ve tarayıcı geçmişini destekleyen benzersiz adres eklendi; mevcut yapılandırma akışı korundu."
+                  "`[İyileştirildi]` SCARA kartlarında standart ve temiz oda tiplerinin Z ekseni strokları ve standart çevrim süreleri yan yana gösterilir. Seçilen tipin model numarası ve teknik özellikleri açılır. Temiz oda modelleri ISO Class 4 olarak belirtilir. Mafsallı robot kartlarına tekrarlanabilirlik, ayrıntılara ise bilek eksenlerinin izin verilen torkları eklendi.",
+                  "`[İyileştirildi]` Robot gövdesi ve standart kablo için robot adedi kullanılır. İsteğe bağlı bileşenlerin adetleri ayrı girilir. Mafsallı robotların G/Ç kabloları yalnızca seçildiğinde eklenir. PROFINET veya CC-Link seçildiğinde ilgili genişletme kartı da seçilir ve iki bölümdeki adet birlikte güncellenir.",
+                  "`[İyileştirildi]` Tür seçilmediğinde ücretli donanım seçenekleri robot modellerinin altında görünür. Bu seçenekler robot seçmeden yapılandırma listesine eklenebilir ve miktarları değiştirilebilir. Her karttaki ürünler işlevlerine göre gruplandı. Genişletme kartları iletişim, giriş/çıkış ve güvenlik olarak ayrıldı. R7H sıfır noktası kalibrasyon aparatı için sipariş kodu güncellendi. Programlama kumandası uzatma kabloları hem Programlama kumandası hem de Diğer Aksesuarlar kartından eklenebilir. Donanım satırına tıklayarak seçim yapabilirsiniz. SCARA J3 kapakları S4, S7 ve S10 modellerinin standart ve temiz oda sürümleri için sunulur.",
+                  "`[İyileştirildi]` Excel listesinde toplam yapılandırma ve robot sayısı gösterilir. Aynı sipariş koduna ait miktarlar tek satırda toplanır.",
+                  "`[İyileştirildi]` Açık renkli panellerde düğmeler ve seçili öğeler maviyle vurgulanıyor.",
+                  "`[Eklendi]` Her robot modeli için aranabilir ayrıntı sayfası ve paylaşma, yenileme ve tarayıcı geçmişini destekleyen benzersiz adres eklendi; mevcut yapılandırma akışı korundu.",
+                  "`[İyileştirildi]` Büyük model görselleri küçültüldü; model listesi ve ayrıntı penceresi daha hızlı açılır. Ayrıntı penceresindeki özellik satırları çizgilerle ayrılır ve eksen bazlı tekrarlanabilirlik seçilen dilde gösterilir."
                 ]
               },
               {
@@ -6765,6 +7450,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[İyileştirildi]` Modeli yakalama noktalarıyla taşırken ikinci nokta seçildiğinde yeni konum hemen uygulanır. Model yerleştirme panelinden Uygula, İptal ve Yeniden seç düğmeleri kaldırıldı.",
+                  "`[Eklendi]` Robot dışındaki bir model seçiliyken hareket tutamacını göstermek için Boşluk tuşunu basılı tutun.",
+                  "`[İyileştirildi]` Büyük STEP modellerinde yakalama noktaları ve eğri yol öğretiminde kullanılan model kenarları daha hızlı hesaplanır.",
+                  "`[İyileştirildi]` Otomatik kalite modu 20 MB ile 50 MB (hariç) arasındaki STEP dosyalarının ilk dönüşümünü hızlandırır. 50 MB ve üzerindeki dosyalarda dönüştürülen parçalar sırayla gösterilir. Test düğmesindeki STEP modelleri önceden dönüştürülmüş ağlarla daha hızlı yüklenir.",
+                  "`[Düzeltildi]` Taslak metin kutusu ve boş nokta listesi, dahili anahtar adı yerine açıklama metnini gösterir; konveyör düğmesi ve penceresindeki ipuçları, bazı durum çubuğu mesajları ve geri al düğmesi açıklamaları Korece yerine seçilen dilde görüntülenir.",
+                  "`[Düzeltildi]` Model ağacından bir parça grubunun hareketi yeniden açıldığında yeni ayarlar yerine mevcut hareket düzenlenir.",
+                  "`[Düzeltildi]` 3B modeller içeren bir sahneye robot eklendiğinde robotun varsayılan konumu artık Y ekseninde kaymıyor."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Eklendi]` Görünüm panelinden 3B sahneyi 16:9 biçiminde, 60 fps WebM videosu olarak kaydedebilirsiniz. Model ağacı ve yüzen paneller videoda görünmez. Daha geniş görüntülerde yükseklik korunur ve her iki kenar eşit ölçüde kırpılır.",
+                  "`[Eklendi]` Kaydı tek düğmeyle başlatabilir, duraklatabilir ve sürdürebilirsiniz. Bitirme ve kaydetme işlemleri ayrıdır. Geçerli veya son kaydın zaman çizelgesinde klipleri bölebilir veya silebilir, kenarlarını sürükleyerek kırpabilir ve kronometrenin başlangıç ve bitiş noktalarını ayarlayabilirsiniz.",
+                  "`[Düzeltildi]` Kartezyen JOG modunda hareket okunun veya dönüş halkasının yanındaki boş alana tıklandığında robotun yanlışlıkla sürüklenmesi düzeltildi. İmleç sürüklenebilir bir okun veya dönüş halkasının üzerine geldiğinde tutamaç turuncu renkle vurgulanır."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[İyileştirildi]` 3D çalışma alanı, model ağacı ve JOG paneli açık renklerle yenilendi. Küçük ekranlarda panelleri alt araç çubuğundan açabilirsiniz.",
@@ -6782,7 +7487,7 @@
                   "`[Eklendi]` Robot programlarında konveyör takibi için web konveyörünün enkoder, sensör ve görüntü algılama verilerini K14 sanal kontrolöre bağlayın.",
                   "`[İyileştirildi]` Çekim anındaki enkoder değeri görüntü işleme gecikmesini telafi eder; bağlantı ayarları çalışma alanıyla kaydedilir.",
                   "`[Eklendi]` Konveyör penceresine hız, ileri/geri yön, sürekli test, basılı tutarak JOG ve durdurma kontrolleri eklendi. Sahne testi köprü bağlantısı gerektirmez; takip bağlantısı açıkken aynı hareket enkoder girişine yansıtılır. Test Conveyor modelindeki bant işaretleri de seçilen hız ve yönde uçların etrafında dolaşır; JOG bırakıldığında veya Durdur düğmesine basıldığında durur.",
-                  "`[Eklendi]` Test penceresinde yapılandırılmış konveyör, iş parçaları, lazer sensörü ve aşağı bakan kamera birlikte oluşturulur. Denetleyiciyi bağlamadan önce lazerin konumu ve algılama renkleri kontrol edilebilir, sensör ayarları kaydedilip geri yüklenebilir. Konveyör görüntüsü robot programındaki CnvTrigVis isteği veya webdeki çekim düğmesiyle alınır. Konveyör modülündeki Konveyör, Kamera ve Sensör alt grupları birlikte veya ayrı seçilip taşınabilir. Bant uzunluğu 2,5 ve genişliği 1,5 katına çıkarıldı; sensör ve kamera giriş ucuna yerleştirildi.",
+                  "`[Eklendi]` Test penceresinde yapılandırılmış konveyör, iş parçaları, lazer sensörü ve aşağı bakan kamera birlikte oluşturulur. Denetleyiciyi bağlamadan önce lazerin konumu ve algılama renkleri kontrol edilebilir, sensör ayarları kaydedilip geri yüklenebilir. Konveyör görüntüsü sensör algılaması ve bant mesafesine bağlı isteğe bağlı otomatik çekim, CnvTrigVis isteği veya manuel çekimle alınabilir. Konveyör modülündeki Konveyör, Kamera ve Sensör alt grupları birlikte veya ayrı seçilip taşınabilir. Bant uzunluğu 2,5 ve genişliği 1,5 katına çıkarıldı; sensör ve kamera giriş ucuna yerleştirildi.",
                   "`[Eklendi]` IO Test In[0]–In[64], seçilen K14 sanal kontrolörün DI0–DI64 girişini açıp kapatır ve gerçek giriş durumunu gösterir. Bağlantı kopması veya okuma hatasında durum bilinmiyor olarak gösterilir.",
                   "`[Eklendi]` Yukarı/aşağı çekim ve renkli canlı görüntü sunan Sanal Görüntü eklendi. Test Vision modülünün Camera parçaları otomatik olarak yukarı çekime bağlanır. 9 nokta ve dönme merkezi kalibrasyonundan sonra Görüntü al düğmesi ana konuma göre X, Y ve açı ofsetlerini bir kez ölçer. K12 sanal kontrolörü için kalibrasyon dışa aktarımı, CALRAW/PIXEL piksel koordinatı TCP komutları ve robot BASE koordinat dönüşümü örneği desteklenir. Görüntüde robot koordinat eksenleri ve 3B düzenleme tutamaçları gösterilmez. RobotLab kalibrasyonunun varsayılan V sonlandırıcısıyla TCP iletişimi desteklenir.",
                   "`[Eklendi]` Bir iş parçası nesnesi seçilerek mevcut model referans konum çevresinde rastgele taşınabilir ve döndürülebilir. Varsayılan sapmalar X/Y için ±50 mm ve açı için ±180° olur; temel şekilli iş parçası oluşturma da desteklenir.",
@@ -6965,6 +7670,23 @@
                   "`[İyileştirildi]` Vakum pedleri, yüzeyler arasındaki boşluk 0,1 mm veya daha az olduğunda nesneleri tutabilir.",
                   "`[Düzeltildi]` Gerçek kontrolör bağlantısında TCP ve Wobj içeren alınan konum ve dönüş değerleriyle uç nokta farkı giderildi ve konum eşitlemesi sırasında ekran güncellemeleri iyileştirildi.",
                   "`[Eklendi]` Tümünü sıfırla işlevi, kayıtlı nesneleri başlangıç konumlarına ve dönüşlerine geri getirir."
+                ]
+              },
+              {
+                "title": "Ver 26.10.05",
+                "items": [
+                  "`[Eklendi]` Model ağacına parça ve model grup klasörleri, Shift ile çoklu seçim, sürükleyerek sıralama ve yeniden adlandırma eklendi. Bir grubu seçerek tümünü birlikte taşıyabilir veya döndürebilirsiniz.",
+                  "`[Eklendi]` Silindir, doğrusal ve döner harici eksen, tutucu, vakum ve konveyör için hareket ayarları eklendi. Birden fazla parça ile IO ve tamamlanma sensörleri bağlanabilir; ekipman robot Tool'unu veya üst ekipmanı takip eder.",
+                  "`[Eklendi]` Nesne kaydı ile vakumla tutma ve bırakma eklendi. Tutucu, vakum ve konveyör yalnızca kayıtlı nesnelere etki eder; önceki tutma/bırakma işlemlerinin yerini hareket ayarları ve IO kontrolü aldı.",
+                  "`[Eklendi]` Soyma hareketi eklendi: tutucu tutamağı kavrayıp tek bir filmi çekerek soyar. Film tamamen soyulduktan sonra tutucu açılarak bırakılabilir.",
+                  "`[Eklendi]` Programlara IO çıkışı ve giriş bekleme komutları eklendi; IO Testi'nde ekipman hareketleri sinyallere eşlenip kontrol edilebilir.",
+                  "`[Eklendi]` Test modelleri ve araçları için önizleme, adede göre yükleme ve eğitim düzeninin toplu yerleşimi eklendi. Yüklenen parçalar hazır grup klasörlerinde gösterilir.",
+                  "`[İyileştirildi]` SCARA test araçlarına adaptör otomatik takılır ve eğitim düzenine yükseltme tabanı eklendi. Kısa erişimli robotlar, modül aralığı korunarak çalışma konumlarına ulaşacak şekilde yerleştirilir.",
+                  "`[Eklendi]` Program paneline, her hareket komutunun hızına %1~100 oran uygulayan genel hız ayarı eklendi.",
+                  "`[Eklendi]` Görünümü seçili modelin etrafında kaydıran ve döndüren seçim merkezi özelliği eklendi.",
+                  "`[İyileştirildi]` Çarpışma algılama artık robotun Tool/nesneleri ile çevredeki modeller arasındaki temasa odaklanır; sabit ekipmanlar arasındaki temas simülasyonu durdurmaz.",
+                  "`[İyileştirildi]` STEP modeli içe aktarma hızı ve robotun eğri yüzeylerindeki dış hat gösterimi iyileştirildi.",
+                  "`[Düzeltildi]` Proje yüklendikten sonra Wobj'nin devre dışı kalması sorunu giderildi."
                 ]
               },
               {
@@ -7195,9 +7917,16 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi."
+                  "`[İyileştirildi]` Büyük bir STEP modeli yüklendiğinde köşe, daire merkezi ve yüz merkezi gibi yakalama noktaları daha hızlı hesaplanır.",
+                  "`[Düzeltildi]` Küçük ekranlarda değerlendirme tablosu artık sayfanın dışına taşmaz; tüm sütunları görmek için yatay kaydırın."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[İyileştirildi]` Açık renkli panellerde düğmeler ve seçili öğeler maviyle vurgulanıyor."
                 ]
               },
               {
@@ -7270,9 +7999,16 @@
             "title": "Project Generator",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi. Canlı kaynak önizlemesinde yorumlar yeşil görünür. Komutlar, dizeler, sayılar ve işlevler renkle ayırt edilir.",
+                  "`[İyileştirildi]` Stiller ve simgeler artık sitenin parçası, kılavuz görselleri yalnızca kılavuz açıldığında yüklenir; oluşturucu harici betik olmadan daha hızlı açılır. Proje Seçenekleri açıklama alanı ve kılavuz arka planı diğer açık renkli pencerelerle aynıdır.",
+                  "`[Düzeltildi]` Süreç listesindeki numara sütunu Çince, Vietnamca, Türkçe ve Rusçada artık \"yok\" anlamına gelen bir kelime göstermiyor."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[İyileştirildi]` Açık renkli panellerde düğmeler ve seçili öğeler maviyle vurgulanıyor. Canlı kaynak önizlemesinde yorumlar yeşil görünür. Komutlar, dizeler, sayılar ve işlevler renkle ayırt edilir.",
                   "`[Eklendi]` Mevcut proje ZIP’i veya klasöründen proses ve seçenekleri düzenleyebilir, özel kodu ve öğretilen noktaları koruyabilir, çakışmaları inceleyerek düzenlenen projenin tamamını ZIP olarak dışa aktarabilirsiniz.",
                   "`[Eklendi]` 3D simülasyon için ayrı bir proje indirilebilir. PLC sinyallerini, IO beklemelerini, öğretme, reçete ve izleme görevlerini kaldırır; takım ve görüntü yanıtlarını belirlenen sürelerle değiştirir ve seçilen işlem sırasını belirlenen döngü sayısı kadar çalıştırır.",
                   "`[Düzeltildi]` Socket kullanan Tray Get ve Vision Calibration dahil diğer işlemler artık görüntü IO ofsetleri yerine Socket verilerini işlem temel ofsetine ekler. Kalibrasyon işlem programları ofseti uygulamadan önce Shot verilerini alır.",
@@ -7511,6 +8247,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Düzeltildi]` Bazı belge başlıkları ve CAD 2D/3D indirme düğmeleri Korece yerine seçilen dilde görüntülenir."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[İyileştirildi]` Açık renkli belge kataloğunda arama yapabilir, filtre ve sonuç sayılarını görebilirsiniz.",
@@ -7672,9 +8414,17 @@
             "title": "Debugging Tool",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[İyileştirildi]` Çalışma alanı fildişi üst çubuk, açık paneller ve koyu metinle yenilendi."
+                  "`[Güncellendi]` Altı hata ayıklama aracı güncellendi. Her ZIP bir Windows yürütülebilir dosyası içeriyor. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[İyileştirildi]` Hata Ayıklama Aracı ve Sıfır Kalibrasyonu sayfaları stillerini ve simgelerini içerir; harici betik olmadan daha hızlı açılır. Sıfır kalibrasyonu giriş alanları eksen ve sütun adlarıyla okunur."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[İyileştirildi]` Açık renkli panellerde düğmeler ve seçili öğeler maviyle vurgulanıyor.",
+                  "`[Düzeltildi]` Sıfır kalibrasyonunda boş bir alana geçildiğinde 0 ipucu gizlenir. Daha önce girilen sıfır, üzerine yeni bir değer yazılabilmesi için seçilir."
                 ]
               },
               {
@@ -7695,6 +8445,12 @@
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Değiştirildi]` CAD Lightweight, `V1.1` sürümünden `V1.2` sürümüne güncellendi."
+                ]
+              },
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "`[Değiştirildi]` CAD Lightweight güncellendi: `V1.0 → V1.1`."
                 ]
               },
               {
@@ -7830,6 +8586,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 5.0 (2026.11.21)",
+                "items": [
+                  "`[İyileştirildi]` Windows için Rust sürümüne geçildi. Robot iletişimi, HMI ve çerçeve izleme ekranlarına mavi tema uygulandı."
+                ]
+              },
+              {
                 "title": "Ver 4.0 (2026.11.04)",
                 "items": [
                   "`[İyileştirme]` Sanal ve fiziksel bağlantılar tek programda birleştirildi; her denetleyici için ayrı bağlantı modu seçilip birlikte kullanılabilir.",
@@ -7852,6 +8614,12 @@
                   "`[Düzeltildi]` Birden fazla sanal EIP hedefine bağlanırken IO aktarımını engelleyen UDP port çakışmaları düzeltildi.",
                   "`[Düzeltildi]` HMI ve işlev bloklarında IO güncelleme gecikmesi ve yavaş ekran etkileşimi düzeltildi.",
                   "`[Düzeltildi]` Kaydedilmiş boş HMI düzenlerinin varsayılan ekranları gizlemesi düzeltildi."
+                ]
+              },
+              {
+                "title": "Ver 3.2 (2026.10.07)",
+                "items": [
+                  "`[Düzeltildi]` Virtual Bus bağlantısı sırasında HMI'da yeni eklenen veya ayarlanan word girişleri ve word düğmelerindeki değer değişiklikleri artık robota uygulanır."
                 ]
               },
               {
@@ -7950,6 +8718,12 @@
             "title": "labelGenerator",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[İyileştirildi]` Windows için Rust sürümüne geçildi. Excel ile JSN arasında dönüştürme yapılabilir ve dört şablondaki etiketler kaydetmeden önce incelenip düzenlenebilir."
+                ]
+              },
+              {
                 "title": "Ver 2.2.0",
                 "items": [
                   "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
@@ -7998,6 +8772,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[İyileştirildi]` Açık renkli dalga biçimi görünümü eklendi. A/B imleçleri düz ve kesikli çizgilerle ayrılıyor ve seçilen aralıkta her kanalın en düşük ve en yüksek değerleri gösteriliyor."
+                ]
+              },
               {
                 "title": "Ver 1.5 (2026.07.25)",
                 "items": [
@@ -8058,6 +8838,12 @@
             "title": "projectCompare",
             "versions": [
               {
+                "title": "Ver 3.0 (2026.11.21)",
+                "items": [
+                  "`[İyileştirildi]` Windows için Rust sürümüne geçildi. Karşılaştırma görünümünde Ctrl tuşunu basılı tutup fare tekerleğini çevirerek her iki bölmedeki kodun ve satır numaralarının boyutu değiştirilebilir."
+                ]
+              },
+              {
                 "title": "Ver 2.2",
                 "items": [
                   "**[Yeni]** Senkronize kaydırmayı etkinleştirme veya devre dışı bırakma ve kaydırmayı her iki tarafın mevcut konumlarına göre hizalama seçeneği eklendi.",
@@ -8095,9 +8881,63 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[İyileştirildi]` Her alarm için robot modu, eksen durumu ve ilgili günlükler tek yerden görüntülenebilir. Program sekmesine görev durumu ve etiket ve konum verisi tabloları eklendi."
+                ]
+              },
+              {
                 "title": "Ver 1.1 (2026.11.04)",
                 "items": [
                   "`[Eklendi]` Tanılama ZIP/klasör analizi, hata ve servo alarmı arama, iz grafikleri, A/B ölçümü ve rapor/CSV aktarımı."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "cadLightweight",
+            "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[İyileştirildi]` SLDPRT ve SLDASM dosyaları SolidWorks kurulmadan doğrudan açılabilir. STEP dışa aktarımında bileşen konumları ile bileşen ve yüzey renkleri, GLB dışa aktarımında ise görüntülenen renkler korunur."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.11.03)",
+                "items": [
+                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
+                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
+                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.10.30)",
+                "items": [
+                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
+                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
+                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
+                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
+                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
+                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
+                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
+                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
+                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.10.23)",
+                "items": [
+                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
+                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.07.25)",
+                "items": [
+                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
+                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
+                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
                 ]
               }
             ]
@@ -8114,11 +8954,20 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Улучшено]` В библиотеке на главной странице можно открыть любой из восьми инструментов или отобрать их по категориям «Проектирование» и «Ресурсы и поддержка».",
+                  "`[Улучшено]` При первом открытии каждая страница загружает почти вдвое меньше данных перевода и отображается быстрее.",
+                  "`[Исправлено]` Страница «Решение для сервосистем» теперь отображается на китайском, турецком и русском языках, а не на корейском."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Улучшено]` Кнопки, значки и выбранные элементы на главной странице и в инструментах теперь оформлены в синих тонах логотипа INOVANCE. Заголовки рядом с логотипом отображаются на выбранном языке и имеют одинаковый шрифт и размер на всех страницах.",
+                  "`[Улучшено]` На главной странице можно посмотреть все восемь инструментов или выбрать категорию «Подбор», «Проектирование», «Управление» или «Материалы».",
                   "`[Улучшено]` Все пять руководств на главной странице получили светлое оформление. На каждом шаге подсвечивается нужный элемент, а субтитры объясняют, что делать и зачем. Можно перейти к любому шагу.",
-                  "`[Улучшено]` Страницы инструментов получили светлую рабочую область и шапку цвета слоновой кости, как на главной."
+                  "`[Улучшено]` Фильтрация моделей и поиск документов работают быстрее. Расчёт массовых характеристик крупных моделей STEP и сравнение файлов проектов также занимают меньше времени.",
+                  "`[Улучшено]` История версий на главной странице и в инструментах отладки получила единое светлое оформление. Изменения по версиям удобно читать и на небольших экранах."
                 ]
               },
               {
@@ -8144,6 +8993,12 @@
                 "title": "Ver 26.10.14",
                 "items": [
                   "`[Добавлено]` На главной странице добавлена карточка «Решение для сервосистем» и руководство по управлению сервоприводами на английском и вьетнамском языках."
+                ]
+              },
+              {
+                "title": "Ver 26.09.30",
+                "items": [
+                  "`[Исправлено]` Communication Tester теперь скачивается в виде ZIP-архива — проблема с загрузкой исполняемого файла устранена."
                 ]
               },
               {
@@ -8184,10 +9039,15 @@
             "title": "Robot Model Select",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости.",
-                  "`[Добавлено]` Для каждой модели добавлены отдельный адрес и доступная для поиска страница характеристик с поддержкой ссылок, перезагрузки и истории браузера при сохранении настройки."
+                  "`[Улучшено]` Карточки SCARA позволяют сравнить ход оси Z и стандартное время цикла обычного исполнения и исполнения для чистых помещений. При выборе исполнения открываются его номер модели и характеристики. Для моделей для чистых помещений указан класс ISO 4. В карточках шарнирных роботов указана повторяемость, а в характеристиках — допустимый крутящий момент по осям запястья.",
+                  "`[Улучшено]` Количество роботов применяется к корпусу и штатному кабелю. Количество дополнительных компонентов задаётся отдельно. Кабели ввода-вывода для шарнирных роботов добавляются только при выборе. При выборе PROFINET или CC-Link соответствующая плата расширения отмечается автоматически. Количество синхронизируется в обоих разделах.",
+                  "`[Улучшено]` Если тип не выбран, платные аппаратные опции отображаются под моделями роботов. Их можно добавлять в список отдельно от робота и изменять количество. В каждой карточке позиции сгруппированы по назначению. Для плат расширения выделены группы связи, ввода-вывода и безопасности. Уточнён код заказа приспособления для калибровки нуля R7H. Удлинительные кабели пульта обучения можно добавить из карточек «Пульт обучения» и «Другие аксессуары». Нажмите на строку, чтобы выбрать позицию. Кожухи SCARA J3 доступны для стандартных исполнений S4, S7 и S10 и версий для чистых помещений.",
+                  "`[Улучшено]` В Excel указано общее число конфигураций и роботов. Количества позиций с одинаковым кодом заказа суммируются в одной строке.",
+                  "`[Улучшено]` На светлых панелях кнопки и выбранные элементы выделены синим цветом.",
+                  "`[Добавлено]` Для каждой модели добавлены отдельный адрес и доступная для поиска страница характеристик с поддержкой ссылок, перезагрузки и истории браузера при сохранении настройки.",
+                  "`[Улучшено]` Крупные изображения моделей уменьшены, поэтому список моделей и окно сведений открываются быстрее. Строки характеристик в окне сведений разделены линиями, а повторяемость по осям отображается на выбранном языке."
                 ]
               },
               {
@@ -8374,6 +9234,26 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Улучшено]` При перемещении модели с привязкой новое положение сразу применяется после выбора второй точки. Кнопки «Применить», «Отмена» и «Выбрать снова» убраны из панели размещения модели.",
+                  "`[Добавлено]` Удерживайте пробел, чтобы показать рукоятку перемещения выбранной модели, если это не робот.",
+                  "`[Улучшено]` Точки привязки и кромки модели для обучения траекторий по кривым рассчитываются быстрее для крупных STEP-моделей.",
+                  "`[Улучшено]` Автоматическое качество ускоряет первое преобразование STEP-файлов от 20 МБ до 50 МБ (не включая 50 МБ). Для файлов от 50 МБ детали отображаются по мере преобразования. STEP-модели в меню «Тест» загружаются быстрее благодаря готовым сеткам.",
+                  "`[Исправлено]` В поле текста эскиза и в пустом списке точек вместо внутреннего имени ключа отображается подсказка, а всплывающие подсказки кнопки и окна конвейера, некоторые сообщения строки состояния и описания кнопки отмены показываются на выбранном языке, а не на корейском.",
+                  "`[Исправлено]` При повторном открытии движения группы деталей из дерева моделей теперь редактируется существующее движение, а не открываются новые настройки.",
+                  "`[Исправлено]` При добавлении робота в сцену с 3D-моделями его исходное положение больше не смещается вдоль оси Y."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Добавлено]` На панели видов можно записать 3D-сцену в формате WebM с соотношением сторон 16:9 и частотой 60 кадров/с. Дерево моделей и плавающие окна в запись не попадают. У более широкого изображения сохраняется полная высота, а края обрезаются поровну слева и справа.",
+                  "`[Добавлено]` Одна кнопка запускает, приостанавливает и возобновляет запись. Завершение и сохранение доступны отдельно. На шкале времени текущей или последней записи можно разделять и удалять фрагменты, перетаскивать их края для обрезки и задавать начало и конец отсчёта секундомера.",
+                  "`[Исправлено]` В декартовом режиме JOG щелчок по пустому месту рядом со стрелкой перемещения или кольцом поворота больше не начинает перетаскивание робота. Стрелка или кольцо поворота подсвечиваются оранжевым, когда курсор находится в области захвата."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Улучшено]` Рабочая область 3D, дерево моделей и панель JOG теперь оформлены в светлых тонах. На небольших экранах панели можно открыть с нижней панели инструментов.",
@@ -8391,7 +9271,7 @@
                   "`[Добавлено]` Подключение энкодера, датчиков и результатов машинного зрения веб-конвейера к виртуальному контроллеру K14 для слежения за конвейером в программе робота.",
                   "`[Улучшено]` Значение энкодера в момент съёмки компенсирует задержку обработки изображения; настройки подключения сохраняются с рабочей областью.",
                   "`[Добавлено]` В окне конвейера доступны скорость, прямое/обратное направление, непрерывный тестовый ход, JOG при удержании кнопки и остановка. Проверка сцены работает без моста; при включённом отслеживании это же движение передаётся на вход энкодера. Метки ленты тестовой модели Conveyor также движутся по замкнутому контуру вокруг её концов с выбранной скоростью и направлением, останавливаясь при отпускании JOG или нажатии остановки.",
-                  "`[Добавлено]` В окне тестовых моделей можно создать настроенную сцену с конвейером, деталями, лазерным датчиком и камерой, направленной вниз. До подключения контроллера можно проверить положение лазера и цвета обнаружения, а также сохранить или восстановить настройки датчика. Съёмка конвейера выполняется по запросу CnvTrigVis из программы робота или по кнопке съёмки на веб-странице. Модуль конвейера содержит подгруппы «Конвейер», «Камера» и «Датчик» для общего или отдельного выбора и перемещения. Лента удлинена в 2,5 раза и расширена в 1,5 раза; датчик и камера расположены у входа.",
+                  "`[Добавлено]` В окне тестовых моделей можно создать настроенную сцену с конвейером, деталями, лазерным датчиком и камерой, направленной вниз. До подключения контроллера можно проверить положение лазера и цвета обнаружения, а также сохранить или восстановить настройки датчика. Съёмку конвейера можно запускать автоматически по датчику и расстоянию хода ленты, по запросу CnvTrigVis или вручную. Модуль конвейера содержит подгруппы «Конвейер», «Камера» и «Датчик» для общего или отдельного выбора и перемещения. Лента удлинена в 2,5 раза и расширена в 1,5 раза; датчик и камера расположены у входа.",
                   "`[Добавлено]` In[0]–In[64] в тесте IO переключает DI0–DI64 выбранного виртуального контроллера K14 и показывает фактическое состояние входа. При разрыве связи или ошибке чтения состояние отмечается как недоступное.",
                   "`[Добавлено]` Добавлено виртуальное зрение с направлением съёмки вверх/вниз и цветным изображением в реальном времени. Части Camera тестового модуля автоматически подключаются для съёмки вверх. После 9-точечной калибровки и калибровки центра вращения кнопка снимка однократно измеряет коррекции X, Y и угла относительно эталона. Поддерживаются экспорт калибровки для виртуального контроллера K12, TCP-команды пиксельных координат CALRAW/PIXEL и пример преобразования в координаты BASE робота. На изображении камеры скрыты оси координат робота и 3D-манипуляторы. Поддерживается TCP-связь с калибровкой RobotLab со стандартным терминатором V.",
                   "`[Добавлено]` Можно выбрать объект детали и случайно перемещать и поворачивать существующую модель вокруг эталонного положения. Отклонения по умолчанию составляют ±50 мм по X/Y и ±180° по углу; создание простых форм деталей также поддерживается.",
@@ -8574,6 +9454,23 @@
                   "`[Улучшено]` Вакуумные присоски захватывают объекты при зазоре между поверхностями не более 0,1 мм.",
                   "`[Исправлено]` Устранено расхождение конечной точки с помощью полученных положения и ориентации с учётом TCP и Wobj; улучшено обновление экрана при синхронизации положения реального контроллера.",
                   "`[Добавлено]` Сброс всех объектов восстанавливает исходные положение и ориентацию зарегистрированных объектов."
+                ]
+              },
+              {
+                "title": "Ver 26.10.05",
+                "items": [
+                  "`[Добавлено]` В дерево моделей добавлены папки групп деталей и моделей, множественный выбор с Shift, изменение порядка перетаскиванием и переименование. Выбрав группу, можно перемещать и вращать всё её содержимое вместе.",
+                  "`[Добавлено]` Настройки движения для цилиндров, линейных и поворотных внешних осей, захватов, вакуума и конвейеров. Можно связать несколько деталей и датчики IO/завершения; оборудование следует за Tool робота или вышестоящим оборудованием.",
+                  "`[Добавлено]` Регистрация объектов и вакуумный захват/сброс. Захваты, вакуум и конвейеры работают только с зарегистрированными объектами, а прежние действия «взять/отпустить» заменены настройками движения и управлением IO.",
+                  "`[Добавлено]` Операция снятия плёнки: захват берёт язычок и стягивает одну плёнку. После полного снятия плёнки захват можно открыть, чтобы её отпустить.",
+                  "`[Добавлено]` В программы добавлены команды вывода IO и ожидания входа; в тесте IO движения оборудования можно сопоставить с сигналами и управлять ими.",
+                  "`[Добавлено]` Предпросмотр тестовых моделей и инструментов, загрузка по количеству и размещение учебной компоновки одним действием. Загруженные детали отображаются в подготовленных папках групп.",
+                  "`[Улучшено]` На тестовые инструменты SCARA автоматически устанавливается адаптер, а в учебную компоновку добавлено подъёмное основание. Роботы с малым вылетом размещаются так, чтобы доставать до рабочих позиций при сохранении шага модулей.",
+                  "`[Добавлено]` В панели программы появилась общая регулировка скорости: к скорости каждой команды перемещения применяется коэффициент 1~100 %.",
+                  "`[Добавлено]` Режим «центр выделения»: вид перемещается и вращается вокруг выбранной модели.",
+                  "`[Улучшено]` Обнаружение столкновений учитывает прежде всего контакт Tool/объектов робота с окружающими моделями, поэтому контакт неподвижного оборудования между собой больше не останавливает симуляцию.",
+                  "`[Улучшено]` Ускорен импорт моделей STEP и улучшено отображение контуров на криволинейных поверхностях робота.",
+                  "`[Исправлено]` Wobj больше не отключается после загрузки проекта."
                 ]
               },
               {
@@ -8804,9 +9701,16 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости."
+                  "`[Улучшено]` При загрузке крупной STEP-модели точки привязки (вершины, центры окружностей и граней) рассчитываются быстрее.",
+                  "`[Исправлено]` На небольших экранах таблица результатов больше не выходит за пределы страницы — её можно прокручивать по горизонтали."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Улучшено]` На светлых панелях кнопки и выбранные элементы выделены синим цветом."
                 ]
               },
               {
@@ -8879,9 +9783,16 @@
             "title": "Project Generator",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости. В предпросмотре исходного кода комментарии выделены зелёным, а команды, строки, числа и функции различаются по цвету.",
+                  "`[Улучшено]` Стили и значки теперь входят в состав сайта, а изображения руководства загружаются только при его открытии, поэтому генератор открывается быстрее без внешних скриптов. Область описания в окне «Параметры проекта» и фон окна руководства оформлены так же, как другие светлые окна.",
+                  "`[Исправлено]` Столбец номеров в списке процессов больше не подписан словом со значением «нет» на китайском, вьетнамском, турецком и русском языках."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Улучшено]` На светлых панелях кнопки и выбранные элементы выделены синим цветом. В предпросмотре исходного кода комментарии выделены зелёным, а команды, строки, числа и функции различаются по цвету.",
                   "`[Добавлено]` Импорт проекта из ZIP или папки для изменения процессов и параметров с сохранением пользовательского кода и обученных точек, проверкой конфликтов и экспортом полного изменённого проекта в ZIP.",
                   "`[Добавлено]` Можно отдельно скачать проект для 3D-симуляции. В нём нет сигналов PLC, ожиданий IO, обучения, рецептов и задач мониторинга; ответы инструмента и зрения заменены заданным временем, а выбранный порядок процессов выполняется заданное число циклов.",
                   "`[Исправлено]` Tray Get и другие операции через Socket, включая Vision Calibration, теперь прибавляют полученные данные Socket к базовой коррекции операции вместо коррекции vision IO. Программа калибровки получает данные Shot перед применением коррекции.",
@@ -9120,6 +10031,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.21",
+                "items": [
+                  "`[Исправлено]` Некоторые названия документов и кнопки загрузки CAD 2D/3D отображаются на выбранном языке, а не на корейском."
+                ]
+              },
+              {
                 "title": "Ver 26.11.18",
                 "items": [
                   "`[Улучшено]` В светлом каталоге документов можно искать материалы и видеть их количество в фильтрах и результатах.",
@@ -9281,9 +10198,17 @@
             "title": "Debugging Tool",
             "versions": [
               {
-                "title": "Ver 26.11.18",
+                "title": "Ver 26.11.21",
                 "items": [
-                  "`[Улучшено]` Рабочая область оформлена светлыми панелями, тёмным текстом и шапкой цвета слоновой кости."
+                  "`[Обновлено]` Обновлено шесть инструментов отладки. Каждый ZIP содержит один исполняемый файл Windows. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Улучшено]` Страницы инструмента отладки и калибровки нуля содержат собственные стили и значки и открываются быстрее без внешних скриптов. Поля ввода калибровки нуля озвучиваются с названием оси и столбца."
+                ]
+              },
+              {
+                "title": "Ver 26.11.20",
+                "items": [
+                  "`[Улучшено]` На светлых панелях кнопки и выбранные элементы выделены синим цветом.",
+                  "`[Исправлено]` В инструменте калибровки нуля при переходе в пустое поле подсказка 0 исчезает. Если в поле уже введён ноль, он выделяется для замены."
                 ]
               },
               {
@@ -9304,6 +10229,12 @@
                 "title": "Ver 26.10.30",
                 "items": [
                   "`[Изменено]` CAD Lightweight обновлён с `V1.1` до `V1.2`."
+                ]
+              },
+              {
+                "title": "Ver 26.10.23",
+                "items": [
+                  "`[Изменено]` CAD Lightweight обновлён: `V1.0 → V1.1`."
                 ]
               },
               {
@@ -9439,6 +10370,12 @@
             "title": "communicationTester",
             "versions": [
               {
+                "title": "Ver 5.0 (2026.11.21)",
+                "items": [
+                  "`[Улучшено]` Выпущена версия для Windows на Rust. Экраны связи с роботом, HMI и монитора кадров оформлены в синей цветовой гамме."
+                ]
+              },
+              {
                 "title": "Ver 4.0 (2026.11.04)",
                 "items": [
                   "`[Улучшено]` Виртуальные и физические подключения объединены в одной программе с независимым выбором режима для каждого контроллера.",
@@ -9461,6 +10398,12 @@
                   "`[Исправлено]` Исправлены конфликты UDP-портов, мешавшие обмену IO с несколькими виртуальными целями EIP.",
                   "`[Исправлено]` Исправлены задержки обновления IO в HMI и функциональных блоках и медленная работа интерфейса.",
                   "`[Исправлено]` Исправлено скрытие стандартных экранов из-за сохранённой пустой компоновки HMI."
+                ]
+              },
+              {
+                "title": "Ver 3.2 (2026.10.07)",
+                "items": [
+                  "`[Исправлено]` При подключении через Virtual Bus изменения значений во вновь добавленных или настроенных в HMI полях ввода слов и кнопках слов теперь применяются к роботу."
                 ]
               },
               {
@@ -9559,6 +10502,12 @@
             "title": "labelGenerator",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Улучшено]` Выпущена версия для Windows на Rust. Поддерживается преобразование Excel и JSN, а метки можно просматривать и редактировать перед сохранением в любом из четырёх шаблонов."
+                ]
+              },
+              {
                 "title": "Ver 2.2.0",
                 "items": [
                   "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
@@ -9607,6 +10556,12 @@
           {
             "title": "trace",
             "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Улучшено]` Добавлено светлое представление осциллограмм. Курсоры A/B обозначены сплошной и пунктирной линиями. Для каждого канала отображаются минимум и максимум на выбранном интервале."
+                ]
+              },
               {
                 "title": "Ver 1.5 (2026.07.25)",
                 "items": [
@@ -9667,6 +10622,12 @@
             "title": "projectCompare",
             "versions": [
               {
+                "title": "Ver 3.0 (2026.11.21)",
+                "items": [
+                  "`[Улучшено]` Выпущена версия для Windows на Rust. Удерживайте Ctrl и вращайте колесо мыши в окне сравнения, чтобы изменить размер кода и номеров строк в обеих панелях."
+                ]
+              },
+              {
                 "title": "Ver 2.2",
                 "items": [
                   "**[Новое]** Добавлена возможность включать или отключать синхронизированную прокрутку и выравнивать прокрутку на основе текущих позиций обеих сторон.",
@@ -9704,9 +10665,63 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Улучшено]` Для каждого аварийного события можно в одном месте увидеть режим робота, состояние осей и связанные журналы. На вкладке программы добавлены состояние задач и таблицы меток и позиций."
+                ]
+              },
+              {
                 "title": "Ver 1.1 (2026.11.04)",
                 "items": [
                   "`[Добавлено]` Анализ ZIP/папок диагностики, поиск ошибок и аварий сервопривода, графики трассировки, измерения A/B и экспорт отчётов/CSV."
+                ]
+              }
+            ]
+          },
+          {
+            "title": "cadLightweight",
+            "versions": [
+              {
+                "title": "Ver 2.0 (2026.11.21)",
+                "items": [
+                  "`[Улучшено]` Файлы SLDPRT и SLDASM открываются напрямую без установки SolidWorks. При экспорте в STEP сохраняются расположение компонентов и цвета компонентов и поверхностей. При экспорте в GLB сохраняются отображаемые цвета."
+                ]
+              },
+              {
+                "title": "Ver 1.3 (2026.11.03)",
+                "items": [
+                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
+                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
+                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.2 (2026.10.30)",
+                "items": [
+                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
+                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
+                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
+                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
+                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
+                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
+                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
+                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
+                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.1 (2026.10.23)",
+                "items": [
+                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
+                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                ]
+              },
+              {
+                "title": "Ver 1.0 (2026.07.25)",
+                "items": [
+                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
+                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
+                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
                 ]
               }
             ]

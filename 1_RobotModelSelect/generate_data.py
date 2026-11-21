@@ -269,7 +269,7 @@ df_acc = model_xl.parse("Accessories")
 df_acc['Type'] = df_acc['Type'].ffill()
 for _, row in df_acc.iterrows():
     acc_code = str(row.get('Code', '')).strip()
-    if pd.isna(acc_code) or acc_code == 'nan' or acc_code == '-':
+    if acc_code in ('nan', '-', '01660004'):
         continue
     
     desc = str(row.get('Description', '')).replace('\n', ' ').replace('\ufffd', '').strip()
@@ -285,6 +285,14 @@ for _, row in df_acc.iterrows():
     target_models = str(row.get('Robot model', '')).strip() if 'Robot model' in df_acc.columns else ''
     if target_models == 'nan': target_models = ''
 
+    if type_name == 'Telescopic Cover':
+        if acc_code in ('98070385', '98070386'):
+            target_models = 'S4C, S4S'
+            desc = f'J3 {"Upper" if acc_code == "98070385" else "Lower"} Cover (IR-S4-Z12C / IR-S4-Z15S)'
+        elif acc_code in ('98070355', '98070354'):
+            target_models = 'S7C, S7S, S10C, S10S'
+            desc = f'J3 {"Upper" if acc_code == "98070355" else "Lower"} Cover (IR-S7/10-Z17C / IR-S7/10-Z20S)'
+
     set_id = str(row.get('Set ID', '')).strip() if 'Set ID' in df_acc.columns else ''
     if set_id == 'nan': set_id = ''
 
@@ -298,7 +306,17 @@ for _, row in df_acc.iterrows():
     }
     if set_id:
         accessory['setId'] = set_id
+    # R7H Manipulator User Guide, sections 8.6.3 and 8.7, supersedes the older selection workbook.
+    if acc_code == '01660018':
+        accessory['target_models'] = ', '.join(model.strip() for model in target_models.split(',') if model.strip() != 'R7H')
     accessories.append(accessory)
+
+if not any(item['code'] == '32022076' for item in accessories):
+    tool_index = next((i + 1 for i, item in enumerate(accessories) if item['code'] == '01660018'), len(accessories))
+    accessories.insert(tool_index, {
+        'code': '32022076', 'type': 'Zeroing tool', 'name': 'R7H zero point calibration tool',
+        'description': 'Zero position calibration', 'spec': 'J1–J6', 'target_models': 'R7H'
+    })
 
 # Keep the emergency-stop-cover pendant variants available even when the
 # source workbook omits the legacy accessory rows. These are the order-code

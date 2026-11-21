@@ -41,6 +41,11 @@ export async function createEquipmentFixture(page, type) {
 }
 
 export async function setEquipmentParts(page, role, refs) {
+ if(role==='movingRef'){
+  // Moving targets are added from the model tree (right-click "이동 대상으로 체크"); the dialog lists no checkboxes for them.
+  await page.evaluate(refs=>{const ui=window.__equipment.equipmentApp.ui;refs.forEach(ref=>ui.addPart(ref));},refs);
+  return;
+ }
  const panel=page.locator('[data-equipment-role="'+role+'"]');
  while(await panel.locator('input[type="checkbox"]:checked').count())await panel.locator('input[type="checkbox"]:checked').first().click();
  for(const ref of refs){

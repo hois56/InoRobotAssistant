@@ -1,0 +1,19 @@
+/* The INOVANCE wordmark blue, with lighter and darker tones for readable controls. */
+:root {
+    --brand-blue: #108ccf;
+    --brand-highlight: #79cfff;
+    --tool-paper: #f2f6fa;
+    --tool-header: #f7fafd;
+    --tool-surface: #fff;
+    --tool-inset: #eaf1f7;
+    --tool-hover: #ddeaf5;
+    --tool-selected: #dceffc;
+    --tool-ink: #192f42;
+    --tool-muted: #4d6273;
+    --tool-line: #c6d5e1;
+    --tool-border-strong: #6185a0;
+    --tool-accent: #075e94;
+    --tool-action: #08689e;
+    --tool-action-hover: #074f7a;
+    --tool-shadow: 0 3px 12px rgba(22, 55, 82, .065);
+}

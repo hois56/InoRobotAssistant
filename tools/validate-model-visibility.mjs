@@ -11,7 +11,7 @@ assert.match(main, /function syncEmptyStateVisibility\(\)[\s\S]*?state\.models\.
 assert.match(main, /state\.models\.push\(model\);\s*state\.scene\.add\(model\);\s*\/\/ The model is already visible[\s\S]*?syncEmptyStateVisibility\(\);/);
 assert.match(main, /finally \{[\s\S]*?syncEmptyStateVisibility\(\);\s*finishBackgroundModelLoading/);
 assert.match(main, /function renderJogControls\(robot\)/);
-assert.match(main, /const jogLabel = 'BASE';/);
+assert.match(main, /if \(el\.btnJogBaseMode\) el\.btnJogBaseMode\.disabled = false;/);
 assert.match(main, /function setJogMode\(mode, \{ preserveSnapMove = false \} = \{\}\)/);
 assert.match(main, /const isBase = !isJoint;/);
 assert.doesNotMatch(main, /btnJogWorkObjectMode|btn-jog-workobject-mode|workObjectJogLabel/,
@@ -50,17 +50,18 @@ assert.match(main, /syncModelTreeHiddenHost\(host\)/);
 assert.match(main, /applyModelTreeVisibilityVisual\(robot, snapshot\.visible !== false\)/);
 assert.match(main, /visible: isModelTreeVisible\(robot\)/);
 assert.match(main, /className = 'model-tree-visibility-indicator'/);
-assert.match(main, /const MODEL_DEFAULT_OUTLINE_COLOR = 0x000000;/);
+assert.match(main, /const MODEL_DEFAULT_OUTLINE_COLOR = 0x5c626b;/);
 assert.match(main, /const MODEL_SELECTION_OUTLINE_COLOR = 0xfacc15;/);
 assert.match(main, /function isModelOutlineSelectionTarget\(mesh, model\)/);
 assert.match(main, /function updateModelSelectionOutlines\(\{ ensureSelection = true \}/);
 assert.match(main, /const nextColor = isModelOutlineSelectionTarget\(mesh, model\)/);
 assert.match(main, /if \(!state\.outlineMode && ensureSelection\)[\s\S]*?syncModelOutlines\(\);/);
-assert.match(main, /if \(!state\.outlineMode && !selected\)[\s\S]*?disposeModelOutlineLine\(mesh\.userData\.outlineLine\)/);
+// With outline mode off every outline is removed; the selection uses a surface highlight instead.
+assert.match(main, /if \(!state\.outlineMode\) \{\s*disposeModelOutlineLine\(mesh\.userData\.outlineLine\);/);
 assert.match(
     main,
-    /line\.visible = transparency < 100[\s\S]*?state\.outlineMode \|\| selected/,
-    'Selected model outlines must remain visible while model-tree placement is active.'
+    /line\.visible = transparency < 100 && state\.outlineMode;/,
+    'Outlines must follow outline mode and hide on fully transparent models.'
 );
 assert.doesNotMatch(
     main,

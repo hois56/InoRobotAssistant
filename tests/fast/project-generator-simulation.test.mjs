@@ -20,7 +20,7 @@ const cases = generateOlpGeneratorCases({repoRoot});
 function simulationProject(entry, input = {}) {
     const sim = G.SimulationSettings(entry.steps, entry.options, input);
     const programs = G.SimulationProgramFiles(entry.steps, entry.options, sim);
-    const files = {...programs, [`${entry.name}_SIM.prj`]: G.SimulationProjectInfo(Object.keys(programs)),
+    const files = {...programs, [`${entry.name}.prj`]: G.SimulationProjectInfo(Object.keys(programs)),
         'Data/P.pts': entry.files['Data/P.pts'], 'Data/Labels.jsn': entry.files['Data/Labels.jsn'],
         'Data/UserDefineWarning.jsn': entry.files['Data/UserDefineWarning.jsn']};
     return {sim, programs, files};
@@ -57,7 +57,7 @@ test('every generator configuration produces a simulation project without PLC ha
         assert.doesNotMatch(text, /^\s*(?:Wait|Get Port|Open Socket|Send Port)\b/m, entry.name);
         assert.doesNotMatch(text, /\bxw[A-Z]|\bxP\d+_|\byP\d+_|xTeach|s03_teach_mode|Manual_set_recipe|Init_signal|xReIO|Goto L\[0\]/, entry.name);
         assert.doesNotMatch(text, /\bundefined\b|NaN/, entry.name);
-        const info = JSON.parse(files[`${entry.name}_SIM.prj`]);
+        const info = JSON.parse(files[`${entry.name}.prj`]);
         assert.equal(info.MultiTaskCount, 0);
         assert.deepEqual(info.ProgramFiles, Object.keys(programs));
         assert.ok(!info.ProgramFiles.some(file => /PLC_|s03_teach_mode/.test(file)), entry.name);

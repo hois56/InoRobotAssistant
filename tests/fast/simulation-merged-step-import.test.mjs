@@ -45,6 +45,17 @@ test('CAD_Lightweight marker는 PRODUCT/NAUO 참조로 식별하고 같은 이�
     assert.match(tagged, /ignore; PRODUCT\(''text''\)/);
 });
 
+test('일반 STEP은 사전 검사에서 원본을 재사용하고 이스케이프된 병합 표시는 계속 인식한다', () => {
+    const { context } = fixture();
+    const plain = encode("#3=PRODUCT('part','plain','',(#900)); #4=DIRECTION('',(0.,1.,0.));");
+    const untagged = context.prepareMergedStepImport(plain);
+    assert.equal(untagged.fileBuffer, plain);
+    assert.equal(untagged.mergedTags.size, 0);
+    const escaped = encode("#5=PRODUCT('part','named','\\X2\\0043\\X0\\AD_Lightweight merged part',(#900));");
+    const tagged = context.prepareMergedStepImport(escaped);
+    assert.equal(tagged.mergedTags.get('__CADLW_PRODUCT_5__').name, 'named');
+});
+
 test('표시명이 같은 합친 제품들은 occurrence별 ID를 유지하고 일반 여러 솔리드는 계속 구분한다', () => {
     const { context } = fixture(); const { mergedTags } = context.prepareMergedStepImport(encode(fixtureStep));
     const root = { children: [

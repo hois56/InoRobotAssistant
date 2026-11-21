@@ -7,10 +7,12 @@ for (const [kind, source] of [['real', 'bridge'], ['virtual', 'bridge'], ['real'
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
       const response = await route.fetch();
-      await route.fulfill({ response, body: await response.text() + '\nwindow.__interferenceFeedback={state,ensureVirtualControllerCore,registerVirtualControllerSession,handleVirtualControllerMessage,applyVirtualControllerFrameForController,getInterferenceZoneProbes,evaluateInterferenceZones,updateInterferenceZoneVisuals,getCurrentTcpPoseBase,getJogReadoutPose};' });
+      await route.fulfill({ response, body: (await response.text()).replace('init();\n', 'window.__simulationReady = init();\n') + '\nwindow.__interferenceFeedback={state,ensureVirtualControllerCore,registerVirtualControllerSession,handleVirtualControllerMessage,applyVirtualControllerFrameForController,getInterferenceZoneProbes,evaluateInterferenceZones,updateInterferenceZoneVisuals,getCurrentTcpPoseBase,getJogReadoutPose};' });
     });
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__interferenceFeedback);
+    // Startup restores the workspace asynchronously; a robot added before it finishes can be replaced.
+    await page.evaluate(() => window.__simulationReady);
     await page.locator('#model-select').selectOption('robot:IR-R7H-90');
     await page.waitForFunction(() => window.__interferenceFeedback.state.activeArticulatedModel?.userData.tcpFrame);
     const result = await page.evaluate(async ({ kind, source }) => {
@@ -22,9 +24,10 @@ for (const [kind, source] of [['real', 'bridge'], ['virtual', 'bridge'], ['real'
       const socket = { readyState: WebSocket.OPEN, send: message => commands.push(message), close: () => commands.push('close') };
       Object.assign(controller, { targetRobotId: robot.userData.motionInstanceId, controllerKind: kind, source,
         wanted: true, status: 'streaming', streamWatchdogTimer: 1, socket, sourceConnectedAt: performance.now() });
-      const send = tcp => {
+      // Zones watch the model's TCP frame, which follows the reported joints; the reported TCP only drives the readout.
+      const send = (tcp, joints = [20, -30, 40, -110, 60, 200]) => {
         a.handleVirtualControllerMessage(JSON.stringify({ type: 'robotState', data: {
-          joints: [20, -30, 40, -110, 60, 200], tcp: [...tcp, 0, 0, 180]
+          joints, tcp: [...tcp, 0, 0, 180]
         } }), controller);
         a.applyVirtualControllerFrameForController(performance.now(), controller);
       };
@@ -46,7 +49,7 @@ for (const [kind, source] of [['real', 'bridge'], ['virtual', 'bridge'], ['real'
       robot.userData.interferenceStopLatched = true;
       send([106, 206, 306]);
       const oldLatchPosition = pose();
-      send([400, 500, 600]);
+      send([400, 500, 600], [-70, -30, 40, -110, 60, 200]);
       a.evaluateInterferenceZones(); a.evaluateInterferenceZones();
       return { entered, insidePosition, oldLatchPosition, outsidePosition: pose(),
         outsideStatus: a.state.interferenceRuntime[0].status, lastAppliedSampleId: controller.lastAppliedSampleId,

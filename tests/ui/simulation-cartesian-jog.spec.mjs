@@ -39,6 +39,93 @@ async function snapshot(page) {
   });
 }
 
+for (const mode of ['translate', 'rotate']) {
+  test(`직교 핸들은 잡을 수 있는 위치에서만 강조되고 드래그된다 (${mode})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await setup(page);
+    await page.locator('#btn-jog-base-mode').click();
+    await page.locator(`#btn-base-gizmo-${mode}`).click();
+    const samples = await page.evaluate(mode => {
+      const { state, THREE } = window.__cartesianJog;
+      const controls = state.baseJogTransformControls;
+      const target = controls.object;
+      const center = target.getWorldPosition(new THREE.Vector3());
+      const eye = new THREE.Vector3(1, -1, 0.85).applyQuaternion(target.getWorldQuaternion(new THREE.Quaternion()));
+      state.controls.target.copy(center);
+      state.camera.position.copy(center).addScaledVector(eye, 1200);
+      state.controls.update();
+      controls.updateMatrixWorld(true);
+      const canvas = state.renderer.domElement.getBoundingClientRect();
+      const gizmo = controls.children.find(child => child.isTransformControlsGizmo).gizmo[mode];
+      function screen(handle, local) {
+        const p = handle.localToWorld(local).project(state.camera);
+        return new THREE.Vector2(canvas.x + (p.x + 1) * canvas.width / 2, canvas.y + (1 - p.y) * canvas.height / 2);
+      }
+      if (mode === 'rotate') {
+        const ring = gizmo.getObjectByName('Z');
+        const { radialSegments, tubularSegments } = ring.geometry.parameters;
+        // Average a cross section to get a point on the drawn arc's centerline.
+        const onRing = new THREE.Vector3();
+        for (let j = 0; j < radialSegments; j++) {
+          const index = j * (tubularSegments + 1) + Math.round(tubularSegments / 3);
+          onRing.add(new THREE.Vector3().fromBufferAttribute(ring.geometry.attributes.position, index));
+        }
+        onRing.divideScalar(radialSegments);
+        return [
+          ['Z', screen(ring, onRing.clone())], [null, screen(ring, onRing.clone().multiplyScalar(1.12))],
+          [null, screen(ring, onRing.clone().negate())]
+        ];
+      }
+      return ['X', 'Y', 'Z'].flatMap((name, index) => {
+        const handle = gizmo.getObjectByName(name);
+        const at = distance => screen(handle, new THREE.Vector3().setComponent(index, distance));
+        const shaft = at(0.40), head = at(0.54);
+        const direction = head.clone().sub(shaft).normalize();
+        const beside = shaft.clone().add(new THREE.Vector2(-direction.y, direction.x).multiplyScalar(8));
+        return [[name, shaft], [name, head], [null, beside], [null, at(-0.40)]];
+      });
+    }, mode);
+    const handleColors = () => page.evaluate(() => {
+      const controls = window.__cartesianJog.state.baseJogTransformControls;
+      const gizmo = controls.children.find(child => child.isTransformControlsGizmo).gizmo[controls.mode];
+      return gizmo.children
+        .filter(handle => handle.isMesh && handle.visible && !handle.userData.baseJogActiveStroke
+          && ['X', 'Y', 'Z'].includes(handle.name))
+        .map(handle => [handle.name, handle.material.color.getHexString()]);
+    });
+    const normalColors = await handleColors();
+    async function expectHover([axis, point]) {
+      await page.mouse.move(point.x, point.y);
+      const hovered = await page.evaluate(() => window.__cartesianJog.state.baseJogTransformControls.axis);
+      expect(hovered, `hover at ${point.x}, ${point.y}`).toBe(axis);
+      await expect.poll(handleColors).toEqual(
+        normalColors.map(([name, color]) => [name, name === axis ? 'b45309' : color])
+      );
+    }
+    for (const sample of samples) await expectHover(sample);
+    await expectHover(samples[0]);
+    await expectHover([null, { x: 10, y: 10 }]);
+    // Press a visible handle before the empty click hands the gesture to camera navigation.
+    for (const [axis, point] of [samples[0], samples.find(([name]) => name === null)]) {
+      const before = await snapshot(page);
+      await page.mouse.move(point.x, point.y);
+      await page.mouse.down();
+      const dragging = await page.evaluate(() => window.__cartesianJog.state.baseJogGizmoDragging);
+      await page.mouse.move(point.x + 8, point.y - 3, { steps: 3 });
+      await page.mouse.up();
+      expect(dragging).toBe(axis !== null);
+      const after = await snapshot(page);
+      if (axis) {
+        const component = mode === 'translate' ? 'position' : 'quaternion';
+        expect(after[component]).not.toEqual(before[component]);
+      } else {
+        expect(after.position).toEqual(before.position);
+        expect(after.quaternion).toEqual(before.quaternion);
+      }
+    }
+  });
+}
+
 async function expectDelta(page, before, distance = 0, degrees = 0) {
   const after = await snapshot(page);
   const errors = await page.evaluate(({ before, after, distance, degrees }) => {

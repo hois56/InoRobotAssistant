@@ -5,16 +5,6 @@
   "assets": [
     {
       "paths": [
-        "2_3DSimulation/VirtualControllerBridge/InoRobotVirtualControllerBridge.exe",
-        "2_3DSimulation/bridge/InoRobotVirtualControllerBridge.exe"
-      ],
-      "fileName": "InoRobotVirtualControllerBridge.exe",
-      "size": 189163388,
-      "sha256": "09133b7a1a2f93a7a3fcc3b3b322d3a5e5cc8cfe2858e1c63dc795b6d19422c4",
-      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/downloads-2026-10-30/InoRobotVirtualControllerBridge.exe"
-    },
-    {
-      "paths": [
         "5_Software/InoRobotLab/Simulation/InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip"
       ],
       "fileName": "InoRobotLab_TP_SPC25K13_MultiVC_20261111.zip",

@@ -40,6 +40,13 @@
     };
 
     const localeData = window.INOROBOT_LOCALES || {};
+    const hasOwn = Object.prototype.hasOwnProperty;
+    // The 3D simulation moves button titles into data-simulation-tooltip for its own tooltip,
+    // sometimes before the title is translated, so that attribute is translated as well.
+    const TRANSLATED_ATTRIBUTES = ['title', 'aria-label', 'placeholder', 'alt', 'data-simulation-tooltip'];
+    const TRANSLATED_ATTRIBUTE_SELECTOR = TRANSLATED_ATTRIBUTES.map(function (name) { return '[' + name + ']'; }).join(', ');
+    // locales-data.js stores each page dictionary once and defines `legacy` (the shared
+    // fallback dictionary) as their union, built on first use.
     const textSources = new WeakMap();
     const attributeSources = new WeakMap();
     let currentLocale = DEFAULT_LOCALE;
@@ -127,9 +134,17 @@
     }
 
     function getByPath(source, path) {
-        return String(path || '').split('.').reduce(function (value, key) {
-            return value && Object.prototype.hasOwnProperty.call(value, key) ? value[key] : undefined;
+        const text = String(path || '');
+        const value = text.split('.').reduce(function (current, key) {
+            return current && hasOwn.call(current, key) ? current[key] : undefined;
         }, source);
+        if (value !== undefined) return value;
+        // Dictionary keys are source sentences and may contain periods, e.g. "legacy.Enter text."
+        const separator = text.indexOf('.');
+        if (separator <= 0 || !source) return undefined;
+        const table = source[text.slice(0, separator)];
+        const key = text.slice(separator + 1);
+        return table && typeof table === 'object' && hasOwn.call(table, key) ? table[key] : undefined;
     }
 
     function interpolate(value, variables) {
@@ -155,32 +170,62 @@
         return korean !== undefined ? korean : fallback;
     }
 
+    const compiledPatterns = new Map();
+
+    function compilePattern(patternSource) {
+        let expression = compiledPatterns.get(patternSource);
+        if (expression === undefined) {
+            try {
+                expression = new RegExp(patternSource);
+            } catch {
+                expression = null;
+            }
+            compiledPatterns.set(patternSource, expression);
+        }
+        return expression;
+    }
+
     function translateFromPageData(pageData, source, normalizedSource) {
         const dictionary = pageData && pageData.legacy;
-        if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, source)) return dictionary[source];
-        if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, normalizedSource)) return dictionary[normalizedSource];
+        if (dictionary && hasOwn.call(dictionary, source)) return dictionary[source];
+        if (dictionary && hasOwn.call(dictionary, normalizedSource)) return dictionary[normalizedSource];
 
         const patterns = pageData && pageData.patterns;
         if (Array.isArray(patterns)) {
             for (const item of patterns) {
                 if (!item || !item.source || typeof item.target !== 'string') continue;
-                const expression = new RegExp(item.source);
-                if (expression.test(source)) return source.replace(expression, item.target);
+                const expression = compilePattern(item.source);
+                if (expression && expression.test(source)) return source.replace(expression, item.target);
             }
         }
         return undefined;
     }
 
+    let translationTables = null;
+
+    function getTranslationTables() {
+        const pageKey = detectPageKey();
+        if (!translationTables || translationTables.locale !== currentLocale || translationTables.pageKey !== pageKey) {
+            translationTables = {
+                locale: currentLocale,
+                pageKey: pageKey,
+                page: get('pageTranslations.' + pageKey, null),
+                fallback: {
+                    legacy: get('legacy', {}),
+                    patterns: get('patterns', [])
+                }
+            };
+        }
+        return translationTables;
+    }
+
     function translateSource(source) {
         const normalizedSource = String(source).replace(/\s+/g, ' ').trim();
-        const pageTranslation = get('pageTranslations.' + detectPageKey(), null);
-        const pageResult = translateFromPageData(pageTranslation, source, normalizedSource);
+        const tables = getTranslationTables();
+        const pageResult = translateFromPageData(tables.page, source, normalizedSource);
         if (pageResult !== undefined) return pageResult;
 
-        const fallbackResult = translateFromPageData({
-            legacy: get('legacy', {}),
-            patterns: get('patterns', [])
-        }, source, normalizedSource);
+        const fallbackResult = translateFromPageData(tables.fallback, source, normalizedSource);
         if (fallbackResult !== undefined) return fallbackResult;
         return source;
     }
@@ -215,8 +260,14 @@
     function translateAttribute(element, attributeName, captureSource) {
         if (!element.hasAttribute(attributeName)) return;
         const sources = getAttributeSourceMap(element);
-        if (captureSource || !Object.prototype.hasOwnProperty.call(sources, attributeName)) {
-            sources[attributeName] = element.getAttribute(attributeName);
+        if (captureSource || !hasOwn.call(sources, attributeName)) {
+            const value = element.getAttribute(attributeName);
+            // The simulation copies an already translated title into its tooltip attribute;
+            // keep the title's original text so a later language change can translate it again.
+            const copiedTitle = attributeName === 'data-simulation-tooltip'
+                && hasOwn.call(sources, 'title')
+                && translateSource(sources.title) === value;
+            sources[attributeName] = copiedTitle ? sources.title : value;
         }
         element.setAttribute(attributeName, translateSource(sources[attributeName]));
     }
@@ -253,7 +304,6 @@
             node = walker.nextNode();
         }
 
-        const attributes = ['title', 'aria-label', 'placeholder', 'alt'];
         const explicitAttributeKeys = {
             title: 'i18nTitle',
             'aria-label': 'i18nAriaLabel',
@@ -262,17 +312,28 @@
         };
         const elements = [];
         if (root.nodeType === Node.ELEMENT_NODE) elements.push(root);
-        if (root.querySelectorAll) elements.push.apply(elements, root.querySelectorAll('[title], [aria-label], [placeholder], [alt]'));
+        if (root.querySelectorAll) elements.push.apply(elements, root.querySelectorAll(TRANSLATED_ATTRIBUTE_SELECTOR));
         elements.forEach(function (element) {
             if (element.closest('[data-i18n-skip]')) return;
-            attributes.forEach(function (attributeName) {
-                if (element.dataset[explicitAttributeKeys[attributeName]]) return;
+            TRANSLATED_ATTRIBUTES.forEach(function (attributeName) {
+                const explicitKey = explicitAttributeKeys[attributeName];
+                if (explicitKey && element.dataset[explicitKey]) return;
                 translateAttribute(element, attributeName, captureSource);
             });
         });
     }
 
+    let pageKeyCache = { pathname: null, key: 'home' };
+
     function detectPageKey() {
+        const currentPath = window.location.pathname;
+        if (pageKeyCache.pathname !== currentPath) {
+            pageKeyCache = { pathname: currentPath, key: resolvePageKey() };
+        }
+        return pageKeyCache.key;
+    }
+
+    function resolvePageKey() {
         const pathname = normalizePath(window.location.pathname).toLowerCase();
         if (ROUTE_LOCALES[normalizePath(window.location.pathname)]) return 'home';
         if (pathname.includes('/7_debuggingtool/zerocalibration/') || pathname.includes('/debuggingsupport/zerocalibration/')) return 'zeroCalibration';
@@ -339,22 +400,21 @@
             container = document.createElement('div');
             container.id = 'inorobot-language-switcher';
             container.className = 'inorobot-language-switcher';
-
-            const label = document.createElement('span');
-            label.className = 'inorobot-language-label';
-            label.setAttribute('aria-hidden', 'true');
-            label.textContent = 'Language';
+            container.lang = 'en';
+            container.translate = false;
+            container.setAttribute('data-i18n-skip', '');
 
             const select = document.createElement('select');
             select.id = 'inorobot-language-select';
             select.className = 'inorobot-language-select';
+            select.setAttribute('aria-label', 'Language');
             [
-                ['ko', '한국어'],
+                ['ko', 'Korean'],
                 ['en', 'English'],
-                ['zh-CN', '简体中文'],
-                ['vi', 'Tiếng Việt'],
-                ['tr', 'Türkçe'],
-                ['ru', 'Русский']
+                ['zh-CN', 'Chinese (Simplified)'],
+                ['vi', 'Vietnamese'],
+                ['tr', 'Turkish'],
+                ['ru', 'Russian']
             ].forEach(function (entry) {
                 const option = document.createElement('option');
                 option.value = entry[0];
@@ -362,7 +422,7 @@
                 select.appendChild(option);
             });
 
-            container.append(label, select);
+            container.appendChild(select);
             document.body.appendChild(container);
         }
 
@@ -388,8 +448,6 @@
             select.dataset.localeListener = 'true';
         }
         select.value = currentLocale;
-        select.setAttribute('aria-label', t('common.languageSelector'));
-        container.setAttribute('aria-label', t('common.languageSelector'));
         container.dataset.landing = isLandingPage() ? 'true' : 'false';
     }
 
@@ -403,13 +461,21 @@
             mutationObserver = new MutationObserver(function (mutations) {
                 stopObserver();
                 mutations.forEach(function (mutation) {
+                    // A record queued before this batch may describe a value this runtime has already
+                    // translated (for example while walking a newly added node). Re-capturing it would
+                    // store the translation as the source and break the next language change.
                     if (mutation.type === 'characterData') {
+                        const current = mutation.target.data.trim();
+                        if (textSources.has(mutation.target) && translateSource(textSources.get(mutation.target)) === current) return;
                         textSources.delete(mutation.target);
                         translateTextNode(mutation.target, true);
                     } else if (mutation.type === 'attributes') {
                         const sources = getAttributeSourceMap(mutation.target);
-                        delete sources[mutation.attributeName];
-                        translateAttribute(mutation.target, mutation.attributeName, true);
+                        const name = mutation.attributeName;
+                        const current = mutation.target.getAttribute(name);
+                        if (current !== null && hasOwn.call(sources, name) && translateSource(sources[name]) === current) return;
+                        delete sources[name];
+                        translateAttribute(mutation.target, name, true);
                     } else {
                         mutation.addedNodes.forEach(function (node) {
                             walkAndTranslate(node, true);
@@ -425,7 +491,7 @@
             subtree: true,
             characterData: true,
             attributes: true,
-            attributeFilter: ['title', 'aria-label', 'placeholder', 'alt']
+            attributeFilter: TRANSLATED_ATTRIBUTES
         });
     }
 

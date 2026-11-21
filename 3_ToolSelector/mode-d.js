@@ -8,14 +8,13 @@ import {
   createCoordinateFrame,
   integrateStepMesh,
   pointInFrame
-} from './mass-properties.mjs';
+} from './tool-mass.mjs';
 import { averagePoints, buildStepSnapCandidates } from './snap-geometry.mjs';
 import { cadColorToHex } from './step-export-transform.mjs?v=20260719-ry-trackball-1';
 
 const OCCT_IMPORT_BASE_URL = './vendor/occt/';
 const OCCT_IMPORT_SCRIPT_URL = `${OCCT_IMPORT_BASE_URL}occt-import-js.js`;
 const KG_PER_MM3_PER_G_PER_CM3 = 1e-6;
-const ROBOT_SELECTION_GRAVITY = 9.8;
 const LARGE_STEP_ENGINE_MIN_BYTES = 100 * 1024 * 1024;
 const LARGE_STEP_ENGINE_WORKER_URL = '../2_3DSimulation/step-import-worker.js?v=20261016-xcaf-assembly-2';
 const MODE_D_STEP_CACHE_DB_NAME = 'inorobot-tool-mode-d-step-cache';
@@ -224,7 +223,7 @@ function cacheElements() {
 
 function setupScene() {
   state.scene = new THREE.Scene();
-  state.scene.background = new THREE.Color(0xe7e8e3);
+  state.scene.background = new THREE.Color(0xe8eff5);
   state.scene.add(state.modelGroup);
 
   state.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 1e8);
@@ -243,7 +242,7 @@ function setupScene() {
   fillLight.position.set(-500, 350, 250);
   state.scene.add(fillLight);
 
-  state.gridHelper = new THREE.GridHelper(4000, 40, 0xa6ada0, 0xcdd2c7);
+  state.gridHelper = new THREE.GridHelper(4000, 40, 0x9bafbf, 0xc7d5e0);
   state.gridHelper.rotation.x = Math.PI / 2;
   state.gridHelper.visible = state.gridVisible;
   state.scene.add(state.gridHelper);
@@ -2259,17 +2258,11 @@ function calculateCadRobotSuitability() {
   if (![mass, ...centerValues, ...inertiaValues].every(Number.isFinite)) return;
 
   const isScara = robot.type === 'scara';
-  const [x, y, centerZ] = centerValues.map((value) => value / 1000);
   const j5OffsetInput = el.robotJ5Offset.value.trim();
   const enteredJ5Offset = j5OffsetInput === '' ? Number.NaN : Number(j5OffsetInput);
   const j5Offset = Number.isFinite(enteredJ5Offset) ? enteredJ5Offset : robot.j5;
-  const z = centerZ + (isScara ? 0 : j5Offset / 1000);
-  const j5ToCenter = Math.hypot(z, x);
-  const j6ToCenter = Math.hypot(x, y);
-  const j5Torque = mass * ROBOT_SELECTION_GRAVITY * j5ToCenter;
-  const j6Torque = mass * ROBOT_SELECTION_GRAVITY * j6ToCenter;
-  const j5Inertia = centerInertia[1][1] + mass * (x * x + z * z);
-  const j6Inertia = centerInertia[2][2] + mass * (x * x + y * y);
+  const [j5ToCenter, j6ToCenter, j5Torque, j6Torque, j5Inertia, j6Inertia] =
+    InoSite.wristLoad(mass, ...centerValues, isScara ? 0 : j5Offset, ...inertiaValues);
   const rows = isScara
     ? [[uiText('최대 부하'), mass, robot.load, 'kg'], [uiText('J4 허용 관성모멘트'), j6Inertia, robot.i4, 'kgm²']]
     : [
@@ -2280,27 +2273,16 @@ function calculateCadRobotSuitability() {
       [uiText('J6 허용 관성모멘트'), j6Inertia, robot.i6, 'kgm²']
     ];
 
-  let anyNg = false;
-  let anyTight = false;
-  el.robotTable.innerHTML = rows.map(([label, value, limit, unit]) => {
-    const margin = (1 - value / limit) * 100;
-    const isWithinLimit = value <= limit;
-    const isTight = isWithinLimit && margin < 10;
-    if (!isWithinLimit) anyNg = true;
-    if (isTight) anyTight = true;
-    const statusClass = !isWithinLimit ? 'ng' : isTight ? 'warn' : 'ok';
-    const status = !isWithinLimit ? 'NG' : isTight ? uiText('OK (마진부족)') : 'OK';
-    return `<tr><td>${label}</td><td>${value.toFixed(3)} ${unit}</td><td>${limit.toFixed(2)} ${unit}</td><td>${margin.toFixed(1)}%</td><td class="${statusClass}">${status}</td></tr>`;
-  }).join('');
+  const worst = window.renderToolLimits(el.robotTable, rows);
   el.robotSummary.innerHTML = isScara
     ? `<div>${uiText('총 질량')}<b>${mass.toFixed(3)} kg</b></div><div>${uiText('CoG 반경 (XY)')}<b>${(j6ToCenter * 1000).toFixed(1)} mm</b></div><div>${uiText('J4 관성')}<b>${j6Inertia.toFixed(3)} kgm²</b></div>`
     : `<div>${uiText('총 질량')}<b>${mass.toFixed(3)} kg</b></div><div>${uiText('J5→CoG')}<b>${(j5ToCenter * 1000).toFixed(1)} mm</b></div><div>${uiText('J6→CoG')}<b>${(j6ToCenter * 1000).toFixed(1)} mm</b></div>`;
 
   el.robotOverall.removeAttribute('style');
-  if (anyNg) {
+  if (worst === 2) {
     el.robotOverall.className = 'overall ng';
     el.robotOverall.textContent = `❌ ${uiText('부적합 — 상위 모델 또는 Tool 재설계 필요')}`;
-  } else if (anyTight) {
+  } else if (worst === 1) {
     el.robotOverall.className = 'overall ng';
     el.robotOverall.style.background = 'rgba(245,158,11,.1)';
     el.robotOverall.style.borderColor = 'rgba(245,158,11,.3)';

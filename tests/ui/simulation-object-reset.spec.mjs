@@ -3,9 +3,11 @@ import { test, expect } from '@playwright/test';
 async function setup(page) {
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    await route.fulfill({ response, body: await response.text() + '\nwindow.__objectReset={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,writeOlpAddress,readOlpSimulatorBit,updateConveyorSimulation};' });
+    await route.fulfill({ response, body: (await response.text()).replace('init();\n', 'window.__simulationReady = init();\n') + '\nwindow.__objectReset={state,equipmentApp,THREE,createPrimitiveShapeRoot,ensureWorkspaceModelId,getRobotToolMountFrame,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot,writeOlpAddress,readOlpSimulatorBit,updateConveyorSimulation};' });
   });
   await page.goto('/2_3DSimulation/index.html');
+  await page.waitForFunction(() => window.__objectReset);
+  await page.evaluate(() => window.__simulationReady);
   await page.waitForFunction(() => window.__objectReset?.state.workspaceRecovery.ready);
 }
 
@@ -118,31 +120,35 @@ test('흡착 중 모두 원위치는 물체를 놓고 복원하며 재개 전에
   await page.waitForFunction(() => window.__objectReset.state.workspaceRecovery.ready);
   await page.locator('#model-select').selectOption('robot:IR-R7H-90');
   await page.waitForFunction(() => window.__objectReset.state.models.some(m => m.userData.tcpFrame));
-  await page.evaluate(() => {
-    const a = window.__objectReset, app = a.equipmentApp;
-    const box = (name, z) => {
-      const model = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name });
-      model.position.z = z; a.state.scene.add(model); a.state.models.push(model); return model;
-    };
-    const pad = box('초기화 패드', 20), object = box('초기화 제품', 0);
+  const home = await page.evaluate(() => {
+    const a = window.__objectReset, app = a.equipmentApp, T = a.THREE;
     const ref = model => 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
     const robot = a.state.models.find(m => m.userData.tcpFrame);
-    const def = app.save({ id: 'held-object', type: 'OBJECT', movingRef: ref(object), robotRef: ref(robot), feedbackGrip: 600 }, { forward: 512, reverse: null });
+    // Suction is a VACUUM motion on a robot-mounted pad; the product is only registered as an object.
+    const pad = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '초기화 패드' });
+    a.getRobotToolMountFrame(robot).add(pad); pad.userData.placement = 'tcp'; pad.userData.attachmentHost = robot; a.state.models.push(pad); pad.updateWorldMatrix(true, true);
+    const object = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '초기화 제품' });
+    object.position.copy(pad.localToWorld(new T.Vector3(0, 0, 21))); object.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
+    a.state.scene.add(object); a.state.models.push(object);
+    const home = object.position.toArray();
+    app.save({ id: 'held-object', type: 'OBJECT', movingRef: ref(object) });
+    const def = app.save({ id: 'held-vacuum', type: 'VACUUM', movingRef: ref(pad), vacuumMode: 'WHOLE', feedbackGrip: 600 }, { forward: 512, reverse: null });
     a.writeOlpAddress('Out[512]', 1); app.runtime.start();
-    app.runtime.applyVacuum(def, true); robot.position.x += 200; app.runtime.followVacuum(def);
-    if (!def.runtime.heldRef || Math.abs(object.getWorldPosition(new a.THREE.Vector3()).x - 200) > 1e-6) throw new Error('흡착 이동 재현 실패');
+    app.runtime.applyVacuum(def, true); robot.position.x += 200; robot.updateMatrixWorld(true); app.runtime.followVacuum(def);
+    if (!def.runtime.heldRef || Math.abs(object.getWorldPosition(new T.Vector3()).x - home[0] - 200) > 1e-6) throw new Error('흡착 이동 재현 실패');
     app.ui.open(ref(object));
+    return home;
   });
   await page.locator('[data-equipment-global="reset"]').click();
-  const result = await page.evaluate(() => {
+  const result = await page.evaluate(home => {
     const a = window.__objectReset, app = a.equipmentApp;
     const vacuum = a.state.equipmentDefinitions.find(def => def.id === 'held-vacuum');
     const object = app.resolve(a.state.equipmentDefinitions.find(def => def.id === 'held-object').movingRef).object;
     app.runtime.update(a.state.equipmentDefinitions, a.state.ioFunctionMappings, 0);
     app.runtime.update(a.state.equipmentDefinitions, a.state.ioFunctionMappings, 100);
-    return { position: object.position.toArray(), held: vacuum.runtime.heldRef, owner: object.userData.equipmentOwner || '', suspended: app.runtime.suspended, sensor: a.readOlpSimulatorBit('IN', 600) };
-  });
-  expect(result).toEqual({ position: [0, 0, 0], held: '', owner: '', suspended: true, sensor: 0 });
+    return { home: object.position.toArray().map((value, i) => Math.abs(value - home[i]) < 1e-6), held: vacuum.runtime.heldRef, owner: object.userData.equipmentOwner || '', suspended: app.runtime.suspended, sensor: a.readOlpSimulatorBit('IN', 600) };
+  }, home);
+  expect(result).toEqual({ home: [true, true, true], held: '', owner: '', suspended: true, sensor: 0 });
 });
 
 test('컨베이어가 이송한 오브젝트도 이송 시작점 대신 등록 기준점으로 복원한다', async ({ page }) => {

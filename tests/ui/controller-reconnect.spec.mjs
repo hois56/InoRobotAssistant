@@ -16,11 +16,12 @@ async function setup(page, robotCount = 1) {
   });
   await page.route('**/2_3DSimulation/main.js*', async route => {
     const response = await route.fetch();
-    await route.fulfill({ response, body: `${await response.text()}
+    await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}
 window.__controllerReconnect = { state, getArticulatedRobots, togglePanelVisibility, isVirtualControllerActiveForRobot };` });
   });
   await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.__controllerReconnect?.state.workspaceRecovery.ready);
+  await page.evaluate(() => window.__simulationReady);
   for (let index = 0; index < robotCount; index++) {
     await page.locator('#model-select').selectOption('robot:IR-R7H-90');
     if (index) await page.locator('#btn-add-robot-model-choice').click();

@@ -9,7 +9,9 @@ test('접합부 AO는 틈만 강조하고 평면·배경·조작 표시의 밝�
     });
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__aoTest = { state, THREE, renderSimulationScene: typeof renderSimulationScene === 'function' ? renderSimulationScene : (renderer, camera) => renderer.render(state.scene, camera) };` });
+        // The scene loop omits AO on software rasterizers (headless Chromium uses SwiftShader),
+        // so exercise the AO pipeline itself rather than the frame scheduler.
+        await route.fulfill({ response, body: `${await response.text()}\nwindow.__aoTest = { state, THREE, renderSimulationScene: (renderer, camera) => renderWithContactAO(renderer, state.scene, camera, state.models) };` });
     });
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__aoTest?.state.renderer);

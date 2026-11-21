@@ -6,10 +6,12 @@ test('IO 테스트 매핑으로 컨베이어를 운전·정지하고 끝단과 �
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__conveyor = { state, equipmentApp, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, openIoFunctionMappingDialog, readOlpSimulatorBit, writeOlpAddress, captureSceneSnapshot, updateConveyorSimulation, resolveConveyorBelt, THREE, moveConveyorObjects, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };` });
+        await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__conveyor = { state, equipmentApp, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, openIoFunctionMappingDialog, readOlpSimulatorBit, writeOlpAddress, captureSceneSnapshot, updateConveyorSimulation, resolveConveyorBelt, THREE, moveConveyorObjects, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };` });
     });
     await page.goto('/2_3DSimulation/index.html');
     await page.waitForFunction(() => window.__conveyor);
+    // Startup restores the workspace asynchronously; build the fixture only after it finishes.
+    await page.evaluate(() => window.__simulationReady);
     await page.evaluate(() => window.__conveyor.openIoFunctionMappingDialog());
     await createConveyorFixture(page);
     await expect(page.locator('#io-function-mapping-action')).toHaveValue('CONVEYOR');

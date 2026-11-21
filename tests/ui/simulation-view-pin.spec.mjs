@@ -40,7 +40,10 @@ test('고정 뷰 맨 앞으로 고정의 켜기, 끄기, 닫기와 기존 팝업
   await expectFullView(page);
   const panel = page.locator('#view-window');
   const initial = await panel.boundingBox();
-  const actions = await page.locator('.view-window-actions').boundingBox();
+  const toolbar = panel.locator('.view-window-actions');
+  expect(await toolbar.evaluate(element => getComputedStyle(element, '::before').backgroundImage))
+    .toContain('rgb(7, 94, 148)');
+  const actions = await toolbar.boundingBox();
   await page.mouse.move(actions.x + 5, actions.y + actions.height / 2);
   await page.mouse.down();
   await page.mouse.move(actions.x - 35, actions.y + actions.height / 2 + 45);

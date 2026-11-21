@@ -598,9 +598,12 @@ assert.match(
 );
 assert.deepEqual(
     [...workspaceRecoveryDialogSource.matchAll(/<button[^>]*id="([^"]+)"/g)].map((match) => match[1]),
-    ['btn-workspace-select-all', 'btn-workspace-clear-selection', 'btn-workspace-delete', 'btn-workspace-new', 'btn-workspace-restore'],
-    'Recovery must require an explicit New or Restore choice, expose saved-workspace management actions, and must not expose a dismiss button.'
+    ['btn-workspace-select-all', 'btn-workspace-clear-selection', 'btn-workspace-delete', 'btn-workspace-cancel', 'btn-workspace-new', 'btn-workspace-restore'],
+    'Recovery must require an explicit New or Restore choice and expose saved-workspace management actions.'
 );
+// Cancel exists only for the project list opened later; startup recovery keeps it hidden.
+assert.match(workspaceRecoveryDialogSource, /<button[^>]*id="btn-workspace-cancel"[^>]*\bhidden\b/);
+assert.match(mainSource, /if \(el\.btnWorkspaceCancel\) el\.btnWorkspaceCancel\.hidden = !allowCancel;/);
 assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-saved-at">마지막 저장: \{time\}<\/p>/);
 assert.match(workspaceRecoveryDialogSource, /id="workspace-recovery-summary">로봇 \{robots\}대 · 3D 모델 \{models\}개<\/p>/);
 assert.ok(
@@ -619,11 +622,11 @@ assert.ok(
         && cssSource.includes('.workspace-recovery-dialog-actions button:disabled'),
     'The recovery dialog must provide a modal backdrop, hidden-error semantics, keyboard focus and disabled loading feedback.'
 );
-const simulationCacheVersion = htmlSource.match(/style\.css\?v=([^"']+)/)?.[1] || '';
+// Style, main module and the generated locale bundle each carry their own cache version.
 assert.ok(
-    simulationCacheVersion
-        && htmlSource.includes(`main.js?v=${simulationCacheVersion}`)
-        && htmlSource.includes(`/Language/runtime/locales-data.js?v=${simulationCacheVersion}`),
+    /style\.css\?v=[^"'\s]+/.test(htmlSource)
+        && /main\.js\?v=[^"'\s]+/.test(htmlSource)
+        && /\/Language\/runtime\/locales-data\.js\?v=[0-9a-f]+/.test(htmlSource),
     'Workspace recovery must invalidate simulation style, module and localized-text caches.'
 );
 assert.ok(
@@ -631,10 +634,6 @@ assert.ok(
         && mainSource.includes('workspaceRecovery: {')
         && mainSource.includes('pendingProbes: new Map()'),
     'The simulation must load the workspace core and keep per-document recovery state.'
-);
-assert.ok(
-    !mainSource.includes('.mjs?v='),
-    'The simulation must not append cache-busting query strings to local module imports.'
 );
 [
     "workspaceRecoveryDialog: document.getElementById('workspace-recovery-dialog')",
@@ -748,8 +747,8 @@ assert.ok(
         && mainSource.includes('function getOlpProjectForRobot(')
         && mainSource.includes('state.olp.projects.set(instanceId, project)')
         && mainSource.includes('robot: targetRobot,')
-        && olpRuntimeSource.includes('readAddress?.(address, this)')
-        && olpRuntimeSource.includes('writeAddress?.(address, value, this)'),
+        && /readAddress\?\.\(address, ?(?:this|runtime)\)/.test(olpRuntimeSource)
+        && /writeAddress\?\.\(address, ?value, ?(?:this|runtime)\)/.test(olpRuntimeSource),
     'OLP must keep project files and runtime IO address resolution scoped to each robot instance.'
 );
 assert.ok(
@@ -868,7 +867,7 @@ assert.ok(
         && workspaceRestoreSource.includes('applyWorkspaceDisplayState(snapshot)')
         && workspaceRestoreSource.includes('applyWorkspaceCameraState(snapshot?.camera)')
         && workspaceRestoreSource.indexOf('state.activeProgramRobot = robotsById.get(selection.activeProgramRobotInstanceId)')
-            < workspaceRestoreSource.indexOf('syncOlpHomeStatus(state.activeProgramRobot || state.activeArticulatedModel);')
+            < workspaceRestoreSource.search(/syncOlpHomeStatus\(\s*state\.activeProgramRobot \|\| state\.activeArticulatedModel/)
         && !workspaceRestoreSource.includes('connectOlpVirtualBus(')
         && workspaceRestoreSource.includes('state.undoStack = []')
         && workspaceRestoreSource.includes('recovery.restoring = false;'),
@@ -940,7 +939,8 @@ const workspaceChoiceResolverSource = mainSource.slice(
 );
 assert.ok(
     workspaceChoiceResolverSource.includes("{ action: 'restore', workspaceId: recovery.selectedRecoveryWorkspaceId }")
-        && workspaceChoiceResolverSource.includes("{ action: 'new', workspaceId: null }"),
+        // Cancel is only offered for the project list opened later (hidden at startup).
+        && workspaceChoiceResolverSource.includes("{ action: choice === 'cancel' ? 'cancel' : 'new', workspaceId: null }"),
     'The modal decision must return an explicit action and selected workspace id.'
 );
 const workspaceCandidateRendererSource = mainSource.slice(
@@ -1118,7 +1118,7 @@ assert.ok(
     workspaceCandidateRefreshSource.includes('if (candidate.legacy) {')
         && workspaceCandidateRefreshSource.includes('const latest = readLegacyWorkspaceCandidate();')
         && workspaceCandidateRefreshSource.includes('return { ...candidate, record: latest, live: false };')
-        && workspaceCandidateRefreshSource.includes('let record = await state.workspaceRecovery.db.getWorkspace(candidate.record.id);')
+        && workspaceCandidateRefreshSource.includes('let record = readWorkspaceExitSnapshot(await state.workspaceRecovery.db.getWorkspace(candidate.record.id));')
         && workspaceCandidateRefreshSource.includes('record.archived || !workspaceSnapshotHasWork(record.state)')
         && workspaceCandidateRefreshSource.includes('const [probe, lease] = await Promise.all([')
         && workspaceCandidateRefreshSource.includes('record = await waitForWorkspaceRecoveryRevision(record.id, probe.revision)')
@@ -1187,7 +1187,7 @@ assert.ok(
         && workspaceSelectedAcquireSource.includes('if (leaseResult.acquired) {')
         && workspaceSelectedAcquireSource.includes('selected = await refreshWorkspaceRecoveryCandidate({ ...selected, live: true });')
         && workspaceSelectedAcquireSource.includes('try {')
-        && workspaceSelectedAcquireSource.includes('const latest = await state.workspaceRecovery.db.getWorkspace(source.id);')
+        && workspaceSelectedAcquireSource.includes('const latest = readWorkspaceExitSnapshot(await state.workspaceRecovery.db.getWorkspace(source.id));')
         && workspaceSelectedAcquireSource.includes('} catch (error) {')
         && workspaceSelectedAcquireSource.includes('if (targetWorkspaceId) {')
         && workspaceSelectedAcquireSource.includes('await recovery.db.releaseLease(targetWorkspaceId, recovery.ownerId).catch(() => {});')
@@ -1208,7 +1208,7 @@ const workspaceRecoveryInitSource = mainSource.slice(
     'readSessionStorageValue(WORKSPACE_SESSION_POINTER_KEY)',
     'let candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId, startClean });',
     'let preferredWorkspaceId = candidates.find((candidate) => candidate.sessionMatch)?.record.id',
-    'const choice = await requestWorkspaceRecoveryChoice(candidates, {',
+    ': await requestWorkspaceRecoveryChoice(candidates, {',
     "if (choice.action === 'new') {",
     'preferredWorkspaceId = choice.workspaceId;',
     'const candidate = candidates.find((entry) => entry.record.id === choice.workspaceId);',
@@ -1253,7 +1253,7 @@ const workspaceRecoveryInitSource = mainSource.slice(
 ));
 const workspaceStartupBeforeChoiceSource = workspaceRecoveryInitSource.slice(
     0,
-    workspaceRecoveryInitSource.indexOf('const choice = await requestWorkspaceRecoveryChoice(candidates, {')
+    workspaceRecoveryInitSource.indexOf(': await requestWorkspaceRecoveryChoice(candidates, {')
 );
 assert.doesNotMatch(
     workspaceStartupBeforeChoiceSource,
@@ -1262,8 +1262,8 @@ assert.doesNotMatch(
 );
 assert.ok(
     workspaceRecoveryInitSource.indexOf('let candidates = await discoverWorkspaceRecoveryCandidates({ sessionWorkspaceId, startClean });')
-        < workspaceRecoveryInitSource.indexOf('const choice = await requestWorkspaceRecoveryChoice(candidates, {')
-        && workspaceRecoveryInitSource.indexOf('const choice = await requestWorkspaceRecoveryChoice(candidates, {')
+        < workspaceRecoveryInitSource.indexOf(': await requestWorkspaceRecoveryChoice(candidates, {')
+        && workspaceRecoveryInitSource.indexOf(': await requestWorkspaceRecoveryChoice(candidates, {')
             < workspaceRecoveryInitSource.indexOf('const prepared = await acquireSelectedWorkspaceRecovery(candidate);')
         && workspaceRecoveryInitSource.indexOf('closeWorkspaceRecoveryDialog();')
             < workspaceRecoveryInitSource.indexOf('showLoading(true, uiText(\'이전 작업 불러오는 중...\'));')
@@ -1397,7 +1397,7 @@ const models = catalog.filter((entry) => entry.type === 'articulated-stl');
 const scaraCount = models.filter((entry) => entry.robotType === 'scara').length;
 const sixAxisCount = models.filter((entry) => entry.robotType === 'six-axis').length;
 assert.equal(scaraCount, 17);
-assert.equal(sixAxisCount, 12);
+assert.equal(sixAxisCount, 14);
 models.forEach((model) => {
     assert.equal(model.jointSpeeds.length, model.limits.length, `${model.name} must define one speed per joint.`);
     assert.ok(model.jointSpeeds.every((speed) => Number.isFinite(speed) && speed > 0), `${model.name} joint speeds must be positive.`);
@@ -1713,7 +1713,7 @@ const fullProject = {
 };
 
 const normalized = normalizeMotionProject(fullProject);
-assert.equal(normalized.robots.length, 29);
+assert.equal(normalized.robots.length, models.length);
 assert.equal(normalized.robots.filter((robot) => robot.included).length, 4);
 assert.equal(normalized.repeatCurrentRobot, false);
 assert.equal(normalized.reverseRepeatCurrentRobot, false);
@@ -1790,8 +1790,11 @@ assert.throws(() => normalizeMotionProject({
         ? { ...robot, steps: robot.steps.map((step, stepIndex) => stepIndex === 5 ? { ...step, viewSlot: 10 } : step) }
         : robot)
 }), /view slot must be 0 to 9/);
-assert.equal(normalized.robots[0].tcpProfiles.length, 3);
-assert.deepEqual(normalized.robots[0].tcpProfiles[0], {
+// Projects without Tool data get Tool 0-15, each with an empty load.
+assert.equal(normalized.robots[0].tcpProfiles.length, 16);
+const { load: defaultToolLoad, ...defaultToolPose } = normalized.robots[0].tcpProfiles[0];
+assert.ok(defaultToolLoad && typeof defaultToolLoad === 'object');
+assert.deepEqual(defaultToolPose, {
     position: [0, 0, 0],
     quaternion: [0, 0, 0, 1]
 });
@@ -1898,7 +1901,7 @@ assert.throws(() => normalizeMotionProject(invalidPointLabel), /label must start
 
 const invalidTcpCount = structuredClone(fullProject);
 invalidTcpCount.robots[0].tcpProfiles = [];
-assert.throws(() => normalizeMotionProject(invalidTcpCount), /TCP profiles must contain exactly 3 entries/);
+assert.throws(() => normalizeMotionProject(invalidTcpCount), /Tool profiles must contain 16 entries \(or 3 legacy TCP entries\)/);
 
 const invalidActiveTcp = structuredClone(configuredTcpProject);
 invalidActiveTcp.robots[0].activeTcpProfileIndex = 3;
@@ -1938,11 +1941,10 @@ assert.ok(!htmlSource.includes('id="program-add-grip-release"') && !mainSource.i
     'btn-reset-tcp-profile',
     'tcp-snap-type',
     'btn-tcp-snap',
-    'tcp-snap-readout',
     'tcp-multi-center-controls',
     'btn-toggle-outline'
 ].forEach((id) => assert.match(htmlSource, new RegExp(`id=["']${id}["']`)));
-assert.equal((htmlSource.match(/data-tcp-profile=/g) || []).length, 3, 'Viewer must expose exactly three TCP slots.');
+assert.equal((htmlSource.match(/data-tcp-profile=/g) || []).length, 16, 'Viewer must expose Tool slots 0 to 15.');
 assert.ok(mainSource.includes('function applyImportedModelColor(')
     && mainSource.includes('findImportedModelPart(partId)')
     && mainSource.includes('modelColorPicker?.addEventListener'), 'Imported model and part colors must be editable from the model tree context menu.');
@@ -2041,9 +2043,10 @@ assert.ok(
         && clipboardCloneSource.includes('record.object.isSkinnedMesh')
         && clipboardCloneSource.includes('clone = cloneObjectWithSkeletons(source);')
         && clipboardCloneSource.includes('clone = source.clone(true);')
-        && clipboardCloneSource.includes('sourceMaterials.map(cloneClipboardMaterial)')
+        && clipboardCloneSource.includes('sourceMaterials.map((material) => cloneClipboardMaterial(material,')
         && clipboardCloneSource.includes('state.collision.highlightedMaterials.get(material)')
-        && clipboardCloneSource.includes('clonedMaterial.color.copy(collisionSnapshot.color)')
+        // Collision highlights and part colour overrides restore the original colour on the copy.
+        && clipboardCloneSource.includes('clonedMaterial.color.copy(snapshot.color)')
         && clipboardCloneSource.includes('object.userData?.simulationSnapFaceOverlay')
         && clipboardCloneSource.includes('object.userData?.collisionDebugMesh')
         && clipboardCloneSource.includes('delete clonedObject.userData.modelTreeId;')
@@ -2133,7 +2136,7 @@ assert.deepEqual(programControlRows, [
     'tcpLiveProfile',
     'tcpProfiles: serializeRobotTcpProfiles(robot)',
     'activeTcpProfileIndex: robot.userData.activeTcpProfileIndex',
-    'function updateCameraScaledTcpAxes()',
+    'function updateCameraScaledTcpAxes(',
     'tcpFrame.add(toolAxesAtTcp)',
     'robot.userData.toolAxesAtTcp = toolAxesAtTcp',
     'maxSpeed: jointSpeeds[index]',
@@ -2187,15 +2190,20 @@ assert.ok(!mainSource.includes('updateRobotCollisions'), 'Approximate robot coll
 assert.ok(!mainSource.includes('prepareRobotCollisionParts'), 'Robot links must not create box collision volumes.');
 assert.ok(!mainSource.includes('collisionHelpers'), 'Collision warning boxes must remain removed.');
 assert.doesNotMatch(motionCoreSource, /SIMULATION_MOTION_DURATION_SCALE|MOVJ_EASING_PEAK_SLOPE/, 'The former fixed motion-time correction must stay removed.');
-assert.match(motionCoreSource, /t \* t \* t \* \(10 \+ t \* \(-15 \+ 6 \* t\)\)/, 'Motion interpolation must use the fifth-order S-curve.');
+// The S-curve is evaluated by the Rust simulation engine.
+assert.match(motionCoreSource, /export function sCurveProgress\(value\) \{\s*return engine\.eased_progress\(/, 'Motion interpolation must use the fifth-order S-curve.');
+assert.match(await readFile(new URL('../simulator-rust/src/camera.rs', import.meta.url), 'utf8'),
+    /fn eased_progress\(progress: f64\) -> f64 \{\s*let t = progress\.clamp\(0\., 1\.\);\s*t \* t \* t \* \(10\. \+ t \* \(-15\. \+ 6\. \* t\)\)/,
+    'Motion interpolation must use the fifth-order S-curve.');
 assert.ok(mainSource.includes('maxAcceleration: jointAccelerations[index]'), 'Robot manifests must expose per-axis acceleration limits.');
 assert.ok(mainSource.includes('maxDeceleration: jointDecelerations[index]'), 'Robot manifests must expose per-axis deceleration limits.');
 assert.ok(mainSource.includes('robot.userData.manifest.cartesianMotion'), 'MOVL must use the selected robot Cartesian limits.');
 assert.match(htmlSource, /main\.js\?v=[^"'\s]+/, 'Viewer cache token must load the current simulation bundle.');
 assert.ok(htmlSource.includes('id="btn-fullscreen-mode"'), 'Viewer must expose the fullscreen UI mode button.');
 assert.match(htmlSource, /id="btn-test-model"[\s\S]*?<i class="fa-solid fa-flask"[^>]*><\/i>\s*<span>/, 'The Test button must place its icon before its text.');
-assert.match(htmlSource, /id="btn-import-3d"[\s\S]*?<i class="fa-solid fa-upload"[^>]*><\/i>\s*<span>/, 'The 3D button must place its icon before its text.');
-assert.match(htmlSource, /id="btn-download-cad"[\s\S]*?<i class="fa-solid fa-download"[^>]*><\/i>\s*<span>/, 'The CAD button must place its icon before its text.');
+assert.match(htmlSource, /id="btn-import-3d"[\s\S]*?<i class="fa-solid fa-upload"[^>]*><\/i>\s*<span[\s>]/, 'The 3D button must place its icon before its text.');
+// The toolbar no longer has a separate CAD download button.
+assert.doesNotMatch(htmlSource, /id="btn-download-cad"/);
 assert.ok(mainSource.includes('function setFullscreenUiMode(') && mainSource.includes('function handleFullscreenUiPointerMove(event)'), 'Fullscreen UI mode must hide and reveal bars from pointer proximity.');
 assert.ok(mainSource.includes('updateFullscreenBar(state.fullscreenBars.top,') && mainSource.includes('updateFullscreenBar(state.fullscreenBars.bottom,'), 'Fullscreen UI mode must update the top and bottom bars independently.');
 assert.ok(mainSource.includes('function attachPendingToolModels(robot)')
@@ -2232,8 +2240,8 @@ assert.ok(mainSource.includes('const MODEL_TRANSFORM_ROTATION_SNAP = THREE.MathU
 assert.doesNotMatch(htmlSource, /id="btn-toggle-transform"/, 'The Model Tree panel must not contain a separate transform handle toggle.');
 assert.doesNotMatch(mainSource, /const mode = \{ w: 'translate', e: 'rotate', r: 'scale' \}\[key\]/, 'Model transform W/E/R keyboard shortcuts must remain disabled.');
 assert.ok(mainSource.includes('const PANEL_DRAG_EXCLUDED_SELECTOR') && mainSource.includes('panel.classList.add(\'panel-drag-anywhere\')'), 'Panels must support dragging from non-interactive areas.');
-assert.ok(mainSource.includes('target.position[editedKey] = editedValue;') && mainSource.includes('positionTolerance: 0.001') && mainSource.includes('updateTcpPresentation(robot, target);'), 'Numeric Base JOG input must preserve other axes and use stable sub-0.01 mm precision.');
-assert.ok(mainSource.includes('function jogTcpInBase(robot, kind, axisName, direction)') && mainSource.includes('const currentTarget = robot.userData.baseJogTarget;') && mainSource.includes('robot.userData.baseJogTarget = target;'), 'Base JOG buttons must preserve exact non-edited target axes.');
+assert.ok(mainSource.includes('displayTarget.position[editedKey] = editedValue;') &&mainSource.includes('positionTolerance: 0.001') && mainSource.includes('updateTcpPresentation(robot, target);'), 'Numeric Base JOG input must preserve other axes and use stable sub-0.01 mm precision.');
+assert.ok(mainSource.includes('function jogTcpInBase(robot, kind, axisName, direction)') && mainSource.includes('const currentBaseTarget = robot.userData.baseJogTarget;') && mainSource.includes('robot.userData.baseJogTarget = target;'), 'Base JOG buttons must preserve exact non-edited target axes.');
 assert.doesNotMatch(htmlSource, /id="program-select-all"/, 'The Program Panel must not contain a select-all/deselect-all control.');
 assert.ok(htmlSource.includes('id="program-toggle-robot-avoidance"')
     && htmlSource.includes('id="program-robot-avoidance-priority"')
@@ -2273,7 +2281,7 @@ assert.match(htmlSource, /style\.css\?v=[^"'\s]+/, 'Stylesheet cache token must 
 assert.match(cssSource, /body\.fullscreen-ui-mode #main-content\s*\{[^}]*top:\s*0[^}]*bottom:\s*0/s, 'Fullscreen UI mode must expand the 3D viewport.');
 assert.doesNotMatch(htmlSource, /id="collision-alert"/);
 assert.doesNotMatch(cssSource, /\.collision-alert\s*\{/);
-assert.match(htmlSource, /id="import-dialog-title">3D 모델 가져오기 방식<\/h2>/);
+assert.match(htmlSource, /id="import-dialog-title">3D\/CAD File Import<\/h2>/);
 assert.match(htmlSource, /<select id="import-placement"[^>]*>[\s\S]*?<option value="tcp">Tool<\/option>[\s\S]*?<option value="scene">3D 모델링<\/option>/);
 assert.doesNotMatch(htmlSource, />배치 방식<\/span>/);
 assert.match(cssSource, /\.import-dialog\s*\{[^}]*position:\s*fixed[^}]*top:\s*50%[^}]*left:\s*50%[^}]*margin:\s*0[^}]*transform:\s*translate\(-50%,\s*-50%\)/s);
@@ -2281,7 +2289,7 @@ assert.ok(mainSource.includes("sceneOption.textContent = uiText('3D 모델링')"
     && mainSource.includes("tcpOption.textContent = uiText('Tool')"), 'Import placement labels must remain Tool and 3D Model.');
 assert.match(
     mainSource,
-    /if \(robot === state\.activeArticulatedModel\) syncJointControls\(robot\);\r?\n\s*updateTcpPresentation\(robot\);/,
+    /if \(robot === state\.activeArticulatedModel\) syncJointControls\(robot\);\r?\n\s*if \(moving\) captureCurrentTcpTarget\(robot\);\r?\n\s*else updateTcpPresentation\(robot\);/,
     'Every animated robot must update its TCP visual, while only the active robot updates JOG controls.'
 );
 assert.match(cssSource, /\.program-panel\s*\{/);
@@ -2366,15 +2374,14 @@ assert.ok(mainSource.includes("import { buildStepSnapCandidates } from '../3_Too
     && mainSource.includes('position: getRobotControllerBaseFrame(robot).worldToLocal(snap.worldPoint.clone())')
     && mainSource.includes('positionTolerance: 0.001'), 'Simulation snap movement must reuse Mode D candidates and solve the selected point in robot Base coordinates.');
 assert.ok(mainSource.includes('formatPositionPointRecordLine({')
-    && mainSource.includes("async function saveStandalonePFile(content, suggestedName = 'P.pts')")
+    && mainSource.includes("async function saveStandalonePFile(content, suggestedName = 'P.pts'")
     && mainSource.includes('saveAs(blob, suggestedName)'), 'Position export must use the verified record formatter and a browser-compatible fallback download.');
-assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?fa-upload[\s\S]*?<span>3D<\/span>/, 'The 3D import button must show a 3D upload tray icon before its text.');
+assert.match(htmlSource, /id="btn-import-3d"[^>]*>[\s\S]*?fa-upload[\s\S]*?<span[^>]*>3D 파일<\/span>/, 'The 3D import button must show a 3D upload tray icon before its text.');
 assert.match(htmlSource, /program-file-row[\s\S]*?id="program-import"[\s\S]*?id="program-export"[\s\S]*?id="btn-position-export"/, 'Program files must provide load, save, and point export controls in order.');
 assert.ok(
     htmlSource.indexOf('id="btn-position-export"') > htmlSource.indexOf('id="program-export"'),
     'Position export must not remain in the top toolbar.'
 );
-assert.match(htmlSource, /id="btn-download-cad"[^>]*>[\s\S]*?<span>CAD<\/span>[\s\S]*?fa-download/, 'CAD download must use a labeled download tray icon.');
 assert.match(htmlSource, /jog-mode-tabs[\s\S]*?id="btn-jog-joint-mode"[\s\S]*?id="btn-jog-base-mode"[\s\S]*?id="btn-snap-move"/, 'JOG must group Joint, Base, and Snap Move controls.');
 assert.ok(!htmlSource.includes('id="program-update-step"') && !mainSource.includes('btnProgramUpdate'), 'The Program Panel must not expose a dedicated point-overwrite button.');
 assert.match(
@@ -2395,7 +2402,7 @@ assert.ok(
         && mainSource.includes("if (!row || !step) return;"),
     'Every program command must expose a delete action in its context menu.'
 );
-assert.ok(mainSource.includes('Boolean(getJogTargetRobot()?.userData?.tcpFrame)')
+assert.ok(mainSource.includes('getJogTargetRobot()?.userData?.tcpFrame')
     && mainSource.includes('!isOlpRunning()')
     && !mainSource.includes('if (!getSimulationSnapModels().length)'), 'Snap Move must remain available during normal playback when a robot can receive the snap target.');
 assert.ok(mainSource.includes('const baseSeedOffset = polarDelta * jointDirection;') && mainSource.includes('const baseSeedOffsets = ['), 'IK must add J1-oriented seeds for targets that require base rotation.');
@@ -2508,12 +2515,16 @@ assert.ok(
 );
 assert.ok(!htmlSource.includes('id="program-panel-resize"'), 'Panel resizing must not require a header button.');
 assert.ok(mainSource.includes('function makePanelEdgeResizable('), 'Panels must support classic edge resizing.');
-assert.ok(mainSource.includes('[el.modelBrowserPanel, el.jogPanel, el.virtualControllerPanel, el.collaborationPanel, el.viewPresetsPanel, el.interferenceZonePanel, el.programPanel, el.measurementPanel, el.shapePanel, el.viewWindow, el.armLoadPanel, el.toolLoadInfoPanel].forEach(makePanelEdgeResizable)')
-    && mainSource.includes('[el.tcpProfilePanel].forEach(makePanelEdgeResizable)'), 'Model, JOG, Virtual Controller, Collaboration, Saved Views, Interference, Measurement, Shape, View Window, Arm Load and TCP Profile panels must all use edge resizing.');
-assert.ok(mainSource.includes("'model-browser-panel': { width: 260, height: 220 }")
-    && mainSource.includes("'jog-panel': { width: 250, height: 300 }")
-    && mainSource.includes("'virtual-controller-panel': { width: 250, height: 230 }")
-    && mainSource.includes("'program-panel': { width: 300, height: 540 }"), 'Resizable panels must preserve usable minimum sizes.');
+const edgeResizablePanels = (mainSource.match(/\[[^\]]*\]\.forEach\(makePanelEdgeResizable\)/g) || []).join(' ');
+assert.ok(['el.modelBrowserPanel', 'el.jogPanel', 'el.virtualControllerPanel', 'el.collaborationPanel', 'el.viewPresetsPanel',
+    'el.interferenceZonePanel', 'el.programPanel', 'el.measurementPanel', 'el.shapePanel', 'el.viewWindow', 'el.armLoadPanel',
+    'el.toolLoadInfoPanel', 'el.tcpProfilePanel'].every((panel) => edgeResizablePanels.includes(panel)), 'Model, JOG, Virtual Controller, Collaboration, Saved Views, Interference, Measurement, Shape, View Window, Arm Load and TCP Profile panels must all use edge resizing.');
+// Minimum panel sizes are defined in the Rust panels module.
+const panelsRustSource = await readFile(new URL('../simulator-rust/src/panels.rs', import.meta.url), 'utf8');
+assert.ok(panelsRustSource.includes('panel("model-browser-panel", 260, 220,')
+    && panelsRustSource.includes('panel("jog-panel", 250, 300,')
+    && panelsRustSource.includes('panel("virtual-controller-panel", 250, 230,')
+    && panelsRustSource.includes('panel("program-panel", 300, 540,'), 'Resizable panels must preserve usable minimum sizes.');
 assert.ok(mainSource.includes("dataset.userResized === 'true'"), 'Resized panels must be constrained after viewport changes.');
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="e"\], \[data-resize-edge="w"\]\)[^{]*\{[^}]*cursor:\s*ew-resize/s);
 assert.match(cssSource, /\.panel-edge-resizable:is\(\[data-resize-edge="n"\], \[data-resize-edge="s"\]\)[^{]*\{[^}]*cursor:\s*ns-resize/s);

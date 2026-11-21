@@ -15,7 +15,8 @@ const ignoredDirectories = new Set([
 const normalize = file => String(file).replaceAll('\\', '/').replace(/^\.\//, '');
 
 export function isIgnoredPath(file) {
-  if (normalize(file).startsWith('simulator-rust/target/')) return true;
+  if (/^(?:simulator|site)-rust\/target\//.test(normalize(file))) return true;
+  if (normalize(file).startsWith('2_3DSimulation/VirtualControllerBridge/target/')) return true;
   if (/\.log$/i.test(file)) return true;
   return normalize(file).split('/').some(part => ignoredDirectories.has(part) ||
     /^test-results(?:-|$)/.test(part) || part.startsWith('.tmp'));
@@ -39,11 +40,20 @@ export function collectTests(root = repoRoot) {
   return catalog;
 }
 
+// Runners for tools/validate-* follow the pages their validators read, plus any validator change.
+const validatorRunnerAreas = {
+  'tests/fast/validators-simulation.test.mjs': ['simulation', 'validators'],
+  'tests/fast/validators-tool.test.mjs': ['tool', 'validators'],
+  'tests/fast/validators-site.test.mjs': ['localized', 'workers', 'history', 'validators']
+};
+
 function testAreas(file, source) {
+  if (validatorRunnerAreas[file]) return validatorRunnerAreas[file];
   if (file.startsWith('tests/tooling/')) return ['tooling'];
   // The home guides replay every tool page, so they follow the guide scripts and each replayed page.
   if (file.includes('tool-guides.')) return ['guide', 'model', 'simulation', 'tool', 'project', 'document'];
   if (file.includes('regression-contracts.')) return Object.values(pageRoots);
+  if (file.endsWith('/site-rust.test.mjs')) return ['home', 'model', 'tool', 'document', 'debugging'];
   if (file.includes('version-history')) return ['home', 'history'];
   if (file.includes('bridge-output-scheduling.')) return ['bridge'];
   if (file.includes('project-generator-')) return ['project'];
@@ -58,9 +68,13 @@ function fileAreas(file) {
   if (file.startsWith('simulator-rust/') || file.startsWith('test-fixtures/cad/')
     || ['tests/support/load-collision-system.mjs', 'tests/support/load-olp-runtime.mjs'].includes(file)) return ['simulation'];
   if (file === '0_Home/UPDATE_HISTORY.md') return ['history'];
-  if (/^2_3DSimulation\/VirtualControllerBridge\//.test(file) || /^tests\/dotnet\//.test(file)) return ['bridge'];
+  if (file.startsWith('2_3DSimulation/VirtualControllerBridge/') || file === '2_3DSimulation/bridge/InoRobotVirtualControllerBridge.zip') return ['bridge'];
   if (/^(test-fixtures\/generator-harness\/|tests\/fixtures\/generator-output-sha256\.json$|tools\/test-generator\.mjs$)/.test(file)) return ['generator'];
   if (/\.(md|txt)$/i.test(file) && !/(UPDATE_HISTORY|업데이트_기록)\.md$/i.test(file)) return [];
+  if (file.startsWith('site-rust/src/controller/') || file === 'site-rust/controller.js') return ['project'];
+  if (file.startsWith('site-rust/') || file === 'shared/site-engine.js') {
+    return ['home', 'model', 'tool', 'project', 'software', 'document', 'debugging'];
+  }
   if (file.startsWith('tests/fixtures/project-generator/') || file === 'tests/support/project-generator-samples.mjs') return ['project'];
   if (file === 'tests/fixtures/robot-purchase-codes.json') return ['model'];
   if (file.startsWith('downloads/') || file === 'tests/fixtures/software-downloads.json') return ['software'];
@@ -72,6 +86,7 @@ function fileAreas(file) {
   if (/^0_Home\/(tool-guide|robot-select-guide)/.test(file)) return ['guide', 'home'];
   if (file === 'tools/static-server.mjs' || file === 'playwright.config.mjs') return ['all'];
   if (/^tools\/(build-localized-site|build-version-history|version-history|sync-.*history-data)\.cjs$/.test(file)) return ['all'];
+  if (/^tools\/(?:validate-[^/]+\.(?:mjs|cjs)|read-simulation-markup\.cjs)$/.test(file)) return ['validators'];
   if (file.startsWith('tools/')) return ['tooling'];
   if (file.startsWith('Language/')) {
     const localizedPage = {
@@ -80,7 +95,13 @@ function fileAreas(file) {
       'software.json': 'software', 'document.json': 'document',
       'debugging-tool.json': 'debugging', 'servo.json': 'servo'
     }[file.split('/').at(-1)];
-    return [localizedPage || 'all'];
+    return [localizedPage || 'all', 'localized'];
+  }
+  // Cloudflare workers deployed beside the Software page.
+  if (/^5_Software\/(?:analytics|visitor-counter)-worker\//.test(file)) return ['software', 'workers'];
+  // Entry pages carry the localized markup and SEO blocks checked site-wide.
+  if (file === '0_Home/home.template.html' || /^[^/]+\/(?:.*\/)?index\.html$/.test(file)) {
+    return [pageRoots[file.split('/')[0]] || 'all', 'localized'];
   }
   if (/^(package(-lock)?\.json|\.github\/)/.test(file)) return ['all'];
   return [pageRoots[file.split('/')[0]] || 'all'];

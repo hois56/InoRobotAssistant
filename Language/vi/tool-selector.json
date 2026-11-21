@@ -206,7 +206,7 @@
     "{format} 파일을 해석할 수 없습니다. {message}": "Không thể phân tích tệp {format}. {message}",
     "{format} 파일 분석 완료": "Đã phân tích tệp {format}",
     "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "Đã xuất STEP · {count} bộ phận · {name}",
-    "InoRobot Tool Select": "Lựa chọn Tool InoRobot",
+    "InoRobot Tool Select": "Chọn dụng cụ cho robot",
     "3D marker legend": "Chú giải marker 3D",
     " · 대용량 최적화 {count}개 부품": " · Tối ưu tệp lớn: {count} bộ phận",
     "계산할 수 없습니다.": "Không thể tính toán.",

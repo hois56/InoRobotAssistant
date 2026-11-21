@@ -454,11 +454,10 @@ test('그룹 폴더에서 그룹 부품 전체의 동작을 설정하고 다시 
     await page.evaluate(()=>{const api=window.__treeMotion;api.state.models[0].userData.modelPartGroups=[{name:'실린더 그룹',parts:[0,1],collapsed:true}];api.updateUIStatus();});
     const folder=page.locator('.model-tree-part-group summary');
     await folder.click({button:'right'});await expect(page.locator('#model-group-motion-settings')).toBeVisible();await page.locator('#model-group-motion-settings').click();
-    const targets=page.locator('[data-equipment-role="movingRef"] .equipment-part-options');
-    await expect(targets.locator('input:checked')).toHaveCount(2);
-    expect(await targets.locator('input:checked').evaluateAll(nodes=>nodes.map(node=>node.value.split('/').at(-1)))).toEqual(['0','1']);
     expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(2);
     await page.locator('#equipment-form button[type="submit"]').click();await expect(page.locator('#equipment-error')).toContainText('저장했습니다');
+    // Every part of the group folder becomes a moving target.
+    expect(await page.evaluate(()=>window.__treeMotion.state.equipmentDefinitions[0].movingRefs.map(ref=>ref.split('/').at(-1)))).toEqual(['0','1']);
     const id=await page.locator('#equipment-form [name="id"]').inputValue();
     await page.locator('#equipment-close').click();
     await expect(page.locator('.model-tree-part-group details')).not.toHaveAttribute('open','');
@@ -499,13 +498,12 @@ test('IO 입력을 연결 영역에 표시하고 선택한 이동 대상만 보�
     await expect(page.locator('#equipment-io [name="feedbackHome"]')).toBeVisible();
     await expect(page.locator('#equipment-io [name="feedbackEnd"]')).toBeVisible();
     await expect(page.locator('#equipment-extra [name^="feedback"]')).toHaveCount(0);
-    const list=page.locator('[data-equipment-role="movingRef"] .equipment-part-options');
-    await expect(list.locator('label')).toHaveCount(1);
-    await expect(list.getByRole('button',{name:'부품 2',exact:true})).toHaveCount(0);
-    await page.locator('[data-equipment-role="movingRef"] > button').click();await page.locator('button[data-model-part-id="test-part-1"]').click();
-    await expect(list.locator('label')).toHaveCount(2);
-    await page.locator('[data-equipment-role="movingRef"] > button').click();
+    // Only the clicked part is the target until another part is checked from the model tree.
+    await expect(page.locator('#equipment-target-label')).toContainText('부품 1');
+    await page.locator('button[data-model-part-id="test-part-1"]').click({button:'right'});await page.locator('#model-motion-add-part').click();
+    await expect(page.locator('#equipment-error')).toContainText('부품을 추가했습니다');
     await page.locator('#equipment-form button[type="submit"]').click();
+    expect(await page.evaluate(()=>window.__treeMotion.state.equipmentDefinitions[0].movingRefs.map(ref=>ref.split('/').at(-1)))).toEqual(['0','1']);
     await expect(page.locator('[data-equipment-command="FORWARD"]')).toHaveText('전진');
     await expect(page.locator('[data-equipment-command="REVERSE"]')).toHaveText('후진');
     const buttons=await page.locator('#equipment-current-controls .equipment-test-actions button').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().top));
@@ -515,13 +513,11 @@ test('IO 입력을 연결 영역에 표시하고 선택한 이동 대상만 보�
     expect(errors).toEqual([]);
 });
 
-test('그룹 이동 대상 들여쓰기와 동작 편집 상태 및 창 경계를 유지한다',async({page})=>{
+test('그룹 안 부품의 동작 편집 상태와 창 경계를 유지한다',async({page})=>{
     await setup(page);
     await page.evaluate(()=>{const api=window.__treeMotion;api.state.models[0].userData.modelPartGroups=[{name:'로드 그룹',parts:[0,1],collapsed:false}];api.updateUIStatus();});
     await page.locator('button[data-model-part-id="test-part-0"]').click({button:'right'});await page.locator('#model-motion-settings').click();
-    const folder=page.locator('[data-equipment-role="movingRef"] summary').filter({hasText:'로드 그룹'});
-    const child=page.locator('[data-equipment-role="movingRef"] label').filter({hasText:'부품 1'});
-    expect((await child.boundingBox()).x).toBeGreaterThan((await folder.boundingBox()).x+8);
+    await expect(page.locator('#equipment-target-label')).toContainText('부품 1');
     await page.locator('#equipment-form button[type="submit"]').click();
     await page.locator('[data-equipment-command="EDIT"]').click();
     await expect(page.locator('.equipment-header h2')).toHaveText('동작 편집');
@@ -680,38 +676,30 @@ test('Ctrl로 하위 부품을 다중 선택하고 그룹을 만들고 해제한
     await page.evaluate(()=>{const api=window.__treeMotion;const model=api.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'보조 모델'});api.state.scene.add(model);api.state.models.push(model);api.updateUIStatus();});
     await page.locator('.model-tree-button').filter({hasText:'실린더 모델'}).click();await page.locator('.model-tree-button').filter({hasText:'보조 모델'}).click({modifiers:['Control']});
     await expect(page.locator('.model-tree-button.active')).toHaveCount(2);
+    // Motion settings on one of several selected models moves all selected models together.
     await page.locator('.model-tree-button').filter({hasText:'실린더 모델'}).click({button:'right'});await page.locator('#model-motion-settings').click();
-    const targets=page.locator('[data-equipment-role="movingRef"] .equipment-part-options');
-    await expect(targets.locator('label')).toHaveCount(2);
-    while(await targets.locator('input:checked').count())await targets.locator('input:checked').first().click();
-    await page.locator('[data-equipment-role="movingRef"] > button').click();await page.locator('.model-tree-button').filter({hasText:'보조 모델'}).click();await page.locator('[data-equipment-role="movingRef"] > button').click();
-    await expect(page.locator('#equipment-form [name="name"]')).toHaveValue('실린더 / 보조 모델');
+    const name=await page.locator('#equipment-form [name="name"]').inputValue();
+    expect(name).toMatch(/^실린더 \/ (실린더 모델|보조 모델)$/);
     await page.locator('#equipment-form button[type="submit"]').click();await expect(page.locator('#equipment-error')).toContainText('저장했습니다');
-    await expect(page.locator('#equipment-form [name="name"]')).toHaveValue('실린더 / 보조 모델');
+    await expect(page.locator('#equipment-form [name="name"]')).toHaveValue(name);
+    expect(await page.evaluate(()=>window.__treeMotion.state.equipmentDefinitions.at(-1).movingRefs.length)).toBe(2);
     expect(errors).toEqual([]);
 });
 
-test('이동 대상 트리 선택은 외곽선 다중 선택과 연결되고 우클릭으로 체크한다',async({page})=>{
+test('우클릭으로 이동 대상을 체크하고 별도 창으로 분리한 동작 설정을 다시 연다',async({page})=>{
     const errors=await setup(page);
     await page.locator('button[data-model-part-id="test-part-0"]').click({button:'right'});await page.locator('#model-motion-add-part').click();
-    await expect(page.locator('#equipment-parts legend')).toHaveText('2. 이동 대상');
-    await expect(page.locator('#equipment-form [name="name"]')).toHaveValue('실린더 / 실린더 모델');
+    await expect(page.locator('#equipment-target-label')).toContainText('부품 1');
+    await expect(page.locator('#equipment-form [name="name"]')).toHaveValue(/^실린더 \/ 실린더 모델/);
     await expect(page.locator('#equipment-form [name="reverseSpeed"]')).not.toBeVisible();
     await expect(page.locator('#equipment-form [name="ioDirection"]')).toHaveCount(0);
-    const list=page.locator('[data-equipment-role="movingRef"] .equipment-part-options');
-    await expect(list.locator('details')).toHaveCount(1);
-    await expect(list.getByRole('button',{name:'부품 2',exact:true})).toHaveCount(0);
-    await page.locator('[data-equipment-role="movingRef"] > button').click();await page.locator('button[data-model-part-id="test-part-1"]').click();await page.locator('[data-equipment-role="movingRef"] > button').click();
-    await list.getByRole('button',{name:'부품 1',exact:true}).click();await list.getByRole('button',{name:'부품 2',exact:true}).click({modifiers:['Shift']});
-    expect(await page.evaluate(()=>window.__treeMotion.state.modelSelection.size)).toBe(2);
-    const outlines=await page.evaluate(()=>{const api=window.__treeMotion;return api.state.models[0].userData.importedParts.map(part=>{let selected=false;part.traverse(mesh=>{if(mesh.userData.outlineLine?.material.color.getHex()===0xfacc15)selected=true;});return selected;});});
-    expect(outlines).toEqual([true,true]);
     await page.locator('button[data-model-part-id="test-part-1"]').click({button:'right'});await page.locator('#model-motion-add-part').click();
-    await expect(list.locator('input:checked')).toHaveCount(2);
+    await expect(page.locator('#equipment-error')).toContainText('부품을 추가했습니다');
     await page.locator('#equipment-form button[type="submit"]').click();await expect(page.locator('#equipment-error')).toContainText('저장했습니다');
+    expect(await page.evaluate(()=>window.__treeMotion.state.equipmentDefinitions[0].movingRefs.map(ref=>ref.split('/').at(-1)))).toEqual(['0','1']);
     await expect(page.locator('.model-tree-button .model-tree-kind')).toHaveText('실린더');
     await page.screenshot({path:test.info().outputPath('motion-selection-tree.png')});
-    await page.locator('#equipment-form [name="type"]').selectOption('CONVEYOR');await expect(page.locator('#equipment-parts legend')).toHaveText('2. 벨트 모델링 선택');
+    await page.locator('#equipment-form [name="type"]').selectOption('CONVEYOR');await expect(page.locator('#equipment-forward-label')).toHaveText('이송 Output 번호');
     const popupPromise=page.waitForEvent('popup');await page.locator('#equipment-popout').click();const popup=await popupPromise;
     await expect(popup.locator('#equipment-dialog')).toBeVisible();await expect(popup).toHaveTitle('3D Simulation - 동작 설정');
     const closed=popup.waitForEvent('close');await popup.locator('#equipment-close').click();await closed;

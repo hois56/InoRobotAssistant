@@ -31,6 +31,7 @@ function beltShape(mesh) {
 
 export function createConveyorVisuals() {
     const records = new Map();
+    const beltAnimations = new WeakMap();
     function remove(mesh, record) {
         if (mesh.material === record.material) mesh.material = record.original;
         for (const material of record.clones) material.dispose();
@@ -68,6 +69,7 @@ export function createConveyorVisuals() {
                     `);
             };
             material.customProgramCacheKey = () => cacheKey + ':conveyor-capsule-v1';
+            beltAnimations.set(material, { travel: uniforms.conveyorTravel, length });
             return material;
         });
         mesh.material = Array.isArray(original) ? clones : clones[0];
@@ -76,6 +78,7 @@ export function createConveyorVisuals() {
         return record;
     }
     return {
+        getBeltAnimation(material) { return beltAnimations.get(material); },
         update(allMappings, activeMappings, resolveBelt, seconds, catalogModels = []) {
             const retained = new Set(), advanced = new Set();
             const retain = model => model?.traverse(mesh => {

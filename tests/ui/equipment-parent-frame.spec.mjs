@@ -3,10 +3,11 @@ import { test, expect } from '@playwright/test';
 test('가동부는 이동·회전된 상위 모델과 Tool 프레임의 로컬 방향을 따른다', async ({ page }) => {
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__frames = { state, equipmentApp, THREE, createPrimitiveShapeRoot, ensureWorkspaceModelId, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };` });
+        await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__frames = { state, equipmentApp, THREE, createPrimitiveShapeRoot, ensureWorkspaceModelId, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };` });
     });
     await page.goto('/2_3DSimulation/index.html');
     await page.waitForFunction(() => window.__frames);
+    await page.evaluate(() => window.__simulationReady);
     const result = await page.evaluate(async () => {
         const { state, equipmentApp: app, THREE, createPrimitiveShapeRoot, ensureWorkspaceModelId, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot } = window.__frames;
         const root = createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '실린더 본체' });
@@ -33,7 +34,8 @@ test('가동부는 이동·회전된 상위 모델과 Tool 프레임의 로컬 �
     result.world.forEach((value, i) => expect(value).toBeCloseTo(result.expected[i], 6));
     result.restored.forEach((value, i) => expect(value).toBeCloseTo(result.local[i], 6));
     result.reset.forEach((value, i) => expect(value).toBeCloseTo([10, 0, 0][i], 6));
-    expect(result.name).toBe('실린더 / 실린더 본체');
+    // Motion names identify the moving part, not just its model.
+    expect(result.name).toBe('실린더 / 실린더 본체 / 로드');
 });
 
 test('로봇 Tool에 장착된 실린더는 로봇 관절 자세의 X 방향을 따라 움직인다', async ({page})=>{

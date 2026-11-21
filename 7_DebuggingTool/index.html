@@ -7,10 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Tools for robot diagnostics, communication testing, data comparison, and zero calibration.">
     <title>Debugging Tool | InoRobot Assistant</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.468.0"></script>
+    <!-- Lucide icons used on this page (prebuilt) -->
+    <script src="icons.js?v=20261121-1"></script>
     <!-- Google Fonts -->
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
@@ -72,314 +70,60 @@
             z-index: 200;
         }
 
-        /* Glass Card */
-        .glass-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 1.5rem;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        body[data-design-page="debugging"] > .debugging-main {
+            max-width: none;
+            padding-inline: 0 !important;
         }
 
-        .glass-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            border-color: rgba(56, 189, 248, 0.3);
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2);
-            background: rgba(30, 41, 59, 0.6);
+        #debug-tool-grid {
+            font-family: Inter, "Segoe UI", "Malgun Gothic", "Microsoft YaHei", sans-serif;
         }
 
-        .status-pill {
-            padding: 2px 10px;
-            border-radius: 99px;
-            font-size: 11px;
+        html:lang(ko) #debug-tool-grid {
+            font-family: "Noto Sans KR", Inter, sans-serif;
+        }
+
+        html:lang(zh-CN) #debug-tool-grid {
+            font-family: "Noto Sans SC", Inter, sans-serif;
+        }
+
+        .debug-tool-version {
+            display: contents;
+        }
+
+        .debug-tool-version > span {
+            flex: 1 0 auto;
+            margin-right: 4px;
+            color: var(--tool-muted);
+            font: 11px/1.3 "Cascadia Mono", Consolas, monospace;
+        }
+
+        #debug-tool-grid .tool-meta :is(button, .download-button) {
+            display: inline-flex;
+            align-items: center;
+            min-width: 0;
+            min-height: 34px;
+            padding: 6px 5px;
+            border: 0;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--tool-accent);
+            box-shadow: none;
+            font-family: inherit;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
         }
 
-        .history-button {
-            display: inline-flex;
-            align-items: center;
-            flex: 0 0 auto;
-            gap: 0.25rem;
-            padding: 0.625rem 0.5rem;
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            border-radius: 0.75rem;
-            background: rgba(14, 165, 233, 0.1);
-            color: #7dd3fc;
-            font-size: 0.75rem;
-            font-weight: 700;
-            line-height: 1;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        #debug-tool-grid .tool-meta :is(button, .download-button):hover {
+            background: var(--tool-selected);
+            color: var(--tool-action-hover);
         }
 
-        .history-button svg {
-            width: 0.8rem;
-            height: 0.8rem;
-            flex: 0 0 auto;
-        }
-
-        .history-button:hover,
-        .history-button:focus-visible {
-            border-color: rgba(56, 189, 248, 0.65);
-            background: rgba(14, 165, 233, 0.2);
-            color: #e0f2fe;
-            outline: none;
-            transform: translateY(-1px);
-        }
-
-        .tool-version-actions {
-            display: flex;
-            align-items: center;
-            flex: 0 0 auto;
-            gap: 0.25rem;
-        }
-
-        .download-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex: 0 0 auto;
-            gap: 0.3rem;
-            padding: 0.625rem 0.7rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.75rem;
-            background: #2563eb;
-            color: #fff;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.8125rem;
-            font-weight: 700;
-            line-height: 1;
-            white-space: nowrap;
-            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2), 0 4px 6px -4px rgba(59, 130, 246, 0.2);
-            transition: all 0.2s ease;
-        }
-
-        .download-button svg {
-            width: 1rem;
-            height: 1rem;
-            flex: 0 0 auto;
-        }
-
-        .download-button:hover,
-        .download-button:focus-visible {
-            background: #3b82f6;
-            outline: none;
-        }
-
-        .download-button:active {
-            transform: scale(0.95);
-        }
-
-        .history-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 300;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 1.25rem;
-            background: rgba(2, 6, 23, 0.84);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-
-        .history-modal.is-open {
-            display: flex;
-            animation: historyFadeIn 0.2s ease-out;
-        }
-
-        .history-dialog {
-            display: flex;
-            flex-direction: column;
-            width: min(780px, 100%);
-            max-height: min(82vh, 820px);
-            overflow: hidden;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 1.5rem;
-            background: linear-gradient(145deg, rgba(15, 23, 42, 0.99), rgba(2, 6, 23, 0.99));
-            box-shadow: 0 35px 90px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-            animation: historyDialogIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .history-dialog-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 1.35rem 1.5rem;
-            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-            background: rgba(15, 23, 42, 0.72);
-        }
-
-        .history-dialog-body {
-            overflow-y: auto;
-            padding: 1.5rem;
-            scrollbar-color: rgba(56, 189, 248, 0.45) transparent;
-            scrollbar-width: thin;
-        }
-
-        .history-close-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 2.4rem;
-            height: 2.4rem;
-            flex: 0 0 auto;
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            border-radius: 0.75rem;
-            background: rgba(30, 41, 59, 0.65);
-            color: #94a3b8;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .history-close-button:hover,
-        .history-close-button:focus-visible {
-            border-color: rgba(248, 113, 113, 0.45);
-            background: rgba(239, 68, 68, 0.12);
-            color: #fca5a5;
-            outline: none;
-        }
-
-        .history-version-block + .history-version-block {
-            margin-top: 1.75rem;
-            padding-top: 1.75rem;
-            border-top: 1px solid rgba(148, 163, 184, 0.12);
-        }
-
-        .history-version-title {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            margin: 0 0 0.9rem;
-            color: #f8fafc;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .history-version-title::before {
-            content: '';
-            width: 0.5rem;
-            height: 0.5rem;
-            border-radius: 999px;
-            background: #38bdf8;
-            box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
-        }
-
-        .history-entry {
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr);
-            align-items: start;
-            gap: 0.65rem;
-            margin-top: 0.65rem;
-            color: #cbd5e1;
-            font-size: 0.9rem;
-            line-height: 1.65;
-        }
-
-        .history-tag {
-            min-width: 3.8rem;
-            margin-top: 0.15rem;
-            padding: 0.15rem 0.45rem;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 0.4rem;
-            background: rgba(51, 65, 85, 0.5);
-            color: #cbd5e1;
-            font-size: 0.68rem;
-            font-weight: 800;
-            line-height: 1.45;
-            text-align: center;
-        }
-
-        .history-tag[data-tag="신규"],
-        .history-tag[data-tag="추가"] {
-            border-color: rgba(52, 211, 153, 0.3);
-            background: rgba(16, 185, 129, 0.1);
-            color: #6ee7b7;
-        }
-
-        .history-tag[data-tag="수정"] {
-            border-color: rgba(251, 191, 36, 0.3);
-            background: rgba(245, 158, 11, 0.1);
-            color: #fcd34d;
-        }
-
-        .history-tag[data-tag="변경"] {
-            border-color: rgba(96, 165, 250, 0.3);
-            background: rgba(59, 130, 246, 0.1);
-            color: #93c5fd;
-        }
-
-        .history-tag[data-tag="개선"],
-        .history-tag[data-tag="배포"] {
-            border-color: rgba(192, 132, 252, 0.3);
-            background: rgba(168, 85, 247, 0.1);
-            color: #d8b4fe;
-        }
-
-        .history-entry code {
-            padding: 0.12rem 0.35rem;
-            border: 1px solid rgba(148, 163, 184, 0.16);
-            border-radius: 0.35rem;
-            background: rgba(2, 6, 23, 0.72);
-            color: #bae6fd;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-            font-size: 0.82em;
-        }
-
-        .history-message {
-            padding: 2.5rem 1rem;
-            color: #94a3b8;
-            text-align: center;
-        }
-
-        @keyframes historyFadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes historyDialogIn {
-            from { opacity: 0; transform: translateY(16px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @media (max-width: 640px) {
-            .download-button {
-                flex: 0 1 auto;
-                min-width: 0;
-                max-width: 100%;
-                white-space: normal;
-                text-align: center;
-                line-height: 1.25;
-            }
-
-            .history-modal {
-                padding: 0.75rem;
-            }
-
-            .history-dialog {
-                max-height: 90vh;
-                border-radius: 1.15rem;
-            }
-
-            .history-dialog-header,
-            .history-dialog-body {
-                padding: 1.1rem;
-            }
-
-            .history-entry {
-                grid-template-columns: 1fr;
-                gap: 0.35rem;
-            }
-
-            .history-tag {
-                width: fit-content;
-            }
+        #debug-tool-grid :is(button, a):focus-visible {
+            outline: 2px solid var(--tool-accent);
+            outline-offset: 2px;
         }
 
         @keyframes fadeInUp {
@@ -399,719 +143,12 @@
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/Language/runtime/i18n.css">
-    <script src="/Language/runtime/locales-data.js" defer></script>
+    <link rel="stylesheet" href="/Language/runtime/i18n.css?v=20261121-header-font">
+    <script src="/Language/runtime/locales-data.js?v=5fc7759e7500" defer></script>
     <script src="/Language/runtime/i18n.js" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
     <script src="/analytics-config.js"></script>
     <script src="/analytics.js" defer></script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <!-- SUBPAGE-SEO:START -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://inovancerobot.com/7_DebuggingTool/">
@@ -1125,8 +162,13 @@
     <meta name="twitter:title" content="Debugging Tool | InoRobot Assistant">
     <meta name="twitter:description" content="Tools for robot diagnostics, communication testing, data comparison, and zero calibration.">
     <!-- SUBPAGE-SEO:END -->
-    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261118-tools-1">
-    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261118-1">
+    <link rel="stylesheet" href="/shared/astryx-theme.css?v=20261120-headings">
+    <link rel="stylesheet" href="/shared/brand-colors.css?v=20261120-blue">
+    <link rel="stylesheet" href="/shared/tool-colors.css?v=20261120-blue">
+    <link rel="stylesheet" href="/0_Home/home.css?v=20261120-headings">
+    <link rel="stylesheet" href="/0_Home/site-card-history.css?v=20261121-font">
+    <!-- Prebuilt Tailwind utilities; kept last like the former runtime-generated style. -->
+    <link rel="stylesheet" href="tailwind.css?v=20261121-1">
 </head>
 
 <body data-design-page="debugging" class="relative flex flex-col min-h-screen">
@@ -1139,12 +181,12 @@
                 <img src="../1_RobotModelSelect/INOVANCE_Logo.png" alt="Inovance" class="h-[60px] w-auto">
             </a>
             <div class="h-8 w-px bg-white/10 mx-2 hidden md:block"></div>
-            <h1 class="font-outfit text-xl font-bold text-white hidden md:block tracking-tight">Debugging Tool</h1>
+            <h1 class="text-white" data-i18n="legacy.Debugging Tool">디버깅 툴</h1>
         </div>
         <div class="inorobot-header-actions flex items-center gap-4" data-i18n-language-slot></div>
     </header>
 
-    <main class="w-full max-w-7xl mx-auto px-6 py-12 flex-grow">
+    <main class="debugging-main home-width flex-grow">
         <!-- Hero Section -->
         <section class="text-center mb-16 animate-fade-in-up">
             <h2 class="font-outfit text-4xl md:text-5xl font-extrabold mb-6 tracking-tight text-white">문제를 발견하셨나요?</h2>
@@ -1154,215 +196,142 @@
         </section>
 
         <!-- Tool Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div id="debug-tool-grid" class="tool-grid">
 
             <!-- 1. Zero Calibration -->
-            <a href="ZeroCalibration/index.html" class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.1s; text-decoration: none;" data-theme-accent="gold">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="target" class="w-8 h-8 text-white"></i>
-                </div>
-                <h2 class="font-outfit text-2xl font-bold mb-3 text-white">
-                    Zero Calibration
-                </h2>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.
-                </p>
-            </a>
+            <article class="tool-card">
+                <a href="ZeroCalibration/index.html" class="tool-link" aria-labelledby="zero-calibration-title">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="target"></i></span>
+                    <span class="open-arrow" aria-hidden="true">↗</span>
+                    <h2 id="zero-calibration-title">
+                        Zero Calibration
+                    </h2>
+                    <p>
+                        엔코더 배터리 방전 등으로 인한 영점 소실 시, 하드웨어 지그 없이 소프트웨어적으로 영점을 보정하는 툴입니다.
+                    </p>
+                </a>
+            </article>
 
             <!-- 2. Communication Tester -->
-            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.2s;" data-theme-accent="blue">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="network" class="w-8 h-8 text-white"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <h2 class="font-outfit text-2xl font-bold text-white">
+            <article class="tool-card">
+                <div class="tool-link">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="network"></i></span>
+                    <h2>
                         Communication Tester
                     </h2>
+                    <p>
+                        로봇 프로그램 검증용으로 상위 제어기 없이 PC에서 로봇과 통신 (Modbus-TCP, EtherNet/IP, MC, Socket)을 테스트 할 수 있는 소프트웨어입니다.
+                        또한 HMI 화면을 사용자가 직접 구성하여 더 쉽게 로봇을 테스트 할 수 있습니다.
+                    </p>
                 </div>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 프로그램 검증용으로 상위 제어기 없이 PC에서 로봇과 통신 (Modbus-TCP, EtherNet/IP, MC, Socket)을 테스트 할 수 있는 소프트웨어입니다.
-                    또한 HMI 화면을 사용자가 직접 구성하여 더 쉽게 로봇을 테스트 할 수 있습니다.
-                </p>
-                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
-                    <div class="tool-version-actions">
-                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V4.0</span>
-                        <button type="button" class="history-button" data-debug-history="communicationTester" data-current-version="V4.0">
-                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                            버전 기록
-                        </button>
+                <div class="tool-meta">
+                    <div class="debug-tool-version">
+                        <span>V5.0</span>
+                        <button type="button" data-debug-history="communicationTester" data-current-version="V5.0">버전 기록</button>
                     </div>
-                    <a href="https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip"
-                       download
-                       class="download-button">
-                       <i data-lucide="download" class="w-4 h-4"></i>
-                       Download
-                    </a>
+                    <a href="CommunicationTester/InoRobot_Comm_Test_V5.0.zip" download class="download-button">Download</a>
                 </div>
-            </div>
+            </article>
 
             <!-- 3. Label Generator -->
-            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.3s;" data-theme-accent="teal">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="tag" class="w-8 h-8 text-white"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <h2 class="font-outfit text-2xl font-bold text-white">
+            <article class="tool-card">
+                <div class="tool-link">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="tag"></i></span>
+                    <h2>
                         Label Generator
                     </h2>
+                    <p>
+                        로봇 프로그램의 라벨을 자동 생성하고 파일로 저장할 수 있는 툴입니다.
+                    </p>
                 </div>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 프로그램의 라벨을 자동 생성하고 파일로 저장할 수 있는 툴입니다.
-                </p>
-                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
-                    <div class="tool-version-actions">
-                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.2</span>
-                        <button type="button" class="history-button" data-debug-history="labelGenerator" data-current-version="V2.2">
-                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                            버전 기록
-                        </button>
+                <div class="tool-meta">
+                    <div class="debug-tool-version">
+                        <span>V2.0</span>
+                        <button type="button" data-debug-history="labelGenerator" data-current-version="V2.0">버전 기록</button>
                     </div>
-                    <a href="InoRobotLabelGen/InoRobot_Label_Gen_V2.2.zip"
-                       download
-                       class="download-button">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        Download
-                    </a>
+                    <a href="InoRobotLabelGen/InoRobot_Label_Gen_V2.0.zip" download class="download-button">Download</a>
                 </div>
-            </div>
+            </article>
 
             <!-- 4. Trace -->
-            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.4s;" data-theme-accent="blue">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="activity" class="w-8 h-8 text-white"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <h2 class="font-outfit text-2xl font-bold text-white">
+            <article class="tool-card">
+                <div class="tool-link">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="activity"></i></span>
+                    <h2>
                         Trace
                     </h2>
+                    <p>
+                        로봇 위치, 속도 등의 모니터링 화면을 트레이스 화면으로 모니터링하고 파일을 저장할 수 있습니다.
+                    </p>
                 </div>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇 위치, 속도 등의 모니터링 화면을 트레이스 화면으로 모니터링하고 파일을 저장할 수 있습니다.
-                </p>
-                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
-                    <div class="tool-version-actions">
-                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V1.5</span>
-                        <button type="button" class="history-button" data-debug-history="trace" data-current-version="V1.5">
-                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                            버전 기록
-                        </button>
+                <div class="tool-meta">
+                    <div class="debug-tool-version">
+                        <span>V2.0</span>
+                        <button type="button" data-debug-history="trace" data-current-version="V2.0">버전 기록</button>
                     </div>
-                    <a href="Trace/InoRobotTrace_V1.5.zip"
-                       download
-                       class="download-button">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        Download
-                    </a>
+                    <a href="Trace/InoRobotTrace_V2.0.zip" download class="download-button">Download</a>
                 </div>
-            </div>
+            </article>
 
             <!-- Log Analyzer -->
-            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.45s;" data-theme-accent="teal">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="file-search" class="w-8 h-8 text-white"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <h2 class="font-outfit text-2xl font-bold text-white">
+            <article class="tool-card">
+                <div class="tool-link">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="file-search"></i></span>
+                    <h2>
                         Log Analyzer
                     </h2>
+                    <p>
+                        로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.
+                    </p>
                 </div>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    로봇의 시스템 진단 ZIP·폴더를 열어 오류 발생 시점과 관련 로그를 함께 분석하는 프로그램입니다. 오류·서보 알람 조회, 트레이스 그래프와 A/B 측정, 보고서·CSV 저장을 지원합니다.
-                </p>
-                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
-                    <div class="tool-version-actions">
-                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V1.1</span>
-                        <button type="button" class="history-button" data-debug-history="logAnalyzer" data-current-version="V1.1">
-                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                            버전 기록
-                        </button>
+                <div class="tool-meta">
+                    <div class="debug-tool-version">
+                        <span>V2.0</span>
+                        <button type="button" data-debug-history="logAnalyzer" data-current-version="V2.0">버전 기록</button>
                     </div>
-                    <a href="https://github.com/hois56/InoRobotAssistant/releases/download/log-analyzer-v1.1/InoDiagAnalyzer_V1.1.zip"
-                       download
-                       class="download-button">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        Download
-                    </a>
+                    <a href="InoRobotLogAnalyzer/InoDiagAnalyzer_V2.0.zip" download class="download-button">Download</a>
                 </div>
-            </div>
+            </article>
 
             <!-- 5. Project Compare -->
-            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.5s;" data-theme-accent="gold">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="git-compare" class="w-8 h-8 text-white"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <h2 class="font-outfit text-2xl font-bold text-white">
+            <article class="tool-card">
+                <div class="tool-link">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="git-compare"></i></span>
+                    <h2>
                         Project Compare
                     </h2>
+                    <p>
+                        두 개의 로봇 프로젝트 파일을 비교하여 프로그램, 포인트 데이터 등의 차이점을 한눈에 파악할 수 있는 툴입니다.
+                    </p>
                 </div>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    두 개의 로봇 프로젝트 파일을 비교하여 프로그램, 포인트 데이터 등의 차이점을 한눈에 파악할 수 있는 툴입니다.
-                </p>
-                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
-                    <div class="tool-version-actions">
-                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V2.2</span>
-                        <button type="button" class="history-button" data-debug-history="projectCompare" data-current-version="V2.2">
-                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                            버전 기록
-                        </button>
+                <div class="tool-meta">
+                    <div class="debug-tool-version">
+                        <span>V3.0</span>
+                        <button type="button" data-debug-history="projectCompare" data-current-version="V3.0">버전 기록</button>
                     </div>
-                    <a href="ProjectCompare/InoRobot_Compare_Project_V2.2.zip"
-                       download
-                       class="download-button">
-                       <i data-lucide="download" class="w-4 h-4"></i>
-                       Download
-                    </a>
+                    <a href="ProjectCompare/InoRobot_Compare_Project_V3.0.zip" download class="download-button">Download</a>
                 </div>
-            </div>
+            </article>
 
             <!-- 6. CAD Lightweight -->
-            <div class="glass-card p-6 md:p-8 flex flex-col group animate-fade-in-up"
-                style="animation-delay: 0.6s;" data-theme-accent="blue">
-                <div
-                    class="site-feature-icon w-16 h-16 mb-5 rounded-2xl overflow-hidden border border-white/5 shadow-lg flex items-center justify-center bg-slate-800/80 group-hover:scale-110 transition-transform duration-500 ease-out shrink-0">
-                    <i data-lucide="box" class="w-8 h-8 text-white"></i>
-                </div>
-                <div class="flex items-center gap-2 mb-3">
-                    <h2 class="font-outfit text-2xl font-bold text-white">
+            <article class="tool-card">
+                <div class="tool-link">
+                    <span class="tool-icon" aria-hidden="true"><i data-lucide="box"></i></span>
+                    <h2>
                         CAD Lightweight
                     </h2>
+                    <p>
+                        대용량 STEP 파일을 실제 형상 기반의 경량 미리보기로 확인하고, 필요한 부품만 선택하여 저장할 수 있는 CAD 도구입니다.
+                    </p>
                 </div>
-                <p class="text-slate-400 flex-grow mb-8 leading-relaxed text-sm md:text-base">
-                    대용량 STEP 파일을 실제 형상 기반의 경량 미리보기로 확인하고, 필요한 부품만 선택하여 저장할 수 있는 CAD 도구입니다.
-                </p>
-                <div class="mt-auto flex items-center justify-between gap-1 border-t border-slate-700/50 pt-5">
-                    <div class="tool-version-actions">
-                        <span class="text-xs font-mono text-slate-500 bg-slate-800/50 px-1.5 py-1.5 rounded-lg border border-white/10">V1.3</span>
-                        <button type="button" class="history-button" data-debug-history="cadLightweight" data-current-version="V1.3">
-                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                            버전 기록
-                        </button>
+                <div class="tool-meta">
+                    <div class="debug-tool-version">
+                        <span>V2.0</span>
+                        <button type="button" data-debug-history="cadLightweight" data-current-version="V2.0">버전 기록</button>
                     </div>
-                    <a href="https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.3/CAD_Lightweight_V1.3.zip"
-                       download
-                       class="download-button">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        Download
-                    </a>
+                    <a href="CADLightweight/CAD_Lightweight_V2.0.zip" download class="download-button">Download</a>
                 </div>
-            </div>
+            </article>
 
         </div>
 
@@ -1373,26 +342,25 @@
     <div id="debug-history-modal" class="history-modal" aria-hidden="true">
         <section class="history-dialog" role="dialog" aria-modal="true" aria-labelledby="debug-history-title">
             <header class="history-dialog-header">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2 mb-1 text-sky-400">
-                        <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                        <span class="text-[11px] font-bold uppercase tracking-[0.18em]">Update History</span>
-                    </div>
-                    <h2 id="debug-history-title" class="font-outfit text-xl md:text-2xl font-bold text-white truncate">버전 기록</h2>
-                    <p id="debug-history-current-version" class="mt-1 text-xs font-mono text-slate-500"></p>
+                <span class="history-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a9 9 0 1 1 1.9 7.7M3 5v5h5M12 7v5l3 2"/></svg></span>
+                <div class="history-heading">
+                    <p class="history-eyebrow">버전 기록</p>
+                    <h2 id="debug-history-title" class="history-title">버전 기록</h2>
                 </div>
+                <p id="debug-history-current-version" class="history-current-version"></p>
                 <button type="button" id="debug-history-close" class="history-close-button" aria-label="버전 기록 닫기">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
                 </button>
             </header>
-            <div id="debug-history-body" class="history-dialog-body">
+            <div id="debug-history-body" class="history-dialog-body" role="region" aria-labelledby="debug-history-title" tabindex="0">
                 <p class="history-message">버전 기록을 불러오는 중입니다.</p>
             </div>
         </section>
     </div>
 
-    <script src="./debugging-history-data.js?v=20261104-log-analyzer-v11"></script>
-    <script src="./debugging-history.js"></script>
+    <script src="/shared/site-engine.js"></script>
+    <script src="./debugging-history-data.js?v=20261121-label-v20"></script>
+    <script src="./debugging-history.js?v=20261119-rust"></script>
     <script>
         // Initialize Icons, or retain the local text fallback when the CDN is unavailable.
         if (window.lucide) {

@@ -38,26 +38,12 @@
     let previousBodyOverflow = '';
     let activeToolKey = null;
 
-    function extractLocalizedToolHistory(markdown, toolKey) {
-        const lines = String(markdown || '').split(/\r?\n/);
-        const startIndex = lines.findIndex((line) => line.trim() === '## ' + toolKey);
-        if (startIndex < 0) return '';
-        let endIndex = lines.length;
-        for (let index = startIndex + 1; index < lines.length; index += 1) {
-            if (lines[index].trim().startsWith('## ')) {
-                endIndex = index;
-                break;
-            }
-        }
-        return lines.slice(startIndex + 1, endIndex).join('\n');
-    }
-
     function getEmbeddedMarkdown(toolKey) {
         const locale = window.InoRobotI18n?.locale || 'ko';
         const localized = window.INOROBOT_LOCALES?.[locale]?.debugHistoryMarkdown;
         if (localized) {
-            const localizedHistory = extractLocalizedToolHistory(localized, toolKey);
-            if (localizedHistory) return localizedHistory;
+            const entries = InoSite.history(localized, toolKey);
+            if (entries.length) return entries;
         }
 
         const encoded = window.DEBUGGING_HISTORY_DATA?.[toolKey];
@@ -65,7 +51,7 @@
 
         try {
             const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
-            return new TextDecoder('utf-8').decode(bytes);
+            return InoSite.history(new TextDecoder('utf-8').decode(bytes));
         } catch (error) {
             console.error('내장된 디버깅 툴 버전 기록을 읽지 못했습니다.', error);
             return null;
@@ -85,7 +71,7 @@
             markdownPromises[toolKey] = fetch(tool.markdownPath, { cache: 'no-cache' })
                 .then((response) => {
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.text();
+                    return response.text().then(markdown => InoSite.history(markdown));
                 })
                 .catch((error) => {
                     delete markdownPromises[toolKey];
@@ -96,60 +82,8 @@
         return markdownPromises[toolKey];
     }
 
-    function appendInlineMarkdown(container, value) {
-        String(value || '').split(/(`[^`]+`)/g).forEach((part) => {
-            if (part.startsWith('`') && part.endsWith('`')) {
-                const code = document.createElement('code');
-                code.textContent = part.slice(1, -1);
-                container.appendChild(code);
-            } else if (part) {
-                container.appendChild(document.createTextNode(part));
-            }
-        });
-    }
-
-    function renderHistory(markdown) {
-        body.replaceChildren();
-        let versionBlock = null;
-
-        markdown.split(/\r?\n/).forEach((line) => {
-            const trimmed = line.trim();
-
-            if (trimmed.startsWith('### ')) {
-                versionBlock = document.createElement('section');
-                versionBlock.className = 'history-version-block';
-
-                const versionTitle = document.createElement('h3');
-                versionTitle.className = 'history-version-title';
-                versionTitle.textContent = trimmed.slice(4).trim();
-                versionBlock.appendChild(versionTitle);
-                body.appendChild(versionBlock);
-                return;
-            }
-
-            if (!versionBlock || !trimmed.startsWith('- ')) return;
-
-            const rawEntry = trimmed.slice(2).trim();
-            const tagMatch = rawEntry.match(/^`\[([^\]]+)\]`\s*(.*)$/)
-                || rawEntry.match(/^\*\*\[([^\]]+)\]\*\*\s*(.*)$/);
-            const tagName = tagMatch ? tagMatch[1] : '안내';
-            const description = tagMatch ? tagMatch[2] : rawEntry;
-            const entry = document.createElement('div');
-            const tag = document.createElement('span');
-            const text = document.createElement('div');
-
-            entry.className = 'history-entry';
-            tag.className = 'history-tag';
-            tag.dataset.tag = tagName;
-            tag.textContent = tagName;
-            appendInlineMarkdown(text, description);
-            entry.append(tag, text);
-            versionBlock.appendChild(entry);
-        });
-
-        if (!body.children.length) renderMessage('등록된 버전 기록이 없습니다.');
-        body.scrollTop = 0;
-    }
+    let request = 0;
+    let displayedTool = null;
 
     function renderMessage(message) {
         const text = document.createElement('p');
@@ -194,12 +128,23 @@
                 version: trigger.dataset.currentVersion.replace(/^V/i, '')
             }) || `Current Ver ${trigger.dataset.currentVersion.replace(/^V/i, '')}`)
             : '';
+        if (!modal.classList.contains('is-open')) showModal();
+        const ticket = ++request;
+        if (displayedTool === toolKey) {
+            body.scrollTop = 0;
+            return;
+        }
+        displayedTool = null;
         renderMessage('버전 기록을 불러오는 중입니다.');
-        showModal();
 
         try {
-            renderHistory(await loadMarkdown(toolKey));
+            const entries = await loadMarkdown(toolKey);
+            if (ticket !== request) return;
+            const empty = '등록된 버전 기록이 없습니다.';
+            InoSite.renderHistory(body, entries, window.InoRobotI18n?.translate(empty) || empty);
+            displayedTool = toolKey;
         } catch (error) {
+            if (ticket !== request) return;
             renderMessage('버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
         }
     }
@@ -218,16 +163,8 @@
 
     document.addEventListener('inorobot:languagechange', async () => {
         Object.keys(markdownPromises).forEach((key) => delete markdownPromises[key]);
-        if (!activeToolKey || !modal.classList.contains('is-open')) return;
-        const tool = tools[activeToolKey];
-        title.textContent = window.InoRobotI18n
-            ? window.InoRobotI18n.translate(tool.title)
-            : tool.title;
-        renderMessage('버전 기록을 불러오는 중입니다.');
-        try {
-            renderHistory(await loadMarkdown(activeToolKey));
-        } catch {
-            renderMessage('버전 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
-        }
+        displayedTool = null;
+        request++;
+        if (activeToolKey && modal.classList.contains('is-open')) openHistory(activeToolKey, lastFocusedElement);
     });
 })();

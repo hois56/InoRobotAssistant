@@ -3,10 +3,12 @@ import { test, expect } from '@playwright/test';
 test('모델 트리에서 동작과 IO를 함께 설정하고 프로그램 없이 IO 버튼으로 운전한다', async ({ page }) => {
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__workflow = {state, equipmentApp, createPrimitiveShapeRoot, updateUIStatus, ensureWorkspaceModelId, readOlpSimulatorBit, writeOlpAddress, ensureMotionProgram, renderMotionProgramPanel, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, OlpRuntime, getOlpSharedIoAdapter};` });
+        // Expose init() so the test waits for startup; otherwise startup can clear models the test just added.
+        await route.fulfill({ response, body: `${(await response.text()).replace('init();\n', 'window.__simulationReady = init();\n')}\nwindow.__workflow = {state, equipmentApp, createPrimitiveShapeRoot, updateUIStatus, ensureWorkspaceModelId, readOlpSimulatorBit, writeOlpAddress, ensureMotionProgram, renderMotionProgramPanel, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, OlpRuntime, getOlpSharedIoAdapter};` });
     });
     await page.goto('/2_3DSimulation/index.html');
     await page.waitForFunction(() => window.__workflow);
+    await page.evaluate(() => window.__simulationReady);
     await page.evaluate(() => {
         const api = window.__workflow;
         const model = api.createPrimitiveShapeRoot('box', {x:40,y:40,z:40}, {name:'이동할 치구'});
@@ -15,15 +17,15 @@ test('모델 트리에서 동작과 IO를 함께 설정하고 프로그램 없�
     await page.locator('#model-tree button[data-model-tree-id]').filter({hasText:'이동할 치구'}).click({button:'right'});
     await expect(page.locator('#model-motion-settings')).toBeVisible();
     await page.locator('#model-motion-settings').click();
-    await expect(page.locator('[data-equipment-role="movingRef"] input:checked')).toHaveCount(1);
+    // The dialog names its target; further moving parts are added from the model tree.
+    await expect(page.locator('#equipment-target-label')).toContainText('이동할 치구');
     await page.evaluate(() => {
         const api=window.__workflow, model=api.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'함께 움직일 부품'});
         model.position.set(250,0,0);api.state.scene.add(model);api.state.models.push(model);api.updateUIStatus();
     });
-    await page.locator('[data-equipment-role="movingRef"] button').click();
     await page.locator('#model-tree button[data-model-tree-id]').filter({hasText:'함께 움직일 부품'}).click({button:'right'});
     await page.locator('#model-motion-add-part').click();
-    await expect(page.locator('[data-equipment-role="movingRef"] input:checked')).toHaveCount(2);
+    await expect(page.locator('#equipment-error')).toContainText('부품을 추가했습니다');
     await page.locator('#equipment-form [name="travel"]').fill('');
     await page.locator('#equipment-form [name="travel"]').fill('60');
     await expect(page.locator('#equipment-form [name="travel"]')).toHaveValue('60');
@@ -31,6 +33,7 @@ test('모델 트리에서 동작과 IO를 함께 설정하고 프로그램 없�
     await page.locator('#equipment-form [name="reverseAddress"]').fill('513');
     await page.locator('#equipment-form button[type="submit"]').click();
     await expect(page.locator('#equipment-error')).toContainText('저장');
+    expect(await page.evaluate(() => window.__workflow.state.equipmentDefinitions[0].movingRefs.length)).toBe(2);
     await page.screenshot({path:test.info().outputPath('model-motion-settings.png')});
     await expect(page.locator('[data-equipment-demo]')).toHaveCount(0);
     await expect(page.locator('#io-conveyor-test-create')).toHaveCount(0);
@@ -98,8 +101,8 @@ test('프로그램 패널의 IO 출력·입력 대기는 같은 설비와 센서
 
 
 test('완료 Input 번호를 화면에서 등록하고 편집·운전·프로젝트 복원에서 유지한다',async({page})=>{
- await page.route('**/2_3DSimulation/main.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:await response.text()+'\nwindow.__inputTest={state,equipmentApp,createPrimitiveShapeRoot,ensureWorkspaceModelId,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot};'});});
- await page.goto('/2_3DSimulation/index.html');await page.waitForFunction(()=>window.__inputTest);
+ await page.route('**/2_3DSimulation/main.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('init();\n','window.__simulationReady = init();\n')+'\nwindow.__inputTest={state,equipmentApp,createPrimitiveShapeRoot,ensureWorkspaceModelId,readOlpSimulatorBit,serializeWorkspaceSnapshot,restoreWorkspaceSnapshot};'});});
+ await page.goto('/2_3DSimulation/index.html');await page.waitForFunction(()=>window.__inputTest);await page.evaluate(()=>window.__simulationReady);
  await page.evaluate(()=>{const a=window.__inputTest,m=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'Input 테스트'});a.state.scene.add(m);a.state.models.push(m);a.equipmentApp.ui.open('equipment-model:'+a.ensureWorkspaceModelId(m)+'/-1');});
  const form=page.locator('#equipment-form');await form.locator('[name="feedbackHome"]').fill('514');await form.locator('[name="feedbackEnd"]').fill('515');await form.locator('[name="travel"]').fill('');await form.locator('[name="travel"]').fill('10');await form.locator('button[type="submit"]').click();await expect(page.locator('#equipment-error')).toContainText('저장했습니다');
  await expect(form.locator('[name="feedbackHome"]')).toHaveValue('514');await expect(form.locator('[name="feedbackEnd"]')).toHaveValue('515');

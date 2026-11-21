@@ -37,25 +37,51 @@ test('live source preview keeps robot syntax colors after file changes and edits
     await page.route(/https:\/\/[^/]+\/.*prism/i, route => route.abort());
     await page.goto('/4_ProjectGenerator/');
     const output = page.locator('#codeOutput');
+    const preview = page.locator('#prismContainer');
+    const editor = page.locator('#codeEditor');
+    const edit = page.locator('#btnToggleEdit');
+    const check = edit.locator('.edit-mode-check');
+    await expect(edit).toHaveAttribute('aria-pressed', 'false');
+    await expect(check).toBeHidden();
     await page.locator('#fileSelector').selectOption('main.pro');
     await expect(output.locator('.token.comment').first()).toBeVisible();
     await expect(output.locator('.token.keyword').filter({ hasText: /^If$/ }).first()).toBeVisible();
 
     await page.locator('#fileSelector').selectOption('s01_initial.pro');
-    await page.locator('#btnToggleEdit').click();
+    await edit.click();
+    await expect(edit).toHaveAttribute('aria-pressed', 'true');
+    await expect(check).toBeVisible();
+    await expect(page.locator('.generator-preview')).toHaveCSS('border-top-color', 'rgb(8, 104, 158)');
+    await expect(preview).toHaveCSS('opacity', '1');
+    await expect(editor).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     const sample = 'If V[7] > 0\n    Print "#1 <ready>"; # 작업 시작\n    Init_signal();\nEndIf;';
-    await page.locator('#codeEditor').fill(sample);
-    await page.locator('#btnToggleEdit').click();
-    expect(await output.textContent()).toBe(sample);
+    await editor.fill(sample);
+    await expect(editor).toHaveCSS('-webkit-text-fill-color', 'rgba(0, 0, 0, 0)');
     await expect(output.locator('.token.comment')).toHaveText('# 작업 시작');
     await expect(output.locator('.token.string')).toHaveText('"#1 <ready>"');
-    const colors = await output.evaluate(code => Object.fromEntries(
+    const tokenColors = () => output.evaluate(code => Object.fromEntries(
         ['comment', 'keyword', 'string', 'number', 'function'].map(kind =>
             [kind, getComputedStyle(code.querySelector('.token.' + kind)).color])
     ));
+    const colors = await tokenColors();
     expect(new Set(Object.values(colors)).size).toBe(5);
     const [r, g, b] = colors.comment.match(/\d+/g).map(Number);
     expect(g).toBeGreaterThan(Math.max(r, b) * 1.5);
+
+    await editor.fill((sample + '\n\t# ' + '길이가 긴 줄 '.repeat(40) + '\n').repeat(30));
+    const scrollTop = await editor.evaluate(input => {
+        input.scrollTop = input.scrollHeight;
+        return input.scrollTop;
+    });
+    expect(scrollTop).toBeGreaterThan(0);
+    await expect.poll(() => preview.evaluate(element => element.scrollTop)).toBe(scrollTop);
+
+    await editor.fill(sample);
+    await edit.click();
+    await expect(edit).toHaveAttribute('aria-pressed', 'false');
+    await expect(check).toBeHidden();
+    expect(await output.textContent()).toBe(sample);
+    expect(await tokenColors()).toEqual(colors);
 });
 
 test('ZIP import, add, review, full modified ZIP export and reimport preserve field edits and attachments', async ({ page }) => {
@@ -65,6 +91,12 @@ test('ZIP import, add, review, full modified ZIP export and reimport preserve fi
     await page.locator('#fileSelector').selectOption('sP01_Tray_Get.pro');
     await expect(page.locator('#codeOutput')).toContainText('V[42]');
     await expect(page.locator('#codeOutput .token.comment').filter({ hasText: '# Custom field recovery' })).toHaveCount(1);
+    await page.locator('#btnToggleEdit').click();
+    const editor = page.locator('#codeEditor');
+    await editor.fill((await editor.inputValue()) + '\n# Edit while highlighted');
+    await expect(page.locator('#prismContainer')).toHaveCSS('opacity', '1');
+    await expect(page.locator('#codeOutput .token.comment').filter({ hasText: '# Edit while highlighted' })).toHaveCount(1);
+    await page.locator('#btnToggleEdit').click();
     await page.locator('#btnAdd').click();
     await expect(page.locator('#stepsList > div')).toHaveCount(4);
     await page.locator('#btnGenerate').click();
@@ -92,6 +124,7 @@ test('ZIP import, add, review, full modified ZIP export and reimport preserve fi
         };
     });
     expect(output.program).toContain('V[42]'); expect(output.program).toContain('# Custom field recovery');
+    expect(output.program).toContain('# Edit while highlighted');
     expect(output.points).toContain('P[111] = 123.456789'); expect(output.points).toContain('P[411]');
     expect(output.extra).toEqual([0, 255, 30]); expect(output.main).toContain('sP04_Tray_Get.P4_pos');
     await page.locator('#projectZipInput').setInputFiles({ name: 'modified.zip', mimeType: 'application/zip', buffer: Buffer.from(output.bytes) });

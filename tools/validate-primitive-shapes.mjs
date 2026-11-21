@@ -100,15 +100,16 @@ assert.match(css, /@media \(max-width: 768px\)/);
 assert.match(main, /function createPrimitiveShapeRoot\(/);
 assert.match(main, /function getPrimitiveShapeName\(type, index\)[\s\S]*?uiText\(primitiveShapeDisplayName\(type\)\)/);
 assert.match(main, /function refreshPrimitiveShapeNames\([\s\S]*?model\.userData\.modelName = modelName/);
-assert.match(main, /function refreshLocalizedControls\(\)\s*\{\s*refreshPrimitiveShapeNames\(\);/);
+assert.match(main, /function refreshLocalizedControls\(\)\s*\{[^}]*?\}?[\s\S]{0,600}?refreshPrimitiveShapeNames\(\);/);
 assert.match(main, /primitiveShapeNameIndex/);
 assert.match(main, /function applyPrimitiveShapeDimensions\(/);
 assert.match(main, /setSelectedTransformMode\('translate', false\);\s*setTransformHandlesEnabled\(true\);/);
-assert.match(main, /function getJogTargetRobot\(\)[\s\S]*?return robots\.length === 1 \? robots\[0\] : null;/);
+// JOG targets robots (an explicit JOG selection or the single robot), never a selected shape.
+assert.match(main, /function getJogTargetRobot\(\)[\s\S]*?return robots\.length === 1 \|\| state\.jogSelectedRobotIds \? robots\[0\] : null;/);
 const runBaseJogButtonFunction = main.match(
     /function runBaseJogButton\(button\)[\s\S]*?(?=\r?\nfunction startBaseJogHold)/
  )?.[0] || '';
-assert.match(runBaseJogButtonFunction, /const robot = getJogTargetRobot\(\)/);
+assert.match(runBaseJogButtonFunction, /const robots = getJogTargetRobots\(\)/);
 assert.doesNotMatch(runBaseJogButtonFunction, /isPrimitiveShapeModel|jogPrimitiveShapeInBase/);
 assert.match(main, /const extensionLine = new THREE\.LineSegments/);
 assert.match(main, /extensionLine\.geometry\.setFromPoints\(\[sourceStart, start, sourceEnd, end\]\)/);

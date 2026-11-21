@@ -1,5 +1,192 @@
 import { test, expect } from '@playwright/test';
 
+test('테스트 버튼의 Base 1000은 원래 STEP의 부품·형상·면 범위를 빠른 경로에서 보존한다', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.route('**/2_3DSimulation/step-import-worker.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({
+            response,
+            body: `${await response.text()}
+                const convertLargeStep = parseLargeStepFile;
+                parseLargeStepFile = (message, requestId) => {
+                    if (message.engine === 'xcaf') throw new Error('XCAF unavailable in this test');
+                    return convertLargeStep(message, requestId);
+                };`
+        });
+    });
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({
+            response,
+            body: `${await response.text()}\nwindow.__baseImport = { state, THREE, getImportedModelParts };`
+        });
+    });
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__baseImport);
+    const importBase = async expectedCount => {
+        await page.locator('#btn-test-model').click();
+        await page.locator('[data-test-quantity="base"]').fill('1');
+        await page.locator('#btn-confirm-test-model').click();
+        await page.waitForFunction(count =>
+            window.__baseImport.state.models.filter(model => model.userData.testModelAssetId === 'base').length === count
+                && !document.querySelector('#btn-test-model').disabled, expectedCount, { timeout: 60_000 });
+        return page.evaluate(async () => {
+            const { state, THREE, getImportedModelParts } = window.__baseImport;
+            const model = state.models.filter(item => item.userData.testModelAssetId === 'base').at(-1);
+            const box = new THREE.Box3().setFromObject(model);
+            const digest = async array => {
+                const hash = await crypto.subtle.digest('SHA-256', array);
+                return [...new Uint8Array(hash)];
+            };
+            const pendingMeshes = [];
+            model.traverse(mesh => {
+                if (!mesh.isMesh) return;
+                pendingMeshes.push((async () => ({
+                    name: mesh.name,
+                    partId: mesh.userData.cadPartKey,
+                    positions: await digest(mesh.geometry.getAttribute('position').array),
+                    normals: await digest(mesh.geometry.getAttribute('normal').array),
+                    indices: await digest(mesh.geometry.index.array),
+                    triangles: mesh.geometry.index.count / 3,
+                    faces: mesh.userData.stepBrepFaces
+                }))());
+            });
+            return {
+                bundled: model.children[0].userData.importTimings.bundled === true,
+                parts: getImportedModelParts(model).length,
+                size: box.getSize(new THREE.Vector3()).toArray(),
+                top: box.max.z,
+                groups: model.userData.modelPartGroups.map(group => group.name),
+                meshes: await Promise.all(pendingMeshes)
+            };
+        });
+    };
+
+    const bundled = await importBase(1);
+    expect(bundled.bundled).toBe(true);
+    expect(bundled.parts).toBe(64);
+    expect(bundled.size).toEqual([1000, 1000, 500]);
+    expect(bundled.top).toBe(0);
+    expect(bundled.groups).toHaveLength(9);
+    expect(bundled.meshes.reduce((sum, mesh) => sum + mesh.triangles, 0)).toBe(82_700);
+    expect(bundled.meshes.reduce((sum, mesh) => sum + (mesh.faces?.length || 0), 0)).toBe(8_901);
+
+    // A same-name source with different bytes must use the regular STEP converter.
+    await page.route('**/Base_1000x1000x500.step', async route => {
+        const response = await route.fetch();
+        const body = Buffer.concat([await response.body(), Buffer.from('\n')]);
+        await route.fulfill({ response, headers: { 'content-type': 'application/octet-stream' }, body });
+    });
+    const retry = page.waitForEvent('console', {
+        predicate: message => message.text().includes('retrying with the standard importer')
+    });
+    const [fallback] = await Promise.all([importBase(2), retry]);
+    expect(fallback).toEqual({ ...bundled, bundled: false });
+});
+
+test('캐시 없는 Base 1000 STEP은 XCAF로 가져오고 저장한 프로젝트에서 같은 부품을 복원한다', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.route('**/Base_1000x1000x500.step.mesh.json.gz*', route => route.fulfill({ status: 404 }));
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({
+            response,
+            body: `${(await response.text()).replace('init();\n', 'window.__baseReady = init();\n')}
+                readStepImportCache = async () => null;
+                window.__baseImport = { state, THREE, getImportedModelParts, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot };`
+        });
+    });
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__baseImport);
+    await page.evaluate(() => window.__baseReady);
+    await page.locator('#btn-test-model').click();
+    await page.locator('[data-test-quantity="base"]').fill('1');
+    await page.locator('#btn-confirm-test-model').click();
+    await page.waitForFunction(() => window.__baseImport.state.models.some(model => model.userData.testModelAssetId === 'base')
+        && !document.querySelector('#btn-test-model').disabled, null, { timeout: 45_000 });
+
+    const { initial, restored, legacyEngine, legacyParts, savedEngine, warnings } = await page.evaluate(async () => {
+        const { state, THREE, getImportedModelParts, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot } = window.__baseImport;
+        const inspect = () => {
+            const model = state.models.find(item => item.userData.testModelAssetId === 'base');
+            const bounds = new THREE.Box3().setFromObject(model);
+            let triangles = 0;
+            let faces = 0;
+            model.traverse(mesh => {
+                if (!mesh.isMesh) return;
+                triangles += mesh.geometry.index.count / 3;
+                faces += mesh.userData.stepBrepFaces?.length || 0;
+            });
+            return {
+                engine: model.userData.stepImportEngine,
+                size: bounds.getSize(new THREE.Vector3()).toArray(),
+                top: bounds.max.z,
+                parts: getImportedModelParts(model).map(part => [part.userData.cadPartKey, part.name, part.visible]),
+                groups: model.userData.modelPartGroups.map(group => group.name),
+                triangles,
+                faces
+            };
+        };
+        const model = state.models.find(item => item.userData.testModelAssetId === 'base');
+        getImportedModelParts(model)[3].visible = false;
+        const initial = inspect();
+        const snapshot = serializeWorkspaceSnapshot();
+        const entry = snapshot.importedModels.find(item => item.testModelAssetId === 'base');
+        const savedEngine = entry.stepImportEngine;
+        const warnings = await restoreWorkspaceSnapshot(snapshot);
+        const restored = inspect();
+        delete entry.stepImportEngine;
+        entry.childMatrices = [];
+        entry.partState = [];
+        entry.materialColors = [];
+        warnings.push(...await restoreWorkspaceSnapshot(snapshot));
+        const legacyModel = state.models.find(item => item.userData.testModelAssetId === 'base');
+        return { initial, restored, legacyEngine: legacyModel.userData.stepImportEngine,
+            legacyParts: getImportedModelParts(legacyModel).length, savedEngine, warnings };
+    });
+    expect(initial.engine).toBe('xcaf');
+    expect(initial.size).toEqual([1000, 1000, 500]);
+    expect(initial.top).toBe(0);
+    expect(initial.parts).toHaveLength(64);
+    expect(initial.groups).toHaveLength(9);
+    expect(initial.triangles).toBe(82_700);
+    expect(initial.faces).toBe(8_901);
+    expect(initial.parts[3][2]).toBe(false);
+    expect(savedEngine).toBe('xcaf');
+    expect(restored).toEqual(initial);
+    expect(legacyEngine).toBe('standard');
+    expect(legacyParts).toBe(64);
+    expect(warnings).toEqual([]);
+});
+
+test('테스트 버튼에서 Teaching Kit 여러 개를 사전 변환 메시로 만들고 STEP 원본을 함께 저장한다', async ({ page }) => {
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        const source = (await response.text()).replace('init();\n', 'window.__teachingReady = init();\n');
+        await route.fulfill({ response, body: `${source}\nwindow.__teaching = { state, getImportedModelParts };` });
+    });
+    await page.goto('/2_3DSimulation/index.html');
+    await page.waitForFunction(() => window.__teaching);
+    await page.evaluate(() => window.__teachingReady);
+    await page.locator('#btn-test-model').click();
+    await page.locator('[data-test-quantity="teaching-kit"]').fill('2');
+    await page.locator('#btn-confirm-test-model').click();
+    await expect(page.locator('#btn-test-model')).toBeEnabled();
+    const result = await page.evaluate(async () => {
+        const { state, getImportedModelParts } = window.__teaching;
+        const models = state.models.filter(model => model.userData.testModelAssetId === 'teaching-kit');
+        const ids = models.map(model => model.userData.workspaceAssetId);
+        const source = await state.workspaceRecovery.db.getAsset(ids[0]);
+        return {
+            fast: models.map(model => model.children[0].userData.importTimings.bundled === true),
+            parts: models.map(model => getImportedModelParts(model).length),
+            sourceSize: source?.blob.size,
+            sameSource: ids.length === 2 && ids[0] === ids[1]
+        };
+    });
+    expect(result).toEqual({ fast: [true, true], parts: [109, 109], sourceSize: 10_063_060, sameSource: true });
+});
+
 test('컨베이어 카드 오른쪽 치수로 여러 모델을 생성하고 저장·복원한다', async ({ page }) => {
     test.setTimeout(180000);
     const errors = [];

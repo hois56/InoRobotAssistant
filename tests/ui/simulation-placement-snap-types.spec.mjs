@@ -62,6 +62,7 @@ const visibleTypes = page => markers(page).evaluateAll(elements => [...new Set(e
 
 test('모델 트리 이동은 선택한 유형의 스냅만 표시하고 클릭할 수 있다', async ({ page }) => {
   const errors = await setup(page);
+  await expect(page.locator('#model-placement-section button')).toHaveCount(0);
   await selectFace(page);
   await page.locator('#model-placement-snap-type').selectOption('edge-midpoint');
   await expect.poll(() => visibleTypes(page)).toEqual(['edge-midpoint']);
@@ -100,7 +101,7 @@ test('면을 선택한 뒤 현재 TCP를 선택해 모델을 배치할 수 있�
   await expect(page.locator('#model-placement-hover-readout')).toContainText('현재 TCP');
   await page.mouse.click(tcpBox.x + tcpBox.width / 2, tcpBox.y + tcpBox.height / 2);
   await expect.poll(() => page.evaluate(() => window.__placementSnaps.state.placement.directionPoint?.snapType)).toBe('robot-tcp');
-  await page.locator('#btn-measurement-apply-placement').click();
+  await expect.poll(() => page.evaluate(() => window.__placementSnaps.state.placement.applied)).toBe(true);
   const position = await page.evaluate(() => window.__placementSnaps.model.position.toArray());
   position.forEach((value, axis) => expect(value).toBeCloseTo(tcp[axis], 5));
   expect(errors).toEqual([]);

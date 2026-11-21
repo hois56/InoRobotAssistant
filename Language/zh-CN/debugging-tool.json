@@ -1,7 +1,7 @@
 {
   "pages": {
     "debugging": {
-      "title": "Debugging Tool | InoRobot Assistant",
+      "title": "调试工具 | InoRobot 助手",
       "description": "提供机器人诊断、通信测试、数据比较和零点校准工具。"
     },
     "zeroCalibration": {
@@ -26,7 +26,7 @@
     "Name": "名称",
     "Tool": "工具",
     "Communication": "通信",
-    "Debugging Tool": "Debugging Tool",
+    "Debugging Tool": "调试工具",
     "문제를 발견하셨나요?": "发现问题了吗？",
     "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "提供用于 INOVANCE 机器人调试和零点校准的高效工具。",
     "Zero Calibration": "零点校准",

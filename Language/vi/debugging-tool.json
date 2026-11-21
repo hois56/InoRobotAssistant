@@ -1,7 +1,7 @@
 {
   "pages": {
     "debugging": {
-      "title": "Debugging Tool | InoRobot Assistant",
+      "title": "Công cụ gỡ lỗi | Trợ lý InoRobot",
       "description": "Công cụ chẩn đoán robot, kiểm tra truyền thông, so sánh dữ liệu và hiệu chỉnh zero."
     },
     "zeroCalibration": {
@@ -26,7 +26,7 @@
     "Name": "Tên",
     "Tool": "Tool",
     "Communication": "Truyền thông",
-    "Debugging Tool": "Debugging Tool",
+    "Debugging Tool": "Công cụ gỡ lỗi",
     "문제를 발견하셨나요?": "Bạn phát hiện sự cố?",
     "INOVANCE 로봇의 디버깅 및 영점 보정에 효율적인 디버깅 툴을 제공합니다.": "Cung cấp công cụ hiệu quả để gỡ lỗi và hiệu chỉnh zero robot INOVANCE.",
     "Zero Calibration": "Hiệu chỉnh zero",

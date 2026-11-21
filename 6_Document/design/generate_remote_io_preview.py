@@ -72,7 +72,8 @@ def main():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="workbook-sha256" content="{sha256(SOURCE.read_bytes()).hexdigest()}">
 <title>{SOURCE.name} · 문서 미리보기</title>
-<link rel="stylesheet" href="../assets/remote-io-preview.css">
+<link rel="stylesheet" href="../../shared/brand-colors.css?v=20261120-blue">
+<link rel="stylesheet" href="../assets/remote-io-preview.css?v=20261120-blue">
 </head>
 <body>
 <main>

@@ -28,6 +28,11 @@ test('티칭 위치·가려진 위치·텍스트 표시는 기본으로 켜지�
     });
     await expect.poll(() => page.evaluate(() => window.__teach.state.teachingPoints.scene?.points.length)).toBe(1);
     await expect(page.locator('#teaching-point-controls')).toBeVisible();
+    await expect(page.locator('#teaching-point-label-mode')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    const fitButton = page.locator('#teaching-point-fit');
+    await expect(fitButton).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await fitButton.hover();
+    await expect(fitButton).toHaveCSS('background-color', 'rgb(221, 234, 245)');
 });
 
 test('티칭 글자는 선택 전후에 텍스처와 같은 비율로 표시된다', async ({ page }) => {

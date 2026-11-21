@@ -206,7 +206,7 @@
     "{format} 파일을 해석할 수 없습니다. {message}": "无法解析 {format} 文件。{message}",
     "{format} 파일 분석 완료": "{format} 文件分析完成",
     "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP 导出完成 · {count} 个部件 · {name}",
-    "InoRobot Tool Select": "InoRobot 工具选择",
+    "InoRobot Tool Select": "机器人工具选型",
     "3D marker legend": "3D 标记图例",
     " · 대용량 최적화 {count}개 부품": " · 大文件优化：{count} 个部件",
     "계산할 수 없습니다.": "无法计算。",

@@ -13,6 +13,48 @@ async function expectGroupedHistory(body) {
     }
 }
 
+for (const [name, route, trigger] of [
+    ['home', '/0_Home/en/', '[data-history-card="robot3dViewer"]'],
+    ['debugging', '/7_DebuggingTool/', '[data-debug-history="communicationTester"]']
+]) {
+    test(`${name} 버전 기록의 한글 제목과 본문은 화면 글꼴을 따른다`, async ({ page }) => {
+        await page.goto(route);
+        await page.evaluate(() => window.InoRobotI18n.setLocale('ko', { persist: false }));
+        await page.locator(trigger).click();
+
+        const dialog = page.getByRole('dialog');
+        const family = await page.locator('body').evaluate(element => getComputedStyle(element).fontFamily);
+        await expect(dialog.locator('.history-title')).toHaveCSS('font-family', family);
+        await expect(dialog.locator('.history-entry').first()).toHaveCSS('font-family', family);
+        await expect(dialog.locator('.history-tag').first()).toHaveCSS('font-family', family);
+    });
+
+    test(`${name} 버전 기록은 밝은 창에서 스크롤하고 좁은 화면에서도 닫을 수 있다`, async ({ page }) => {
+        await page.goto(route);
+        if (name === 'home') await page.evaluate(() => window.InoRobotI18n.setLocale('en', { persist: false }));
+        const button = page.locator(trigger);
+        const dialog = page.getByRole('dialog');
+        const body = dialog.locator('.history-dialog-body');
+        for (const width of [1280, 360]) {
+            await page.setViewportSize({ width, height: 720 });
+            await button.click();
+            await expect(body.locator('.history-entry').first()).toBeInViewport();
+            await expect(dialog).toHaveCSS('color-scheme', 'light');
+            const close = dialog.locator('.history-close-button');
+            await expect(close).toBeInViewport();
+            expect(await body.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+            await dialog.screenshot({ path: test.info().outputPath(`${name}-history-${width}.png`) });
+            await body.focus();
+            await page.keyboard.press('End');
+            await expect.poll(() => body.evaluate(node => node.scrollTop)).toBeGreaterThan(0);
+            await expect(close).toBeInViewport();
+            await page.keyboard.press('Escape');
+            await expect(dialog).toBeHidden();
+            await expect(button).toBeFocused();
+        }
+    });
+}
+
 test('홈페이지 카드와 버전 기록 창은 최신 배포 기록을 표시한다', async ({ page }) => {
     const source = JSON.parse(fs.readFileSync(new URL('../../0_Home/version-history.json', import.meta.url), 'utf8'));
     const section = source.locales.ko.versionHistory.sections.find(value => value.title === '3D Simulation');
@@ -44,8 +86,9 @@ for (const fallback of [false, true]) {
         await expect(body).toBeVisible();
         await expect(body).toContainText('Ver 3.1');
         await expect(body).toContainText('Ver 4.0 (2026.11.04)');
-        await expect(page.locator('[data-debug-history="communicationTester"]')).toHaveAttribute('data-current-version', 'V4.0');
-        await expect(page.locator('a[href="https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip"]')).toHaveCount(1);
+        await expect(body).toContainText('Ver 5.0 (2026.11.21)');
+        await expect(page.locator('[data-debug-history="communicationTester"]')).toHaveAttribute('data-current-version', 'V5.0');
+        await expect(page.locator('a[href="CommunicationTester/InoRobot_Comm_Test_V5.0.zip"]')).toHaveCount(1);
         await expectGroupedHistory(body);
     });
 }

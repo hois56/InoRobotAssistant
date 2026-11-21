@@ -1,0 +1,190 @@
+/* The home cards and the debugging tools open the same release-note layout. */
+:is(#version-history-modal, #debug-history-modal) {
+    --history-paper: var(--tool-surface);
+    --history-header: var(--tool-paper);
+    --history-ink: var(--tool-ink);
+    --history-muted: var(--tool-muted);
+    --history-line: var(--tool-line);
+    --history-accent: var(--tool-accent);
+    --history-mono: "Cascadia Mono", Consolas, monospace;
+    --history-gutter: clamp(16px, 3vw, 32px);
+    color-scheme: light;
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    place-items: center;
+    padding: 16px;
+    background: rgb(20 37 53 / 42%);
+    color: var(--history-ink);
+    text-align: start;
+
+    &.is-open { display: grid; }
+
+    .history-dialog {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        width: min(860px, 100%);
+        min-width: 0;
+        max-height: min(82vh, 800px);
+        max-height: min(82dvh, 800px);
+        overflow: hidden;
+        color: var(--history-ink);
+        background: var(--history-paper);
+        border: 1px solid var(--history-line);
+        border-radius: 12px;
+        box-shadow: 0 18px 64px rgb(22 55 82 / 20%);
+    }
+
+    .history-dialog-header {
+        flex: none;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        align-items: center;
+        gap: 14px;
+        padding: 20px var(--history-gutter);
+        background: var(--history-header);
+        border-bottom: 1px solid var(--history-line);
+    }
+
+    .history-symbol {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--tool-line);
+        border-radius: 10px;
+        color: var(--history-accent);
+        background: var(--tool-selected);
+    }
+    .history-symbol svg { width: 24px; height: 24px; }
+    .history-eyebrow { margin: 0 0 3px; color: var(--history-muted) !important; font-size: 12px; line-height: 1.35; font-weight: 600; }
+    .history-title { margin: 0; color: var(--history-ink); font-family: inherit; font-size: clamp(21px, 2.6vw, 29px); font-weight: 700; line-height: 1.2; letter-spacing: -.035em; overflow-wrap: anywhere; }
+    .history-current-version { margin: 0; color: var(--history-muted); font: 12px/1.5 var(--history-mono); overflow-wrap: anywhere; }
+    .history-current-version:empty { display: none; }
+    .history-close-button {
+        grid-column: -2;
+        align-self: start;
+        display: grid;
+        place-items: center;
+        width: 38px !important;
+        height: 38px !important;
+        padding: 0;
+        cursor: pointer;
+        background: var(--history-paper) !important;
+        color: var(--history-ink) !important;
+        border: 1px solid var(--history-line) !important;
+        border-radius: 7px;
+        box-shadow: none;
+    }
+    .history-close-button:hover { background: var(--tool-hover) !important; }
+    .history-close-button svg { width: 18px; height: 18px; }
+    :is(.history-close-button, .history-dialog-body):focus-visible { outline: 2px solid var(--history-accent); outline-offset: -3px; }
+
+    .history-dialog-body {
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-color: var(--tool-border-strong) var(--history-paper);
+        scrollbar-width: thin;
+        padding: 0 var(--history-gutter);
+    }
+    .history-version-block {
+        --version-column: 8.5rem;
+        display: flow-root;
+        padding-block: 22px;
+    }
+    .history-version-block + .history-version-block { border-top: 1px solid var(--history-line); }
+    .history-version-title {
+        float: inline-start;
+        position: sticky;
+        top: 16px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        box-sizing: border-box;
+        width: var(--version-column);
+        margin: 0;
+        padding: 3px 18px 3px 0;
+        color: var(--history-ink);
+        font: 650 13px/1.6 var(--history-mono);
+        overflow-wrap: anywhere;
+    }
+    .history-version-title::before {
+        content: "";
+        flex: none;
+        width: 7px;
+        height: 7px;
+        border: 1px solid var(--tool-border-strong);
+        border-radius: 50%;
+        background: var(--history-paper) !important;
+    }
+    .history-version-block:first-child .history-version-title::before { border-color: var(--history-accent); background: var(--history-accent) !important; }
+    .history-entry {
+        display: grid;
+        grid-template-columns: minmax(0, 5.25rem) minmax(0, 1fr);
+        align-items: start;
+        gap: 10px;
+        margin-inline-start: var(--version-column);
+        color: var(--tool-ink);
+        font-size: 14px;
+        line-height: 1.7;
+        font-weight: 400;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+    .history-entry + .history-entry { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--tool-inset); }
+    .history-entry:lang(ko) { grid-template-columns: 3.25rem minmax(0, 1fr); word-break: keep-all; }
+    .history-tag {
+        justify-self: start;
+        max-width: 100%;
+        margin-top: 2px;
+        padding: 2px 8px;
+        border: 1px solid var(--tool-line);
+        border-radius: 5px;
+        background: var(--tool-selected);
+        color: var(--tool-accent);
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    .history-tag:is([data-tag="수정"], [data-tag="Fixed"], [data-tag="Fix"], [data-tag="修复"],
+        [data-tag="Sửa lỗi"], [data-tag="Đã sửa"], [data-tag="Sửa"], [data-tag="Düzeltildi"],
+        [data-tag="Düzeltme"], [data-tag="Sabitlendi"], [data-tag="Исправлено"]) {
+        background: #f7eddb;
+        color: #705027;
+        border-color: #e7d9bd;
+    }
+    .history-tag:is([data-tag="변경"], [data-tag="Changed"], [data-tag="变更"], [data-tag="Thay đổi"],
+        [data-tag="Değiştirildi"], [data-tag="Değişiklik"], [data-tag="Изменено"]) {
+        background: var(--tool-inset);
+        color: var(--tool-muted);
+        border-color: var(--tool-line);
+    }
+    .history-entry code {
+        padding: 1px 4px;
+        border: 1px solid var(--tool-line) !important;
+        border-radius: 4px;
+        background: var(--tool-inset) !important;
+        color: var(--tool-accent) !important;
+        font: .9em/1.4 var(--history-mono);
+        white-space: normal;
+    }
+    .history-message { margin: 0; padding: 36px 0; color: var(--history-muted); text-align: center; }
+
+    @media (max-width: 640px) {
+        padding: 8px;
+        .history-dialog { max-height: 94vh; max-height: 94dvh; }
+        .history-dialog-header { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; row-gap: 4px; padding-block: 14px; }
+        .history-symbol { width: 36px; height: 36px; }
+        .history-symbol svg { width: 20px; height: 20px; }
+        .history-current-version { grid-column: 2; font-size: 11px; }
+        .history-close-button { grid-row: 1; }
+        .history-version-block { padding-block: 0 16px; }
+        .history-version-title { float: none; top: 0; z-index: 1; width: auto; padding: 12px 0 8px; margin-bottom: 4px; background: var(--history-paper); }
+        .history-entry { grid-template-columns: min(26%, 5.25rem) minmax(0, 1fr); margin: 0; gap: 8px; }
+        .history-entry:lang(ko) { grid-template-columns: 3rem minmax(0, 1fr); }
+    }
+}

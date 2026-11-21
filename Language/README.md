@@ -23,9 +23,10 @@
 | Software | `software.json` | 설명, 툴팁, 다운로드 및 오류 문구 |
 | Document | `document.json` | 탭, 문서 설명, 검색 및 오류 문구 |
 | Debugging Tool | `debugging-tool.json` | Debugging Tool과 Zero Calibration UI |
+| Servo | `servo.json` | 서보 시스템 솔루션 소개 화면 |
 | Privacy Policy | `privacy.json` | 개인정보처리방침 |
 
-각 언어 폴더에는 위의 JSON 파일 9개만 번역 원본으로 둡니다. `index.html`은 빌드할 때 자동 생성되므로 직접 수정하지 않습니다.
+각 언어 폴더에는 위의 JSON 파일 10개만 번역 원본으로 둡니다. `index.html`은 빌드할 때 자동 생성되므로 직접 수정하지 않습니다.
 
 ## 수정 방법
 

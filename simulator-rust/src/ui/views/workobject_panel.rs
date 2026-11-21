@@ -1,4 +1,4 @@
-use crate::ui::{tag, text, Node};
+use crate::ui::{svg, tag, text, Node};
 
 #[rustfmt::skip]
 pub(super) const VIEW: Node = tag("aside", &[("id", "workobject-panel"), ("class", "tcp-profile-panel workobject-panel frame-settings-panel panel-user-hidden"), ("aria-label", "Wobj 설정"), ("data-i18n-aria-label", "legacy.Wobj 설정")], &[
@@ -6,7 +6,10 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "workobject-panel"), ("class
     tag("div", &[("class", "tcp-profile-panel-header")], &[
         text("\n                    "),
         tag("h2", &[], &[
-            tag("i", &[("class", "fa-solid fa-compass-drafting")], &[]),
+            svg("svg", &[("class", "workobject-frame-icon"), ("width", "14"), ("height", "14"), ("viewBox", "0 0 24 24"), ("aria-hidden", "true"), ("focusable", "false")], &[
+                svg("path", &[("d", "M12 13V3 M9 6l3-3 3 3 M12 13l9 5m-4 1 4-1-2-4 M12 13l-9 5m2-4-2 4 4 1"), ("fill", "none"), ("stroke", "currentColor"), ("stroke-width", "2"), ("stroke-linecap", "round"), ("stroke-linejoin", "round")], &[]),
+                svg("circle", &[("cx", "12"), ("cy", "13"), ("r", "2"), ("fill", "currentColor")], &[]),
+            ]),
             text(" "),
             tag("span", &[("data-i18n", "legacy.Wobj 설정")], &[text("Wobj 설정")]),
         ]),

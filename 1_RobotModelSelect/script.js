@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const isManualEmbed = new URLSearchParams(window.location.search).get('embed') === 'manual';
     const modelPages = window.InoRobotModelPages;
+    const configurationWorkbook = window.InoRobotConfigurationWorkbook;
+    const escapeHtml = modelPages.escapeHtml;
     if (isManualEmbed) document.documentElement.dataset.modelSelectEmbed = 'manual';
 
     const uiText = (value) => window.InoRobotI18n
@@ -149,24 +151,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return productValue === optionId;
     }
 
-    function matchesActiveFilterConstraints(product, constraints, excludedCategoryId = null) {
-        return Object.entries(constraints).every(([categoryId, optionIds]) => {
-            if (categoryId === excludedCategoryId) return true;
-            return optionIds.some(optionId => matchesFilterOption(product, categoryId, optionId));
-        });
-    }
-
     let state = {
         filters: JSON.parse(JSON.stringify(filtersData)),
         products: JSON.parse(JSON.stringify(productsData)),
         accessories: (typeof accessoriesList !== 'undefined') ? JSON.parse(JSON.stringify(accessoriesList)) : []
     };
 
+    function updateSavedRobotOptions(item) {
+        if (!item || item.kind === 'hardware' || !Array.isArray(item.accessories)) return item;
+        const r7h = /^IR-R7H-/i.test(item.modelId || item.modelName || '');
+        const correctedTool = r7h && state.accessories.find(part => part.code === '32022076');
+        const correctedCode = code => correctedTool && code === '01660018' ? correctedTool.code : code;
+        const accessories = item.accessories.filter(part => part.code !== '01660004').map(part => {
+            if (correctedCode(part.code) === part.code) return part;
+            return {...part, code: correctedTool.code, inputName: 'accSelection', inputValue: correctedTool.code, name: correctedTool.name,
+                detail: correctedTool.description + ' (' + correctedTool.spec + ')'};
+        });
+        const selections = {...item.selections};
+        if (Array.isArray(selections.accessories)) {
+            selections.accessories = selections.accessories.filter(code => code !== '01660004').map(correctedCode);
+        }
+        return {...item, accessories, selections};
+    }
+
     function loadCartItems() {
         try {
             const raw = localStorage.getItem(cartStorageKey);
             const parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? parsed : [];
+            return Array.isArray(parsed) ? parsed.filter(Boolean).map(updateSavedRobotOptions) : [];
         } catch (error) {
             console.warn('Could not restore saved model configurations:', error);
             return [];
@@ -181,15 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.warn('Could not save model configurations:', error);
         }
-    }
-
-    function escapeHtml(value) {
-        return String(value ?? '')
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
     }
 
     function parsePositiveQuantity(value, fallback = 1) {
@@ -209,10 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const length = lenEl ? lenEl.value : 'N/A';
         const type = typeEl ? typeEl.value : 'Standard (표준형)';
         const isFlex = type.includes('High Flex');
-        const matched = (product?.cables || []).find(cable => {
-            const text = String(cable.cable || '');
-            return (isFlex ? text.includes('High flex') : !text.includes('High flex')) && text.includes(length);
-        });
+        const matched = InoSite.matchCable(product?.cables || [], length, isFlex);
 
         return {
             length,
@@ -225,34 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Sub Type for each product
     state.products.forEach(product => {
         if (!product || !product.specs) return;
-        const name = product.name.toUpperCase();
-        const isClean = product.specs['Clean Type'] === 'Yes';
-        let sub = '일반형';
-
-        if (name.includes('IR-CS')) {
-            sub = '경제형';
-        } else if (isClean) {
-            sub = '클린형';
-        } else if (product.specs.Type === 'SCARA' && (name.includes('TS4') || name.includes('TS5'))) {
-            sub = '천장형';
-        }
-        
-        product.specs['Sub Type'] = sub;
+        product.specs['Sub Type'] = modelPages.subtype(product);
     });
-
-    function isModelMatch(targetStr, robotName) {
-        if (!targetStr || targetStr.toLowerCase() === 'all') return true;
-        const targets = targetStr.split(',').map(t => t.trim().toUpperCase());
-        const name = robotName.toUpperCase();
-        return targets.some(t => {
-            if (t === 'ALL') return true;
-            if (t.includes('(ALL)')) {
-                const prefix = t.replace('(ALL)', '').trim();
-                return name.includes(prefix);
-            }
-            return name.includes(t);
-        });
-    }
 
     function isHiddenProduct(product) {
         return modelPages.isHiddenProduct(product);
@@ -263,8 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return parsePositiveQuantity(input ? input.value : 1);
     }
 
+    function selectionQuantityInput(input) {
+        return input?.closest('label')?.querySelector('.accessory-quantity');
+    }
+
     function getSelectionQuantity(input, fallback = 1) {
-        const quantityInput = input?.closest('label')?.querySelector('.accessory-quantity');
+        const quantityInput = selectionQuantityInput(input);
         return parsePositiveQuantity(quantityInput ? quantityInput.value : fallback, fallback);
     }
 
@@ -319,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        const selectedIoCableSet = modalBody.querySelector('input[name="ioCableSetSelection"]:checked');
+        const selectedIoCableSet = modalBody.querySelector('input[name="ioCableSetSelection"][data-code]:checked');
         if (selectedIoCableSet) {
             const quantity = getSelectionQuantity(selectedIoCableSet);
             addRow({
@@ -452,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bodySelections,
                 accessories: Array.from(modalBody.querySelectorAll('input[name="accSelection"]:checked')).map(input => input.value),
                 communication: communication ? communication.value : 'none',
-                expansion: Array.from(modalBody.querySelectorAll('input[name="expSelection"]:checked')).map(input => input.value),
+                expansion: Array.from(modalBody.querySelectorAll('input[name="expSelection"]:checked:not([data-included-by-protocol])')).map(input => input.value),
                 remoteCouplers: Array.from(modalBody.querySelectorAll('input[name="remoteCouplerSelection"]:checked')).map(input => input.value)
             }
         };
@@ -461,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCart() {
         if (!cartList) return;
 
-        const totalRobots = cartItems.reduce((sum, item) => sum + parsePositiveQuantity(item.robotQuantity), 0);
+        const totalRobots = cartItems.reduce((sum, item) => sum + (item.kind === 'hardware' ? 0 : parsePositiveQuantity(item.robotQuantity)), 0);
         cartBadge.textContent = String(cartItems.length);
         cartTotalItems.textContent = String(cartItems.length);
         cartTotalRobots.textContent = String(totalRobots);
@@ -475,9 +453,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         cartList.innerHTML = cartItems.map((item, index) => {
+            const hardware = item.kind === 'hardware';
             const cable = item.cable || {};
             const accessories = Array.isArray(item.accessories) ? item.accessories : [];
-            const detailRows = [
+            const detailRows = hardware ? [] : [
                 { name: uiText('기본 케이블'), detail: `${uiText(cable.type || '-')}${cable.length ? ` / ${cable.length}` : ''}`, code: cable.code || '-', quantity: item.robotQuantity },
                 ...accessories.map(option => ({
                     name: localizeDisplayText(option.name || option.category),
@@ -487,25 +466,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 }))
             ];
 
+            const title = hardware ? localizeDisplayText(item.name) : (item.modelName || item.productName || item.modelId);
+            const meta = hardware
+                ? `${escapeHtml(getConfigurationComponentType(item.category, item.name))} · <span class="cart-item-detail-code">${escapeHtml(item.code)}</span>`
+                : `${escapeHtml(uiText('로봇 수량'))}: ${escapeHtml(item.robotQuantity)} · ${escapeHtml(item.purchaseCode || item.modelId)}`;
+            const details = hardware
+                ? `<div class="cart-hardware-details"><span>${escapeHtml(hardwareDescription(item))}</span>
+                    <label>${escapeHtml(uiText('수량'))}<input class="hardware-quantity" type="number" min="1" step="1" required
+                        data-hardware-quantity="${escapeHtml(item.id)}" value="${escapeHtml(item.quantity)}"></label></div>`
+                : `<div class="cart-item-details">${detailRows.map(row => `
+                    <span class="cart-item-detail-name">${escapeHtml(row.name)}</span>
+                    <span>${escapeHtml(row.detail)} <span class="cart-item-detail-code">${escapeHtml(row.code)}</span></span>
+                    <span class="cart-item-detail-qty">${escapeHtml(row.quantity)}${escapeHtml(uiText('개'))}</span>`).join('')}</div>`;
             return `
                 <article class="cart-item" data-cart-id="${escapeHtml(item.id)}">
                     <div class="cart-item-header">
                         <div>
-                            <div class="cart-item-title">${index + 1}. ${escapeHtml(item.modelName || item.productName || item.modelId)}</div>
-                            <div class="cart-item-meta">${escapeHtml(uiText('로봇 수량'))}: ${escapeHtml(item.robotQuantity)} · ${escapeHtml(item.purchaseCode || item.modelId)}</div>
+                            <div class="cart-item-title">${index + 1}. ${escapeHtml(title)}</div>
+                            <div class="cart-item-meta">${meta}</div>
                         </div>
                         <div class="cart-item-actions">
-                            <button class="cart-item-action" type="button" data-cart-action="edit" data-cart-id="${escapeHtml(item.id)}">${escapeHtml(uiText('구성 수정'))}</button>
+                            ${hardware ? '' : `<button class="cart-item-action" type="button" data-cart-action="edit" data-cart-id="${escapeHtml(item.id)}">${escapeHtml(uiText('구성 수정'))}</button>`}
                             <button class="cart-item-action" type="button" data-cart-action="delete" data-cart-id="${escapeHtml(item.id)}">${escapeHtml(uiText('구성 삭제'))}</button>
                         </div>
                     </div>
-                    <div class="cart-item-details">
-                        ${detailRows.map(row => `
-                            <span class="cart-item-detail-name">${escapeHtml(row.name)}</span>
-                            <span>${escapeHtml(row.detail)} <span class="cart-item-detail-code">${escapeHtml(row.code)}</span></span>
-                            <span class="cart-item-detail-qty">${escapeHtml(row.quantity)}${escapeHtml(uiText('개'))}</span>
-                        `).join('')}
-                    </div>
+                    ${details}
                 </article>
             `;
         }).join('');
@@ -525,19 +510,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setupAccessoryQuantityControls() {
-        const selector = [
-            'input[name="pendantLength"]',
-            'input[name="ioCableSetSelection"]',
-            'input[name^="armSelection_"]',
-            'input[name^="bodySelection_"]',
-            'input[name="accSelection"]',
-            'input[name="commSelection"]',
-            'input[name="expSelection"]',
-            'input[name="remoteCouplerSelection"]'
-        ].join(',');
+    const accessorySelectionSelector = [
+        'input[name="pendantLength"]',
+        'input[name="ioCableSetSelection"]',
+        'input[name^="armSelection_"]',
+        'input[name^="bodySelection_"]',
+        'input[name="accSelection"]',
+        'input[name="commSelection"]',
+        'input[name="expSelection"]',
+        'input[name="remoteCouplerSelection"]'
+    ].join(',');
 
-        modalBody.querySelectorAll(selector).forEach(selectionInput => {
+    function setupAccessoryQuantityControls() {
+        modalBody.querySelectorAll(accessorySelectionSelector).forEach(selectionInput => {
             if (selectionInput.value === 'none' || selectionInput.disabled) return;
             const label = selectionInput.closest('label');
             if (!label || label.querySelector('.accessory-quantity-wrap')) return;
@@ -561,6 +546,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function findModalSelectionInput(name, value) {
         return Array.from(modalBody.querySelectorAll('input')).find(input => input.name === name && input.value === value) || null;
+    }
+
+    function linkCommunicationCards(radios) {
+        const standard = radios.querySelector('input[value="none"]');
+        for (const protocol of radios.querySelectorAll('input[type="radio"]:not([value="none"])')) {
+            const card = findModalSelectionInput('expSelection', protocol.dataset.code);
+            if (!card) continue;
+
+            // A protocol supplies its card until the protocol changes. Explicit card selections persist.
+            const syncSelection = () => {
+                if (protocol.checked && !card.checked) {
+                    card.checked = true;
+                    card.dataset.includedByProtocol = '';
+                } else if (!protocol.checked && card.hasAttribute('data-included-by-protocol')) {
+                    card.checked = false;
+                    delete card.dataset.includedByProtocol;
+                }
+            };
+            radios.addEventListener('change', syncSelection);
+            card.addEventListener('change', () => {
+                if (!card.checked && protocol.checked) {
+                    standard.checked = true;
+                    delete card.dataset.includedByProtocol;
+                }
+            });
+            syncSelection();
+
+            const protocolQuantity = selectionQuantityInput(protocol);
+            const cardQuantity = selectionQuantityInput(card);
+            // Older configurations stored the quantity only on the option that supplied the card.
+            if (protocol.checked) cardQuantity.value = protocolQuantity.value;
+            else protocolQuantity.value = cardQuantity.value;
+            for (const [field, other] of [[protocolQuantity, cardQuantity], [cardQuantity, protocolQuantity]]) {
+                const mirrorQuantity = () => { other.value = field.value; };
+                field.addEventListener('input', mirrorQuantity);
+                field.addEventListener('change', mirrorQuantity);
+            }
+        }
     }
 
     function restoreCartItemToModal(cartItem) {
@@ -587,14 +610,14 @@ document.addEventListener('DOMContentLoaded', () => {
         (selections.armSelections || []).forEach(item => setInput(item.name, item.value, false));
         (selections.bodySelections || []).forEach(item => setInput(item.name, item.value, false));
         (selections.accessories || []).forEach(value => setInput('accSelection', value, false));
-        setInput('commSelection', selections.communication || 'none', true);
+        setInput('commSelection', selections.communication || 'none', false);
         (selections.expansion || []).forEach(value => setInput('expSelection', value, false));
         (selections.remoteCouplers || []).forEach(value => setInput('remoteCouplerSelection', value, false));
 
         setupAccessoryQuantityControls();
         (cartItem.accessories || []).forEach(option => {
             const input = findModalSelectionInput(option.inputName, option.inputValue);
-            const quantityInput = input?.closest('label')?.querySelector('.accessory-quantity');
+            const quantityInput = selectionQuantityInput(input);
             if (quantityInput) {
                 quantityInput.value = String(parsePositiveQuantity(option.quantity));
             }
@@ -602,18 +625,181 @@ document.addEventListener('DOMContentLoaded', () => {
         syncAccessoryQuantityControls();
     }
 
-    function renderFilters() {
-        filterContainer.innerHTML = '';
+    const visibleProducts = state.products.filter(product => !isHiddenProduct(product));
+    const catalogGroups = modelPages.groupCatalogProducts(visibleProducts);
+    const hardwareType = {id: 'paid-hardware', label: '유료 하드웨어 옵션'};
+    const typeFilter = state.filters.find(group => group.id === 'Type');
+    typeFilter.label = '타입';
+    typeFilter.options.push(hardwareType);
+    const hardwareCategories = [
+        {id: 'pendant', label: '펜던트', type: 'Pendant', groups: [
+            ['비상정지 보호 커버 없음', part => part.type === 'Pendant' && !part.emergency_stop_cover],
+            ['비상정지 보호 커버 있음', part => part.type === 'Pendant' && part.emergency_stop_cover],
+            ['티칭 펜던트 연장 케이블', part => isPendantExtensionCable(part.name)]
+        ]},
+        {id: 'expansion', label: '확장 카드', type: 'Expansion Card'},
+        {id: 'accessories', label: '기타 악세서리', type: 'Accessory', groups: [
+            ['Homing tool', part => part.type === 'Zeroing tool'],
+            ['펜던트 케이블·플러그', part => isPendantExtensionCable(part.name) || part.type === 'Pendant dummy Plug'],
+            ['SCARA J3 보호 커버', part => part.type === 'Telescopic Cover'],
+            ['Encoder Battery', part => part.type === 'Encoder Battery'],
+            ['Fork lift tool for robots', part => part.type === 'Fork lift tool']
+        ]},
+        {id: 'coupler', label: '리모트 커플러', type: 'Remote Coupler', groups: [
+            ['EtherCAT 커플러', part => /EtherCAT remote module/i.test(part.description)],
+            ['디지털 입출력', part => /digital (input|output) module/i.test(part.description)],
+            ['아날로그 입출력', part => /analog (input|output) module/i.test(part.description)]
+        ]}
+    ];
+    function hardwareCategoryType(accessory) {
+        if (['Expansion Card', 'Remote Coupler', 'Pendant'].includes(accessory.type)) return accessory.type;
+        if (accessory.type === 'Software' || ['Robot arm I/O cable', 'Robot Body I/O cable'].includes(accessory.name)
+            || /1\.0 TP Connector|TP2\.0 adapter to old version/.test(accessory.description)) return null;
+        return 'Accessory';
+    }
+    function isPendantExtensionCable(name) {
+        return /teach pendant extension cable/i.test(name);
+    }
+    for (const category of hardwareCategories) {
+        category.parts = state.accessories.filter(part => hardwareCategoryType(part) === category.type
+            || (category.type === 'Pendant' && isPendantExtensionCable(part.name)));
+        category.sections = category.type === 'Expansion Card' ? groupExpansionCards(category.parts) : groupHardwareParts(category);
+    }
+    function groupHardwareParts(category) {
+        const sections = category.groups.map(([label, matches]) => ({label, matches, parts: []}));
+        const other = {label: category.label, parts: []};
+        for (const part of category.parts) {
+            const section = sections.find(group => group.matches(part)) || other;
+            section.parts.push(part);
+        }
+        return [...sections, other].filter(section => section.parts.length);
+    }
+    function groupExpansionCards(parts) {
+        const remaining = new Map(parts.map(part => [part.code, part]));
+        const sections = [
+            ['Communication', ['01650028', '01650040']],
+            ['입출력', ['01650026', '01650027', '01650025']],
+            ['안전 확장', ['01650030']]
+        ].map(([label, codes]) => {
+            const members = codes.map(code => remaining.get(code)).filter(Boolean);
+            members.forEach(part => remaining.delete(part.code));
+            return {label, parts: members};
+        }).filter(section => section.parts.length);
+        if (remaining.size) sections.push({label: '확장 카드', parts: [...remaining.values()]});
+        return sections;
+    }
+    const expansionSections = hardwareCategories.find(category => category.id === 'expansion').sections;
+    const hardwareDialog = document.getElementById('hardware-dialog');
+    const hardwareOrderForm = document.getElementById('hardware-order-form');
+    const hardwareAddButton = document.getElementById('add-hardware-to-cart');
 
-        const activeConstraints = {};
-        state.filters.forEach(cat => {
-            const selectedOpts = cat.options.filter(o => o.isSelected).map(o => o.id);
-            if (selectedOpts.length > 0) {
-                activeConstraints[cat.id] = selectedOpts;
+    function appendHardwareCards() {
+        const cards = hardwareCategories.map(category => {
+            const count = uiText('{count}개 품목').replace('{count}', category.parts.length);
+            return `<button type="button" class="product-card hardware-category-card" data-hardware-category="${category.id}" aria-haspopup="dialog">
+                <span class="hardware-photo"><img src="Model_image/hardware-${category.id}.webp?v=20261121-hardware" alt=""></span>
+                <span class="hardware-card-caption"><strong>${escapeHtml(uiText(category.label))}</strong>
+                    <span>${escapeHtml(count)}</span></span></button>`;
+        }).join('');
+        productContainer.insertAdjacentHTML('beforeend', `<div class="product-grid hardware-grid" role="group"
+            aria-label="${escapeHtml(uiText(hardwareType.label))}">${cards}</div>`);
+    }
+
+    function hardwareDescription(part) {
+        return [part.description, part.spec].filter(value => value && value !== '-').map(localizeDisplayText).join(' · ');
+    }
+
+    function hardwareDraft() {
+        return new Map(Array.from(hardwareOrderForm.querySelectorAll('[name="hardwarePart"]:checked'), input =>
+            [input.value, input.closest('tr').querySelector('.hardware-quantity').value]));
+    }
+
+    function renderHardwareDetails(category, selected = new Map()) {
+        hardwareDialog.dataset.category = category.id;
+        hardwareDialog.querySelector('h2').textContent = uiText(category.label);
+        hardwareAddButton.textContent = uiText('구성 목록에 담기');
+        hardwareAddButton.disabled = !selected.size;
+        const labels = ['품목명', '구매 코드', '호환 모델', '수량'].map(key => escapeHtml(uiText(key)));
+        function partRow(part) {
+            const name = escapeHtml(uiText(part.name));
+            const code = escapeHtml(part.code);
+            const checked = selected.has(part.code);
+            const targets = part.target_models === 'All' ? uiText('전체 모델') : part.target_models;
+            return `<tr><th scope="row"><label class="hardware-choice"><input type="checkbox" name="hardwarePart" value="${code}"${checked ? ' checked' : ''}>
+                <span>${name}<small>${escapeHtml(hardwareDescription(part))}</small></span></label></th>
+                <td data-label="${labels[1]}"><code>${code}</code></td><td data-label="${labels[2]}">${escapeHtml(targets)}</td>
+                <td data-label="${labels[3]}"><input class="hardware-quantity" type="number" min="1" step="1" required
+                    aria-label="${name} ${labels[3]}" value="${escapeHtml(selected.get(part.code) ?? 1)}"${checked ? '' : ' disabled'}></td></tr>`;
+        }
+        const bodies = category.sections.map(section => {
+            const heading = `<tr><th scope="rowgroup" colspan="4" class="hardware-section-heading">${escapeHtml(uiText(section.label))}</th></tr>`;
+            return `<tbody>${heading}${section.parts.map(partRow).join('')}</tbody>`;
+        }).join('');
+        hardwareDialog.querySelector('.hardware-parts').innerHTML = `<table><thead><tr>${labels.map(label => `<th scope="col">${label}</th>`).join('')}</tr></thead>${bodies}</table>`;
+    }
+
+    hardwareOrderForm.addEventListener('click', event => {
+        if (event.target.closest('label, input, button')) return;
+        const checkbox = event.target.closest('tr')?.querySelector('[name="hardwarePart"]');
+        checkbox?.click();
+    });
+
+    hardwareOrderForm.addEventListener('change', event => {
+        if (event.target.name !== 'hardwarePart') return;
+        event.target.closest('tr').querySelector('.hardware-quantity').disabled = !event.target.checked;
+        hardwareAddButton.disabled = !hardwareOrderForm.querySelector('[name="hardwarePart"]:checked');
+    });
+
+    hardwareOrderForm.addEventListener('submit', event => {
+        event.preventDefault();
+        const selected = hardwareDraft();
+        if (!selected.size || !hardwareOrderForm.reportValidity()) return;
+        const category = hardwareCategories.find(group => group.id === hardwareDialog.dataset.category);
+        const updated = cartItems.slice();
+        for (const [code, amount] of selected) {
+            const part = category.parts.find(member => member.code === code);
+            if (!part) return;
+            const id = 'hardware-' + code;
+            const index = updated.findIndex(item => item.id === id);
+            const quantity = Number(amount) + (index < 0 ? 0 : updated[index].quantity);
+            if (!Number.isSafeInteger(quantity) || quantity < 1) {
+                alert(uiText('수량은 1개 이상이어야 합니다.'));
+                return;
             }
-        });
+            const item = {kind: 'hardware', id, category: hardwareCategoryType(part), code: part.code, name: part.name,
+                description: part.description, spec: part.spec, quantity};
+            if (index < 0) updated.push(item);
+            else updated[index] = item;
+        }
+        cartItems = updated;
+        persistCartItems();
+        renderCart();
+        hardwareDialog.close();
+        setCartOpen(true);
+        cartCloseBtn.focus();
+    });
+
+    hardwareDialog.addEventListener('click', event => {
+        if (event.target === hardwareDialog) hardwareDialog.close();
+    });
+    const optionGroups = [];
+    const allOptions = state.filters.flatMap((category, group) => category.options.map(option => {
+        optionGroups.push(group);
+        return { category, option };
+    }));
+    const catalog = InoSite.catalog(optionGroups, state.filters.length, visibleProducts.map(product =>
+        allOptions.flatMap(({ category, option }, index) => matchesFilterOption(product, category.id, option.id) ? [index] : [])));
+    const optionIndex = new Map(allOptions.map(({ option }, i) => [option, i]));
+    const productCards = new Map();
+    function filterResult() {
+        return catalog.select(allOptions.map(({ option }) => Number(option !== hardwareType && Boolean(option.isSelected))));
+    }
+
+    function renderFilters(result) {
+        filterContainer.replaceChildren();
 
         state.filters.forEach(filterCategory => {
+            if (hardwareType.isSelected && filterCategory !== typeFilter) return;
             const row = document.createElement('div');
             row.className = 'filter-row';
             row.dataset.filterId = filterCategory.id;
@@ -630,19 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
             filterCategory.options.forEach(opt => {
                 if (filterCategory.id === 'Sub Type' && opt.id === '경제형') return;
 
-                let isValid = false;
-
-                if (opt.isSelected) {
-                    isValid = true;
-                } else {
-                    isValid = state.products.some(p => {
-                        if (isHiddenProduct(p)) return false;
-                        return matchesFilterOption(p, filterCategory.id, opt.id)
-                            && matchesActiveFilterConstraints(p, activeConstraints, filterCategory.id);
-                    });
-                }
-
-                if (!isValid) return;
+                if (opt !== hardwareType && !opt.isSelected && !result.available[optionIndex.get(opt)]) return;
                 hasVisibleOptions = true;
 
                 const btn = document.createElement('button');
@@ -654,6 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         : uiText(opt.label);
                 btn.dataset.filterId = filterCategory.id;
                 btn.dataset.optionId = opt.id;
+                btn.setAttribute('aria-pressed', String(Boolean(opt.isSelected)));
                 btn.addEventListener('click', () => {
                     toggleFilter(filterCategory.id, opt.id, !opt.isSelected);
                 });
@@ -668,83 +843,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderProducts() {
-        productContainer.innerHTML = '';
+    function renderModelCards(result) {
+        const matchingProducts = new Set(Array.from(result.rows, i => visibleProducts[i]));
 
-        const activeConstraints = {};
-        state.filters.forEach(cat => {
-            const selectedOpts = cat.options.filter(o => o.isSelected).map(o => o.id);
-            if (selectedOpts.length > 0) {
-                activeConstraints[cat.id] = selectedOpts;
-            }
-        });
-
-        const filteredProducts = state.products.filter(product => {
-            if (isHiddenProduct(product)) return false;
-
-            if (!matchesActiveFilterConstraints(product, activeConstraints)) return false;
-            return true;
-        });
-
-        if (filteredProducts.length === 0) {
+        if (matchingProducts.size === 0) {
             productContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted)">${uiText('현재 필터 규칙에 맞는 모델이 없습니다.')}</div>`;
             return;
         }
 
-        filteredProducts.forEach(product => {
-            const card = document.createElement('a');
-            card.className = 'product-card';
-            card.href = modelPages.modelPath(product.id);
-            card.dataset.productId = product.id;
-
-            const scaraSubtype = product.specs['Sub Type'] || '일반형';
-            product.image = modelPages.imagePath(product);
-            const displayName = modelPages.displayName(product);
-
-            let extraSpecsHTML = '';
-            if (product.specs.Type === 'SCARA') {
-                extraSpecsHTML = `
-                    <div class="spec-row">
-                        <span>${uiText('타입')}</span>
-                        <span class="spec-value">${uiText(scaraSubtype)}</span>
-                    </div>
-                    <div class="spec-row">
-                        <span>${uiText('Z축 길이 (mm)')}</span>
-                        <span class="spec-value">${product.specs['Z axis Length(mm)'] || '-'}</span>
-                    </div>
-                `;
-            } else if (product.specs.Type === '6-Axis') {
-                extraSpecsHTML = `
-                    <div class="spec-row">
-                        <span>${uiText('중공형')}</span>
-                        <span class="spec-value">${formatHollowWrist(product.specs['Hollow Wrist'])}</span>
-                    </div>
-                `;
+        const fragment = document.createDocumentFragment();
+        const template = document.createElement('template');
+        for (const variants of catalogGroups) {
+            const product = variants.find(variant => matchingProducts.has(variant));
+            if (!product) continue;
+            if (!productCards.has(product)) {
+                template.innerHTML = modelPages.catalogCardHtml(variants, product, uiText);
+                productCards.set(product, template.content.firstElementChild);
             }
+            fragment.appendChild(productCards.get(product));
+        }
+        productContainer.replaceChildren(fragment);
+    }
 
-            card.innerHTML = `
-                <img src="${product.image}" alt="${product.name}" class="product-image" loading="lazy" decoding="async" style="pointer-events:none; min-height:180px;">
-                <div class="product-name" style="pointer-events:none;">${displayName}</div>
-                <div class="product-specs" style="pointer-events:none;">
-                    <div class="spec-row">
-                        <span>${uiText('가반 하중 (kg)')}</span>
-                        <span class="spec-value">${product.specs['Payload(kg)'] || '-'}</span>
-                    </div>
-                    <div class="spec-row">
-                        <span>${uiText('리치 (mm)')}</span>
-                        <span class="spec-value">${product.specs['Manipulator Length(mm)'] || '-'}</span>
-                    </div>
-                    ${extraSpecsHTML}
-                </div>
-            `;
+    productContainer.addEventListener('click', event => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        const hardwareCard = event.target.closest('[data-hardware-category]');
+        if (hardwareCard) {
+            renderHardwareDetails(hardwareCategories.find(category => category.id === hardwareCard.dataset.hardwareCategory));
+            hardwareDialog.showModal();
+            hardwareDialog.querySelector('.hardware-parts').scrollTop = 0;
+            return;
+        }
+        const link = event.target.closest('a[href]');
+        const productId = link ? modelPages.productFromUrl(link.href, visibleProducts)?.id : event.target.closest('.product-card')?.dataset.productId;
+        if (!productId) return;
+        event.preventDefault();
+        openOptionsModal(productId);
+    });
 
-            card.addEventListener('click', event => {
-                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                openOptionsModal(product.id);
-            });
-            productContainer.appendChild(card);
-        });
+    function renderCatalog(result = filterResult()) {
+        renderFilters(result);
+        if (hardwareType.isSelected) {
+            productContainer.replaceChildren();
+        } else {
+            renderModelCards(result);
+        }
+        if (hardwareType.isSelected || !typeFilter.options.some(option => option.isSelected)) {
+            appendHardwareCards();
+        }
     }
 
     function toggleFilter(categoryId, optionId, forceState) {
@@ -753,37 +899,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const option = category.options.find(o => o.id === optionId);
         if (!option) return;
 
+        if (option === hardwareType || hardwareType.isSelected) {
+            allOptions.forEach(entry => { entry.option.isSelected = false; });
+            option.isSelected = forceState;
+            renderCatalog();
+            return;
+        }
+
         option.isSelected = forceState;
 
-        const activeConstraints = {};
-        state.filters.forEach(cat => {
-            const selectedOpts = cat.options.filter(o => o.isSelected).map(o => o.id);
-            if (selectedOpts.length > 0) activeConstraints[cat.id] = selectedOpts;
+        const result = filterResult();
+        let pruned = false;
+        allOptions.forEach(({ option }, i) => {
+            if (option.isSelected && !result.available[i]) {
+                option.isSelected = false;
+                pruned = true;
+            }
         });
-
-        state.filters.forEach(cat => {
-            cat.options.forEach(opt => {
-                if (opt.isSelected) {
-                    let isValid = state.products.some(p => {
-                        if (isHiddenProduct(p)) return false;
-                        return matchesFilterOption(p, cat.id, opt.id)
-                            && matchesActiveFilterConstraints(p, activeConstraints, cat.id);
-                    });
-                    if (!isValid) opt.isSelected = false;
-                }
-            });
-        });
-
-        renderFilters();
-        renderProducts();
+        renderCatalog(pruned ? filterResult() : result);
     }
 
     function resetFilters() {
         state.filters.forEach(cat => {
             cat.options.forEach(opt => opt.isSelected = false);
         });
-        renderFilters();
-        renderProducts();
+        renderCatalog();
     }
 
     resetBtn.addEventListener('click', resetFilters);
@@ -1220,19 +1360,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // The selection guide and the robot introduction training material
         // specify the R10-140, R16 and R25 families as High Protection.
-        if (name.includes('R10-140') || name.includes('R16') || name.includes('R25')) {
+        if (InoSite.modelProfile(name).fixed) {
             model = 'IRCB501-6ND-INT';
         }
 
         let type = controllerTypeByModel[model];
         // GS60 uses the 4MD controller model number but belongs to the
         // High Protection robot/controller category.
-        if (name.includes('IR-GS60')) type = 'High Protection';
+        if (InoSite.modelProfile(name).gs60) type = 'High Protection';
         return model && type ? `${model} (${type})` : '-';
     }
 
     function getRobotBodyOptions(product) {
-        if (!product || !product.specs || product.specs.Type !== '6-Axis') return [];
+        if (product.specs.Type === 'SCARA') {
+            const variants = catalogGroups.find(group => group.includes(product));
+            if (!variants || variants.length === 1) return [];
+            return variants.map(variant => ({
+                id: variant.id,
+                label: modelPages.subtype(variant),
+                spec: variant.specs['Clean Type'] === 'Yes' ? modelPages.scaraCleanClass : '클린 사양 없음'
+            }));
+        }
+        if (product.specs.Type !== '6-Axis') return [];
 
         const name = product.name.toUpperCase();
 
@@ -1242,8 +1391,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
         }
 
-        const cleanClass = (name.includes('R15H') || name.includes('R20H')) ? 'ISO Class 4' : 'ISO Class 3';
-        const standardIp = (name.includes('R15H') || name.includes('R20H')) ? 'IP54' : 'IP40';
+        const cleanClass = InoSite.modelProfile(name).highPayload ? 'ISO Class 4' : 'ISO Class 3';
+        const standardIp = InoSite.modelProfile(name).highPayload ? 'IP54' : 'IP40';
         return [
             { id: 'standard', label: '기본형', spec: `${standardIp}, 클린 사양 없음` },
             { id: 'clean', label: '클린형', spec: cleanClass },
@@ -1253,6 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getCleanTypeDisplay(product) {
         const cleanType = product?.specs?.['Clean Type'] || '-';
+        if (product?.specs?.Type === 'SCARA' && cleanType === 'Yes') return modelPages.scaraCleanClass;
         if (!product || !product.specs || product.specs.Type !== '6-Axis') return cleanType;
 
         const name = product.name.toUpperCase();
@@ -1262,8 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isFixedBodySpecModel(name) {
-        const upper = String(name || '').toUpperCase();
-        return upper.includes('R10-140') || upper.includes('R16') || upper.includes('R25');
+        return InoSite.modelProfile(name).fixed;
     }
 
     function formatIpRating(value) {
@@ -1277,19 +1426,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return source.replace(/\b(?:Signal\s+)?lines?\b/gi, uiText('Pins'));
     }
 
-    function appendUnitIfMissing(value, unit) {
-        const text = (value === undefined || value === null || value === '') ? '-' : String(value).trim();
-        if (text === '-') return text;
-        const pattern = new RegExp(`\\b${unit}\\b`, 'i');
-        return pattern.test(text) ? text : `${text} ${unit}`;
-    }
-
     function formatWeight(value) {
-        return appendUnitIfMissing(value, 'kg');
+        return modelPages.formatSpecWithUnit(value, 'kg');
     }
 
     function formatRepeatability(value) {
-        return appendUnitIfMissing(value, 'mm');
+        return modelPages.formatSpecWithUnit(value, 'mm');
     }
 
     function formatCertification(value, product) {
@@ -1331,19 +1473,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getCircuitBreaker(name) {
-        const u = name.toUpperCase();
-        if (u.includes('R10-140')) return '20A';
-        if (u.includes('R16')) return '30A';
-        if (u.includes('R25')) return '30A';
-        if (u.includes('R10-110')) return '15A';
-        if (u.includes('R10H')) return '15A';
-        if (u.includes('R11')) return '15A';
-        if (u.includes('R4H') || u.includes('R4')) return '10A';
-        if (u.includes('R7H')) return '10A';
-        if (u.includes('S35') || u.includes('S50') || u.includes('S60') || u.includes('GS60')) return '20A';
-        if (u.includes('S25')) return '15A';
-        if (u.includes('S4') || u.includes('S7') || u.includes('S10') || u.includes('TS4') || u.includes('TS5')) return '10A';
-        return '-';
+        const amps = InoSite.modelProfile(name).breaker;
+        return amps ? amps + 'A' : '-';
     }
 
     function getCadFolderBase(product) {
@@ -1461,8 +1592,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isManualEmbed) return;
         const product = modelPages.productFromUrl(window.location.href, state.products);
         if (product) {
-            openOptionsModal(product.id, null, {syncUrl: false});
-            showModelRoute(product, true);
+            openOptionsModal(product.id, {replaceUrl: true});
         } else {
             closeOptionsModal({syncUrl: false});
             updateModelPageMetadata(null);
@@ -1472,12 +1602,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('popstate', restoreModelFromLocation);
 
     // Modal Logic
-    function openOptionsModal(productId, cartItem = null, {syncUrl = true} = {}) {
+    function openOptionsModal(productId, {configuration = null, editingId = null, replaceUrl = false} = {}) {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
         currentActiveProduct = product;
-        editingCartItemId = cartItem ? cartItem.id : null;
+        editingCartItemId = editingId;
 
         // CAD availability is known from the static manifest, so opening the
         // modal does not require one or more network HEAD requests.
@@ -1488,33 +1618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cadBtn.style.opacity = isCadAvailable ? "1" : "0.4";
         cadBtn.style.cursor = isCadAvailable ? "pointer" : "not-allowed";
 
-        // Rename SCARA clean types for modal title
-        let displayName = product.name;
-        let scaraSubtype = '일반형';
-        const isClean = product.specs['Clean Type'] === 'Yes';
-
-        if (product.specs.Type === 'SCARA') {
-            const upperName = product.name.toUpperCase();
-            
-            if (upperName.includes('IR-CS')) {
-                scaraSubtype = '경제형';
-            } else if (isClean) {
-                scaraSubtype = '클린형';
-            } else if (upperName.includes('TS4') || upperName.includes('TS5')) {
-                scaraSubtype = '천장형';
-            } else {
-                scaraSubtype = '일반형';
-            }
-
-            if (product.specs['Clean Type'] === 'Yes') {
-                displayName = displayName.replace(/\s*\(Clean Type\)\s*/gi, '');
-                displayName = displayName.replace(/Z(\d+)([S])/gi, (match, p1, p2) => {
-                    let newNum = parseInt(p1) - 3;
-                    return 'Z' + newNum + 'C';
-                });
-            }
-        }
-
+        const displayName = modelPages.displayName(product);
         document.getElementById('modal-title').textContent = `[${displayName}] ${uiText('제품 상세 및 구성')}`;
         modalBody.innerHTML = '';
 
@@ -1539,7 +1643,8 @@ document.addEventListener('DOMContentLoaded', () => {
         imgContainer.style.textAlign = "center";
 
         const img = document.createElement('img');
-        img.src = product.image;
+        img.src = modelPages.imagePath(product);
+        img.alt = displayName;
         img.style.maxWidth = "100%";
         img.style.maxHeight = "350px";
         img.style.objectFit = "contain";
@@ -1550,6 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ds = product.detailSpecs || {};
         const is6Axis = product.specs.Type === '6-Axis';
         const isScara = product.specs.Type === 'SCARA';
+        const bodyOptions = getRobotBodyOptions(product);
         const tech = getTechSpecs(product.name);
 
         // Dynamic spec extraction with fallbacks to tech map or defaults
@@ -1563,13 +1669,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const dks = Object.keys(ds);
         // Check if we have J1-J6 info in detailSpecs
         if (dks.length > 0 && dks.some(k => k.toLowerCase().includes('j1'))) {
-            axesRows = `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 10px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
+            axesRows = `<tr style="border-bottom: 1px solid var(--tool-line); font-size: 11px; color: var(--text-muted);"><td></td><td style="text-align:right; padding: 4px 10px 4px 0;">속도</td><td style="text-align:right; padding: 4px 0;">가동범위</td></tr>`;
 
             // Requirement 1: Combined Speed for SCARA J1+J2 (Standard color)
             if (isScara) {
                 const combinedSpeedKey = dks.find(k => k.toLowerCase().includes('speed') && k.toLowerCase().includes('j1+j2'));
                 if (combinedSpeedKey) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${uiText('J1+J2 합산 속도')}</strong></td><td style="text-align:right; padding-right:10px;">${formatAxisSpecValue(ds[combinedSpeedKey], combinedSpeedKey)}</td><td style="text-align:right;">-</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>${uiText('J1+J2 합산 속도')}</strong></td><td style="text-align:right; padding-right:10px;">${formatAxisSpecValue(ds[combinedSpeedKey], combinedSpeedKey)}</td><td style="text-align:right;">-</td></tr>`;
                 }
             }
 
@@ -1585,18 +1691,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isScara && (num === 1 || num === 2)) speedVal = '-';
 
                 if (sk || rk) {
-                    axesRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${label}</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${rangeVal}</td></tr>`;
+                    axesRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>${label}</strong></td><td style="text-align:right; padding-right:10px;">${speedVal}</td><td style="text-align:right;">${rangeVal}</td></tr>`;
                 }
             });
         } else if (tech && tech.axes) {
             axesRows = `
-                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 11px; color: var(--text-muted);">
+                <tr style="border-bottom: 1px solid var(--tool-line); font-size: 11px; color: var(--text-muted);">
                     <td></td>
                     <td style="text-align:right; padding: 4px 5px 4px 0;">속도</td>
                     <td style="text-align:right; padding: 4px 0;">가동범위</td>
                 </tr>
             ` + tech.axes.map(ax => `
-                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <tr style="border-bottom: 1px solid var(--tool-line);">
                     <td style="padding:6px 0;"><strong>${formatAxisLabel(ax.axis)}</strong></td>
                     <td style="text-align:right; padding-right:10px;">${ax.speed}</td>
                     <td style="text-align:right;">${ax.range}</td>
@@ -1612,48 +1718,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 const r12 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j1+j2'))];
                 const r3 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j3'))];
                 const r4 = ds[dks.find(k => k.toLowerCase().includes('repeatability') && k.toLowerCase().includes('j4'))];
-                if (r12) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J1+J2)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r12)}</td></tr>`;
-                if (r3) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J3)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r3)}</td></tr>`;
-                if (r4) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도 (J4)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r4)}</td></tr>`;
+                if (r12) extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>반복 정밀도 (J1+J2)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r12)}</td></tr>`;
+                if (r3) extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>반복 정밀도 (J3)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r3)}</td></tr>`;
+                if (r4) extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>반복 정밀도 (J4)</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(r4)}</td></tr>`;
             } else {
-                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(repeatability)}</td></tr>`;
+                extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>반복 정밀도</strong></td><td colspan="2" style="text-align:right;">${formatRepeatability(repeatability)}</td></tr>`;
+            }
+
+            for (const [label, value] of modelPages.wristTorqueSpecs(product, uiText)) {
+                extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>${escapeHtml(label)}</strong></td><td colspan="2" style="text-align:right;">${escapeHtml(value)}</td></tr>`;
             }
 
             // Inertia
             const i4 = ds[dks.find(k => k.toLowerCase().includes('inertia') && k.toLowerCase().includes('j4'))];
-            if (i4) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J4)</strong></td><td colspan="2" style="text-align:right;">${i4} kg·m²</td></tr>`;
+            if (i4) extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J4)</strong></td><td colspan="2" style="text-align:right;">${i4} kg·m²</td></tr>`;
             if (is6Axis) {
                 const i5 = ds[dks.find(k => k.toLowerCase().includes('inertia') && k.toLowerCase().includes('j5'))];
                 const i6 = ds[dks.find(k => k.toLowerCase().includes('inertia') && k.toLowerCase().includes('j6'))];
-                if (i5) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J5)</strong></td><td colspan="2" style="text-align:right;">${i5} kg·m²</td></tr>`;
-                if (i6) extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J6)</strong></td><td colspan="2" style="text-align:right;">${i6} kg·m²</td></tr>`;
+                if (i5) extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J5)</strong></td><td colspan="2" style="text-align:right;">${i5} kg·m²</td></tr>`;
+                if (i6) extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>허용 관성 모멘트 (J6)</strong></td><td colspan="2" style="text-align:right;">${i6} kg·m²</td></tr>`;
             }
 
             // Certification
             const cert = ds[dks.find(k => k.toLowerCase().includes('cert'))];
             const certDisplay = formatCertification(cert, product);
             if (certDisplay) {
-                extraRows += `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);"><td style="padding:6px 0;"><strong>인증 정보</strong></td><td colspan="2" style="text-align:right; font-size:11px;">${certDisplay}</td></tr>`;
+                extraRows += `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>인증 정보</strong></td><td colspan="2" style="text-align:right; font-size:11px;">${certDisplay}</td></tr>`;
             }
         }
 
         const specHtml = `
             <div style="margin-top: 20px; padding: 15px; background: var(--tool-inset); border: 1px solid var(--tool-line); border-radius: 8px;">
-                <h4 style="margin-bottom: 12px; color: var(--primary-blue); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 8px;">로봇 스펙 정보</h4>
+                <h4 style="margin-bottom: 12px; color: var(--primary-blue); border-bottom: 1px solid var(--tool-line); padding-bottom: 8px;">로봇 스펙 정보</h4>
                 <table style="width:100%; font-size:13px; border-collapse: collapse; color: var(--text-main);">
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Payload(kg)'] || '-'} kg</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
-                    ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${scaraSubtype}</td></tr>` : ''}
-                    ${isScara ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
-                    ${is6Axis ? `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${formatHollowWrist(product.specs['Hollow Wrist'])}</td></tr>` : ''}
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${getCleanTypeDisplay(product)}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>${uiText('호환 컨트롤러')}</strong></td><td colspan="2" style="text-align:right; white-space:nowrap;">${getCompatibleController(product)}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${formatWeight(weight)}</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>가반 하중(Payload)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Payload(kg)'] || '-'} kg</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>리치(Reach)</strong></td><td colspan="2" style="text-align:right;">${product.specs['Manipulator Length(mm)'] || '-'} mm</td></tr>
+                    ${isScara ? `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>로봇 타입</strong></td><td colspan="2" style="text-align:right;">${uiText(modelPages.subtype(product))}</td></tr>` : ''}
+                    ${isScara ? `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>Z축 길이</strong></td><td colspan="2" style="text-align:right;">${product.specs['Z axis Length(mm)'] || '-'} mm</td></tr>` : ''}
+                    ${isScara && ds['Standard cycle time (s)'] ? `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>${uiText('표준 사이클 시간')}</strong></td><td colspan="2" style="text-align:right;">${ds['Standard cycle time (s)']} s</td></tr>` : ''}
+                    ${is6Axis ? `<tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>중공형(Hollow Wrist)</strong></td><td colspan="2" style="text-align:right;">${formatHollowWrist(product.specs['Hollow Wrist'])}</td></tr>` : ''}
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>클린 타입</strong></td><td colspan="2" style="text-align:right;">${getCleanTypeDisplay(product)}</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>${uiText('호환 컨트롤러')}</strong></td><td colspan="2" style="text-align:right; white-space:nowrap;">${getCompatibleController(product)}</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>방수 방진 등급</strong></td><td colspan="2" style="text-align:right;">${ipRating}</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>중량</strong></td><td colspan="2" style="text-align:right;">${formatWeight(weight)}</td></tr>
                     ${extraRows}
                     ${axesRows}
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);"><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${air}</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>사용자 배선</strong></td><td colspan="2" style="text-align:right;">${ioPins}</td></tr>
+                    <tr style="border-bottom: 1px solid var(--tool-line);"><td style="padding:6px 0;"><strong>사용자 공압</strong></td><td colspan="2" style="text-align:right;">${air}</td></tr>
                     <tr><td style="padding:6px 0;"><strong>권장 차단기</strong></td><td colspan="2" style="text-align:right;">${getCircuitBreaker(product.name)}</td></tr>
                 </table>
             </div>
@@ -1669,6 +1780,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const baseCode = (product.cables && product.cables.length > 0) ? product.cables[0].code : 'N/A';
 
+        const optionalHeading = title => `
+            <div class="configuration-heading">
+                <h3>${escapeHtml(uiText(title))}</h3>
+                <span class="configuration-codes"></span>
+            </div>`;
+
         const infoHtml = `
             <div id="dynamic-purchase-code" style="font-size:14px;margin-bottom:8px;font-weight:bold;color:var(--primary-blue);">${uiText('현재 구매 코드')}: ${baseCode}</div>
             <div id="lead-time-display" style="font-size:13px;margin-bottom:15px;color:#eee;background:rgba(255,255,255,0.05);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
@@ -1676,79 +1793,76 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <h2 id="modal-model-name" style="color:var(--text-main);margin-bottom:12px;">${displayName}</h2>
 
-            <div class="robot-quantity-panel" style="margin-bottom:18px; padding:12px; border:1px solid rgba(56,189,248,0.25); border-radius:8px; background:rgba(56,189,248,0.05);">
-                <label for="robot-quantity" style="display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--text-main); font-size:13px; font-weight:700;">
-                    <span>${uiText('로봇 수량')}</span>
-                    <input id="robot-quantity" name="robotQuantity" type="number" min="1" step="1" value="1" class="accessory-quantity" aria-label="로봇 수량">
-                </label>
-                <small style="display:block; margin-top:6px; color:var(--text-muted);">${uiText('선택한 모델 구성을 장바구니에 담을 수 있습니다.')}</small>
-            </div>
-            
-            <h4 style="margin-bottom: 12px; color: var(--text-main);">로봇 구성 선택</h4>
-            
-            <div style="margin-bottom:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 길이 <span style="color:var(--tool-danger)">*</span></label>
-                <div id="cable-len-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-            </div>
-            <div style="margin-bottom:20px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">파워/엔코더 케이블 타입 <span style="color:var(--tool-danger)">*</span></label>
-                <div id="cable-type-container" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
-            </div>
-
-            ${product.specs.Type === '6-Axis' ? `
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">로봇 바디 옵션 <span style="color:var(--tool-danger)">*</span></label>
-                <div id="robot-body-option-container" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
-            </div>` : ''}
-
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-pendant" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">티칭 펜던트 구성 (유로 옵션)</label>
-                <div id="pendant-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-
-            ${product.specs.Type === '6-Axis' ? `
-            <div style="margin-bottom:12px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-arm" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Arm I/O 케이블 구성 (유로 옵션)</label>
-                <div id="arm-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-body" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">Body I/O 케이블 구성 (유로 옵션)</label>
-                <div id="body-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>` : ''}
-
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-other" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">기타 악세서리 (유로 옵션)</label>
-                <div id="other-accessories-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-comm" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">통신 프로토콜 옵션 (확장카드 옵션)</label>
-                <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC ${uiText('통신은 기본 제공됩니다.')}</p>
-                <div id="comm-radios" style="display:flex; flex-wrap:wrap; gap:10px;">
-                    <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="none" checked data-code="">
-                        <span>기본 프로토콜 사용</span>
-                    </label>
-                    <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="IRCB501-2PN-BD" data-code="01650028" data-label="PROFINET">
-                        <span>PROFINET</span>
-                    </label>
-                    <label class="cable-option" style="margin:0;">
-                        <input type="radio" name="commSelection" value="IR-CE-CCLINK" data-code="01650040" data-label="CC-Link">
-                        <span>CC-Link</span>
-                    </label>
-                </div>
-            </div>
-
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-expansion" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">컨트롤러 확장 카드 옵션</label>
-                <div id="expansion-cards-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-
-            <div style="margin-bottom:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px;">
-                <label id="header-remote-coupler" style="display:block; font-size:13px; font-weight:bold; margin-bottom:6px; color: var(--text-main);">리모트 커플러 옵션</label>
-                <div id="remote-couplers-container" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
+            <ol class="configuration-sections">
+                <li>
+                    <div class="configuration-heading">
+                        <h3>${uiText('로봇 구성 (필수)')}</h3>
+                        <label class="robot-quantity" for="robot-quantity">
+                            <span>${uiText('수량')}</span>
+                            <input id="robot-quantity" name="robotQuantity" type="number" min="1" step="1" value="1" class="accessory-quantity" aria-label="${escapeHtml(uiText('로봇 수량'))}">
+                        </label>
+                    </div>
+                    <div class="configuration-field">
+                        <h4>${uiText('파워/엔코더 케이블 길이')}</h4>
+                        <div id="cable-len-container" class="configuration-options"></div>
+                    </div>
+                    <div class="configuration-field">
+                        <h4>${uiText('파워/엔코더 케이블 타입')}</h4>
+                        <div id="cable-type-container" class="configuration-options"></div>
+                    </div>
+                    ${bodyOptions.length ? `
+                    <div class="configuration-field">
+                        <h4>${uiText('로봇 바디 옵션')}</h4>
+                        <div id="robot-body-option-container" class="configuration-options"></div>
+                    </div>` : ''}
+                </li>
+                <li>
+                    ${optionalHeading('펜던트 구성 (선택)')}
+                    <div id="pendant-container" class="configuration-stack"></div>
+                </li>
+                ${is6Axis ? `
+                <li>
+                    ${optionalHeading('I/O 케이블 구성 (선택)')}
+                    <div class="configuration-field">
+                        <h4 id="arm-cable-title">${uiText('Arm I/O 케이블')}</h4>
+                        <div id="arm-container" class="configuration-stack"></div>
+                    </div>
+                    <div class="configuration-field">
+                        <h4>${uiText('Body I/O 케이블')}</h4>
+                        <div id="body-container" class="configuration-stack"></div>
+                    </div>
+                </li>` : ''}
+                <li>
+                    ${optionalHeading('통신 구성 (선택)')}
+                    <p class="configuration-note">Modbus-RTU, Modbus-TCP, EtherNet/IP, EtherCAT, MC ${uiText('통신은 기본 제공됩니다.')}</p>
+                    <div id="comm-radios" class="configuration-options">
+                        <label class="cable-option" style="margin:0;">
+                            <input type="radio" name="commSelection" value="none" checked data-code="">
+                            <span>${uiText('기본 프로토콜 사용')}</span>
+                        </label>
+                        <label class="cable-option" style="margin:0;">
+                            <input type="radio" name="commSelection" value="IRCB501-2PN-BD" data-code="01650028" data-label="PROFINET">
+                            <span>PROFINET</span>
+                        </label>
+                        <label class="cable-option" style="margin:0;">
+                            <input type="radio" name="commSelection" value="IR-CE-CCLINK" data-code="01650040" data-label="CC-Link">
+                            <span>CC-Link</span>
+                        </label>
+                    </div>
+                </li>
+                <li>
+                    ${optionalHeading('컨트롤러 확장 카드 (선택)')}
+                    <div id="expansion-cards-container" class="configuration-stack"></div>
+                </li>
+                <li>
+                    ${optionalHeading('리모트 커플러 (선택)')}
+                    <div id="remote-couplers-container" class="configuration-stack"></div>
+                </li>
+                <li>
+                    ${optionalHeading('기타 액세서리 (선택)')}
+                    <div id="other-accessories-container" class="configuration-stack"></div>
+                </li>
+            </ol>
         `;
         rightCol.innerHTML = infoHtml;
 
@@ -1817,117 +1931,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const robotBodyOptionContainer = rightCol.querySelector('#robot-body-option-container');
         if (robotBodyOptionContainer) {
-            getRobotBodyOptions(product).forEach((option, index) => {
+            const inputName = isScara ? 'scaraVariant' : 'robotBodyOption';
+            const selectedId = isScara ? product.id : 'standard';
+            bodyOptions.forEach(option => {
                 const btn = document.createElement('label');
                 btn.className = 'cable-option';
                 btn.style.margin = '0';
                 btn.style.alignItems = 'center';
                 btn.style.minWidth = '190px';
                 btn.innerHTML = `
-                    <input type="radio" name="robotBodyOption" value="${option.id}" ${index === 0 ? 'checked' : ''} data-label="${option.label}" data-spec="${option.spec}">
+                    <input type="radio" name="${inputName}" value="${option.id}" ${option.id === selectedId ? 'checked' : ''} data-label="${option.label}" data-spec="${option.spec}">
                     <span>
                         <strong>${uiText(option.label)}</strong>
-                        <small style="display:block; margin-top:4px; color:var(--text-muted); font-size:12px; line-height:1.35;">${localizeDisplayText(option.spec)}</small>
+                        <small class="configuration-hint">${localizeDisplayText(option.spec)}</small>
                     </span>
                 `;
                 robotBodyOptionContainer.appendChild(btn);
             });
         }
 
-        // Function to update dynamic header codes
         function updateHeaderCodes() {
-            // Pendant
-            const pConfig = rightCol.querySelector('input[name="pendantConfig"]:checked');
-            const pSel = rightCol.querySelector('input[name="pendantLength"]:checked');
-            const pHeader = rightCol.querySelector('#header-pendant');
-            if (pHeader) {
-                const codeHtml = (pConfig && pConfig.value !== 'none' && pSel) ? ` <span class="code-badge">${pSel.value}</span>` : '';
-                pHeader.innerHTML = `${uiText('티칭 펜던트 구성 (유로 옵션)')}${codeHtml}`;
-            }
-
-            // Arm - Dynamic for multiple pin types
-            const armSelections = Array.from(rightCol.querySelectorAll('input[name^="armSelection_"]:checked'));
-            const selectedIoCableSet = rightCol.querySelector('input[name="ioCableSetSelection"]:checked');
-            const armHeader = rightCol.querySelector('#header-arm');
-            if (armHeader) {
-                const armCodes = selectedIoCableSet
-                    ? [selectedIoCableSet.getAttribute('data-code') || selectedIoCableSet.value]
-                    : armSelections.filter(s => s.value !== 'none').map(s => s.value);
-                const codeHtml = armCodes.length > 0 ? armCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                armHeader.innerHTML = `${uiText('Arm I/O 케이블 구성 (유로 옵션)')} ${codeHtml}`;
-            }
-
-            // Body - Dynamic for multiple pin types
-            const bodySelections = Array.from(rightCol.querySelectorAll('input[name^="bodySelection_"]:checked'));
-            const bodyHeader = rightCol.querySelector('#header-body');
-            if (bodyHeader) {
-                const bodyCodes = selectedIoCableSet
-                    ? [selectedIoCableSet.getAttribute('data-code') || selectedIoCableSet.value]
-                    : bodySelections.filter(s => s.value !== 'none').map(s => s.value);
-                const codeHtml = bodyCodes.length > 0 ? bodyCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                bodyHeader.innerHTML = `${uiText('Body I/O 케이블 구성 (유로 옵션)')} ${codeHtml}`;
-            }
-
-            // Other
-            const otherHeader = rightCol.querySelector('#header-other');
-            if (otherHeader) {
-                const checkedItems = Array.from(rightCol.querySelectorAll('input[name="accSelection"]:checked'));
-                const selectedCodes = checkedItems.map(cb => cb.value);
-                const codeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                otherHeader.innerHTML = `${uiText('기타 악세서리 (유로 옵션)')} ${codeHtml}`;
-
-                // Requirement 2: Show code on the right of each item
-                rightCol.querySelectorAll('input[name="accSelection"]').forEach(cb => {
-                    const codeSpan = cb.parentElement.querySelector('.item-code-inline');
-                    if (codeSpan) {
-                        codeSpan.style.display = cb.checked ? 'inline' : 'none';
+            for (const badges of rightCol.querySelectorAll('.configuration-codes')) {
+                const codes = new Set();
+                for (const input of badges.closest('li').querySelectorAll(accessorySelectionSelector)) {
+                    if (input.checked && !input.disabled && input.value !== 'none') {
+                        codes.add(input.dataset.code || input.value);
                     }
-                });
-            }
-
-            // Communication and expansion-card selections are independent.
-            const commSel = rightCol.querySelector('input[name="commSelection"]:checked');
-            const commHeader = rightCol.querySelector('#header-comm');
-            if (commHeader) {
-                const commCode = commSel ? commSel.getAttribute('data-code') : '';
-                const codeHtml = (commSel && commSel.value !== 'none' && commCode) ? ` <span class="code-badge">${commCode}</span>` : '';
-                commHeader.innerHTML = `${uiText('통신 프로토콜 옵션 (확장카드 옵션)')}${codeHtml}`;
-
-                // The large protocol selector and the expansion-card checklist are
-                // intentionally independent so PROFINET and CC-Link can coexist.
-            }
-
-            // Expansion
-            const expansionHeader = rightCol.querySelector('#header-expansion');
-            if (expansionHeader) {
-                const checkedExp = Array.from(rightCol.querySelectorAll('input[name="expSelection"]:checked'));
-                const selectedCodes = checkedExp.map(cb => cb.value);
-                const codeBadgeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                expansionHeader.innerHTML = `${uiText('컨트롤러 확장 카드 옵션')} ${codeBadgeHtml}`;
-
-                // Requirement 2: Show code inline for expansion cards
-                rightCol.querySelectorAll('input[name="expSelection"]').forEach(cb => {
-                    const codeSpan = cb.parentElement.querySelector('.exp-code-inline');
-                    if (codeSpan) {
-                        codeSpan.style.display = cb.checked ? 'inline' : 'none';
-                    }
-                });
-            }
-
-            // Remote Coupler
-            const remoteCouplerHeader = rightCol.querySelector('#header-remote-coupler');
-            if (remoteCouplerHeader) {
-                const checkedRemoteCouplers = Array.from(rightCol.querySelectorAll('input[name="remoteCouplerSelection"]:checked'));
-                const selectedCodes = checkedRemoteCouplers.map(cb => cb.value);
-                const codeBadgeHtml = selectedCodes.length > 0 ? selectedCodes.map(c => `<span class="code-badge">${c}</span>`).join('') : '';
-                remoteCouplerHeader.innerHTML = `${uiText('리모트 커플러 옵션')} ${codeBadgeHtml}`;
-
-                rightCol.querySelectorAll('input[name="remoteCouplerSelection"]').forEach(cb => {
-                    const codeSpan = cb.parentElement.querySelector('.remote-coupler-code-inline');
-                    if (codeSpan) {
-                        codeSpan.style.display = cb.checked ? 'inline' : 'none';
-                    }
-                });
+                }
+                badges.innerHTML = Array.from(codes, code => `<span class="code-badge">${escapeHtml(code)}</span>`).join('');
             }
             syncAccessoryQuantityControls();
         }
@@ -1940,12 +1971,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const typeValue = typeEl ? typeEl.value : '';
             const isFlex = typeValue.includes('High Flex');
 
-            let matched = product.cables.find(c => {
-                let txt = c.cable;
-                let matchFlex = isFlex ? txt.includes('High flex') : !txt.includes('High flex');
-                let matchLen = txt.includes(lenValue);
-                return matchFlex && matchLen;
-            });
+            const matched = InoSite.matchCable(product.cables, lenValue, isFlex);
 
             const codeDisplay = rightCol.querySelector('#dynamic-purchase-code');
             const leadTimeVal = rightCol.querySelector('#lead-time-value');
@@ -1957,32 +1983,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const finalCode = bodyOptionNeedsCode ? bodyOptionCode : (matched ? matched.code : (product.cables.length > 0 ? product.cables[0].code : 'N/A'));
                 codeDisplay.innerHTML = `${uiText('현재 구매 코드')}: <span class="code-badge">${finalCode}</span>`;
 
-                // Requirement 2: Dynamic Lead Time Calculation
-                const isScara = product.specs.Type === 'SCARA';
-                const subType = product.specs['Sub Type'] || '일반형';
-                const hasCode = finalCode && finalCode !== '-';
-                let timeStr = "-";
-
-                if (isScara) {
-                    const isCleanScara = product.id.endsWith('C-INT');
-                    const isS60 = product.id.includes('S60');
-                    if (isCleanScara) {
-                        timeStr = "6\uac1c\uc6d4";
-                    } else if (!hasKcsCertification(product)) {
-                        timeStr = "10주";
-                    } else if (isS60) {
-                        timeStr = hasCode ? "6주" : "10주";
-                    } else if (subType === '일반형') {
-                        timeStr = hasCode ? "6주" : "7주";
-                    } else if (subType === '클린형' || subType === '경제형') {
-                        timeStr = hasCode ? "6주" : "10주";
-                    } else {
-                        timeStr = hasCode ? "6주" : "7주"; // fallback for other types like '천장형'
-                    }
-                } else {
-                    timeStr = hasCode ? "7주" : "8주";
+                if (leadTimeVal) {
+                    leadTimeVal.textContent = uiText(InoSite.leadTime(product, finalCode, hasKcsCertification(product)));
                 }
-                if (leadTimeVal) leadTimeVal.textContent = uiText(timeStr);
             }
             updateModalModelName();
             updateHeaderCodes();
@@ -1990,21 +1993,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lenContainer.addEventListener('change', updateDynamicCode);
         typeContainer.addEventListener('change', updateDynamicCode);
-        if (robotBodyOptionContainer) {
-            robotBodyOptionContainer.addEventListener('change', updateDynamicCode);
-        }
+        robotBodyOptionContainer?.addEventListener('change', event => {
+            if (!isScara) {
+                updateDynamicCode();
+                return;
+            }
+            const scrollTop = modalBody.scrollTop;
+            openOptionsModal(event.target.value, {
+                configuration: collectCurrentCartItem(), editingId: editingCartItemId, replaceUrl: true
+            });
+            modalBody.scrollTop = scrollTop;
+            modalBody.querySelector('input[name="scaraVariant"]:checked')?.focus({preventScroll: true});
+        });
         
         // Accessory Filtering Logic
         const accs = state.accessories;
         const prodName = product.name;
+        const scaraVariant = /^IR-(S\d+)-\d+Z\d+([CS])-/i.exec(prodName);
+        const compatibilityName = scaraVariant ? `${prodName} ${scaraVariant[1]}${scaraVariant[2]}` : prodName;
+        const compatible = InoSite.compatibleAccessories(compatibilityName, accs);
 
         // 1. Pendant Logic
         const pendantContainer = rightCol.querySelector('#pendant-container');
-        const pendantOptions = accs.filter(a => a.type === 'Pendant' && isModelMatch(a.target_models, prodName));
+        const pendantOptions = compatible.filter(a => a.type === 'Pendant');
         
         pendantContainer.innerHTML = `
             <div>
-                <div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${uiText('펜던트 사용 여부 선택')}</div>
+                <div class="configuration-hint">${uiText('펜던트 사용 여부 선택')}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-config-radios">
                     <label class="cable-option" style="margin:0;">
                         <input type="radio" name="pendantConfig" value="none" checked data-label="사용안함">
@@ -2021,7 +2036,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div style="margin-top:4px;">
-                <div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${uiText('펜던트 길이 선택')}</div>
+                <div class="configuration-hint">${uiText('펜던트 길이 선택')}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-length-radios"></div>
             </div>
         `;
@@ -2060,11 +2075,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 2. Arm / Body Cable Logic (Requirement 4)
-        if (product.specs.Type === '6-Axis') {
+        if (is6Axis) {
             const armContainer = rightCol.querySelector('#arm-container');
-            const armOptions = accs.filter(a => a.name === 'Robot arm I/O cable' && isModelMatch(a.target_models, prodName));
+            const armOptions = compatible.filter(a => a.name === 'Robot arm I/O cable');
             const bodyContainer = rightCol.querySelector('#body-container');
-            const bodyOptions = accs.filter(a => a.name === 'Robot Body I/O cable' && isModelMatch(a.target_models, prodName));
+            const bodyOptions = compatible.filter(a => a.name === 'Robot Body I/O cable');
 
             // R15H/R20H Arm and Body I/O cables are sold as one selectable set.
             const ioSetGroups = {};
@@ -2079,15 +2094,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(([setId, set]) => ({ setId, ...set }));
 
             if (pairedIoCableSets.length > 0) {
-                armContainer.innerHTML = '';
-                const groupDiv = document.createElement('div');
-                groupDiv.style.marginBottom = '12px';
-                groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${uiText('케이블 선택')}</div>
-                    <div style="display:flex; flex-direction:column; gap:10px;" id="io-cable-set-radios"></div>`;
-                armContainer.appendChild(groupDiv);
-
-                const radios = groupDiv.querySelector('#io-cable-set-radios');
-                pairedIoCableSets.forEach((set, index) => {
+                rightCol.querySelector('#arm-cable-title').textContent = uiText('Arm/Body I/O 케이블은 세트로 선택됩니다.');
+                bodyContainer.closest('.configuration-field').hidden = true;
+                armContainer.innerHTML = `<div id="io-cable-set-radios" class="configuration-stack">
+                    <label class="cable-option" style="margin:0;">
+                        <input type="radio" name="ioCableSetSelection" value="none" checked><span>${uiText('사용안함')}</span>
+                    </label>
+                </div>`;
+                const radios = armContainer.querySelector('#io-cable-set-radios');
+                pairedIoCableSets.forEach(set => {
                     const armPin = getPinCount(set.arm.description) || '기본핀';
                     const bodyPin = getPinCount(set.body.description) || '기본핀';
                     const armSpec = set.arm.spec === '-' ? uiText('커넥터만') : set.arm.spec;
@@ -2095,12 +2110,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const label = document.createElement('label');
                     label.className = 'cable-option';
                     label.style.margin = '0';
-                    label.innerHTML = `<input type="radio" name="ioCableSetSelection" value="${set.setId}" ${index === 0 ? 'checked' : ''} data-code="${set.arm.code}" data-arm-pin="${armPin}" data-arm-desc="${set.arm.description}" data-arm-spec="${set.arm.spec || ''}" data-body-pin="${bodyPin}" data-body-desc="${set.body.description}" data-body-spec="${set.body.spec || ''}">
-                        <span><strong>${set.arm.code}</strong><small style="display:block; margin-top:4px; color:var(--text-muted); line-height:1.5;">${uiText('Arm I/O 케이블')}: ${formatPinCount(armPin)} ${armSpec}<br>${uiText('Body I/O 케이블')}: ${formatPinCount(bodyPin)} ${bodySpec}</small></span>`;
+                    label.innerHTML = `<input type="radio" name="ioCableSetSelection" value="${set.setId}" data-code="${set.arm.code}" data-arm-pin="${armPin}" data-arm-desc="${set.arm.description}" data-arm-spec="${set.arm.spec || ''}" data-body-pin="${bodyPin}" data-body-desc="${set.body.description}" data-body-spec="${set.body.spec || ''}">
+                        <span><strong>${set.arm.code}</strong><small class="configuration-hint">${uiText('Arm I/O 케이블')}: ${formatPinCount(armPin)} ${armSpec}<br>${uiText('Body I/O 케이블')}: ${formatPinCount(bodyPin)} ${bodySpec}</small></span>`;
                     radios.appendChild(label);
                 });
                 radios.addEventListener('change', updateHeaderCodes);
-                bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('Arm/Body I/O 케이블은 세트로 선택됩니다.')}</span>`;
             } else {
             // Group Arm I/O by pins
             
@@ -2116,7 +2130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(pinGroups).forEach(pin => {
                     const groupDiv = document.createElement('div');
                     groupDiv.style.marginBottom = '12px';
-                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
+                    groupDiv.innerHTML = `<div class="configuration-hint">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="arm-radios-${pin}">
                             <label class="cable-option" style="margin:0;"><input type="radio" name="armSelection_${pin}" value="none" checked><span>${uiText('사용안함')}</span></label>
                         </div>`;
@@ -2134,7 +2148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     radios.addEventListener('change', updateHeaderCodes);
                 });
             } else {
-                armContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.')}</span>`;
+                armContainer.innerHTML = `<span class="configuration-hint">${uiText('해당 모델에 호환되는 Arm 케이블 옵션이 없습니다.')}</span>`;
             }
 
             // Group Body I/O by pins
@@ -2150,7 +2164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Object.keys(bodyPinGroups).forEach(pin => {
                     const groupDiv = document.createElement('div');
                     groupDiv.style.marginBottom = '12px';
-                    groupDiv.innerHTML = `<div style="font-size:12px; margin-bottom:5px; color:var(--text-muted);">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
+                    groupDiv.innerHTML = `<div class="configuration-hint">${formatPinCount(pin)} ${uiText('케이블 선택')}</div>
                         <div style="display:flex; flex-wrap:wrap; gap:10px;" id="body-radios-${pin}">
                             <label class="cable-option" style="margin:0;"><input type="radio" name="bodySelection_${pin}" value="none" checked><span>${uiText('사용안함')}</span></label>
                         </div>`;
@@ -2168,23 +2182,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     radios.addEventListener('change', updateHeaderCodes);
                 });
             } else {
-                bodyContainer.innerHTML = `<span style="font-size:13px; color:#999;">${uiText('해당 모델에 호환되는 Body 케이블 옵션이 없습니다.')}</span>`;
+                bodyContainer.innerHTML = `<span class="configuration-hint">${uiText('해당 모델에 호환되는 Body 케이블 옵션이 없습니다.')}</span>`;
                 }
             }
         }
 
         // 3. Other Accessories Logic (Requirement 1 & 2)
         const otherAccContainer = rightCol.querySelector('#other-accessories-container');
-        const otherOptions = accs.filter(a => {
-            if (a.type === 'Pendant') return false;
-            if (a.name === 'Robot arm I/O cable' || a.name === 'Robot Body I/O cable') return false;
-            if (a.type === 'Software' && a.name.includes('Simulation')) return false;
-            if (a.description.includes('1.0 TP Connector')) return false; 
-            if (a.description.includes('TP2.0 adapter to old version')) return false;
-            if (a.type === 'Expansion Card' || a.type === 'Remote Coupler') return false;
-            if (isFixedBodySpecModel(prodName) && a.name === 'Handheld motor break release box') return false;
-            return isModelMatch(a.target_models, prodName);
-        });
+        const otherOptions = compatible.filter(a => hardwareCategoryType(a) === 'Accessory');
 
         if (otherOptions.length > 0) {
             otherOptions.forEach(acc => {
@@ -2194,38 +2199,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${uiText(acc.name || 'Accessory')}</strong>
-                        <span class="item-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:var(--text-muted); font-size:13px;">${uiText(acc.description)}</span>
+                        <span class="option-item-code code-badge">${acc.code}</span>
+                        <br><span class="configuration-hint">${uiText(acc.description)}</span>
                     </div>
                 `;
                 otherAccContainer.appendChild(lbl);
             });
             otherAccContainer.addEventListener('change', updateHeaderCodes);
         } else {
-            otherAccContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('기타 악세서리가 없습니다.')}</span>`;
+            otherAccContainer.innerHTML = `<span class="configuration-hint">${uiText('기타 악세서리가 없습니다.')}</span>`;
         }
 
         // 4. Expansion Cards Logic
         const expContainer = rightCol.querySelector('#expansion-cards-container');
-        const expOptions = accs.filter(a => a.type === 'Expansion Card');
-        
-        if (expOptions.length > 0) {
-            expOptions.forEach(acc => {
-                const lbl = document.createElement('label');
-                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
-                lbl.innerHTML = `
-                    <input type="checkbox" name="expSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
-                    <div style="flex:1;">
-                        <strong>${uiText(acc.name)}</strong>
-                        <span class="exp-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:var(--text-muted); font-size:13px;">${uiText(acc.description)}</span>
-                    </div>
-                `;
-                expContainer.appendChild(lbl);
-            });
+        if (expansionSections.length) {
+            expContainer.innerHTML = expansionSections.map(section => {
+                const choices = section.parts.map(part => `<label class="expansion-card-choice">
+                    <input type="checkbox" name="expSelection" value="${escapeHtml(part.code)}"
+                        data-desc="${escapeHtml(part.name + ' - ' + part.description)}" data-spec="${escapeHtml(part.spec || '')}">
+                    <span class="expansion-card-description"><strong>${escapeHtml(uiText(part.name))}</strong>
+                        <span class="option-item-code code-badge">${escapeHtml(part.code)}</span><br>
+                        <span class="configuration-hint">${escapeHtml(uiText(part.description))}</span></span>
+                </label>`).join('');
+                return `<section class="configuration-stack expansion-group"><h4 class="expansion-group-title">${escapeHtml(uiText(section.label))}</h4>${choices}</section>`;
+            }).join('');
             expContainer.addEventListener('change', updateHeaderCodes);
         } else {
-            expContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('확장 카드 옵션이 없습니다.')}</span>`;
+            expContainer.innerHTML = `<span class="configuration-hint">${uiText('확장 카드 옵션이 없습니다.')}</span>`;
         }
 
         // 5. Remote Coupler Logic
@@ -2240,33 +2240,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="checkbox" name="remoteCouplerSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
                     <div style="flex:1;">
                         <strong>${uiText(acc.name)}</strong>
-                        <span class="remote-coupler-code-inline code-badge" style="display:none; margin-left:8px;">${acc.code}</span>
-                        <br><span style="color:var(--text-muted); font-size:13px;">${uiText(acc.description)}</span>
+                        <span class="option-item-code code-badge">${acc.code}</span>
+                        <br><span class="configuration-hint">${uiText(acc.description)}</span>
                     </div>
                 `;
                 remoteCouplerContainer.appendChild(lbl);
             });
             remoteCouplerContainer.addEventListener('change', updateHeaderCodes);
         } else {
-            remoteCouplerContainer.innerHTML = `<span style="color:#999; font-size:13px;">${uiText('리모트 커플러 옵션이 없습니다.')}</span>`;
+            remoteCouplerContainer.innerHTML = `<span class="configuration-hint">${uiText('리모트 커플러 옵션이 없습니다.')}</span>`;
         }
-
-        rightCol.querySelector('#comm-radios').addEventListener('change', updateHeaderCodes);
 
         setupAccessoryQuantityControls();
+        if (configuration) restoreCartItemToModal(configuration);
+        const communicationRadios = rightCol.querySelector('#comm-radios');
+        linkCommunicationCards(communicationRadios);
+        communicationRadios.addEventListener('change', updateHeaderCodes);
         updateDynamicCode();
-        if (cartItem) {
-            restoreCartItemToModal(cartItem);
-            updateDynamicCode();
-        }
         if (addToCartBtn) {
-            addToCartBtn.textContent = uiText(cartItem ? '구성 수정' : '구성 담기');
+            addToCartBtn.textContent = uiText(editingId ? '구성 수정' : '구성 담기');
         }
         if (window.InoRobotI18n) {
             window.InoRobotI18n.apply(modalBody);
         }
         modalOverlay.style.display = 'flex';
-        if (syncUrl) showModelRoute(product);
+        showModelRoute(product, replaceUrl);
     }
 
     function closeOptionsModal({syncUrl = true} = {}) {
@@ -2336,6 +2334,19 @@ document.addEventListener('DOMContentLoaded', () => {
         persistCartItems();
         renderCart();
     });
+    cartList?.addEventListener('change', event => {
+        const id = event.target.dataset.hardwareQuantity;
+        if (!id) return;
+        const item = cartItems.find(entry => entry.id === id && entry.kind === 'hardware');
+        if (!item) return;
+        const quantity = event.target.valueAsNumber;
+        if (!Number.isSafeInteger(quantity) || quantity < 1) {
+            event.target.value = String(item.quantity);
+            return;
+        }
+        item.quantity = quantity;
+        persistCartItems();
+    });
     cartList?.addEventListener('click', event => {
         const button = event.target.closest('[data-cart-action]');
         if (!button) return;
@@ -2354,12 +2365,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = state.products.find(entry => entry.id === item.modelId);
             if (!product) return;
             setCartOpen(false);
-            openOptionsModal(product.id, item);
+            openOptionsModal(product.id, {configuration: item, editingId: item.id});
         }
     });
 
-    function buildConfigurationWorkbookRows(items) {
-        return items.flatMap(item => {
+    function createConfigurationReport(items) {
+        const parts = items.flatMap(item => {
+            if (item.kind === 'hardware') {
+                return [{kind: 'option', modelNumber: localizeDisplayText(item.name), code: item.code,
+                    type: getConfigurationComponentType(item.category, item.name),
+                    details: hardwareDescription(item), quantity: parsePositiveQuantity(item.quantity)}];
+            }
             const product = state.products.find(entry => entry.id === item.modelId);
             const modelNumber = item.modelName || (product ? getDisplayModelName(product, item.bodyOptionValue) : item.modelId || item.productName || '-');
             const cable = item.cable || {};
@@ -2379,6 +2395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bodyOption ? localizeDisplayText(bodyOption.detail || bodyOption.name) : ''
             ].filter(Boolean).join(' / ');
             const rows = [{
+                kind: 'robot',
                 modelNumber: modelNumber || '-',
                 code: robotCode,
                 type: getConfigurationRobotType(product),
@@ -2388,6 +2405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (hasSeparateCableCode) {
                 rows.push({
+                    kind: 'cable',
                     modelNumber: uiText('기본 케이블'),
                     code: cable.code,
                     type: uiText('파워/엔코더 케이블'),
@@ -2396,19 +2414,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            const cableSets = new Map();
             accessories.forEach(option => {
                 if (option.category === 'Robot Body') return;
-                rows.push({
+                const part = {
+                    kind: 'option',
                     modelNumber: localizeDisplayText(option.name || option.category || '-'),
                     code: option.code || '-',
                     type: getConfigurationComponentType(option.category, option.name),
                     details: localizeDisplayText(option.detail || ''),
                     quantity: parsePositiveQuantity(option.quantity)
-                });
+                };
+                // Arm and body entries from the same I/O set share one ordered quantity.
+                if (option.inputName === 'ioCableSetSelection' && option.code) {
+                    const set = cableSets.get(option.code);
+                    if (set) {
+                        for (const field of ['modelNumber', 'type', 'details']) {
+                            set[field] = [...new Set([set[field], part[field]].filter(Boolean))].join('\n');
+                        }
+                        set.quantity = Math.max(set.quantity, part.quantity);
+                        return;
+                    }
+                    cableSets.set(option.code, part);
+                }
+                rows.push(part);
             });
 
             return rows;
         });
+        return configurationWorkbook.createReport(parts, uiText, items.length);
     }
 
     function getPowerEncoderCableMovement(cable) {
@@ -2430,160 +2464,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getConfigurationComponentType(category, name = '') {
+        if (isPendantExtensionCable(name)) return uiText('티칭 펜던트 연장 케이블');
         if (category === 'Pendant') return uiText('펜던트');
         if (category === 'Arm I/O Cable') return uiText('Arm I/O (J4)');
         if (category === 'Body I/O Cable') return uiText('Arm I/O (Base)');
-        if (/teach pendant extension cable/i.test(String(name))) return uiText('티칭 펜던트 연장 케이블');
-        return uiText('악세서리');
-    }
-
-    function escapeXml(value) {
-        return String(value ?? '')
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&apos;');
-    }
-
-    function getExcelColumnName(index) {
-        let value = index + 1;
-        let name = '';
-        while (value > 0) {
-            const remainder = (value - 1) % 26;
-            name = String.fromCharCode(65 + remainder) + name;
-            value = Math.floor((value - 1) / 26);
-        }
-        return name;
-    }
-
-    function buildConfigurationWorkbookFiles(rows) {
-        const headers = ['순번', '형번', '코드', '타입', '상세 정보', '수량'].map(uiText);
-        const values = [headers, ...rows.map((row, index) => [index + 1, row.modelNumber, row.code, row.type, row.details, row.quantity])];
-        const sheetRows = values.map((cells, rowIndex) => {
-            const rowNumber = rowIndex + 1;
-            const cellXml = cells.map((value, columnIndex) => {
-                const reference = `${getExcelColumnName(columnIndex)}${rowNumber}`;
-                const style = rowIndex === 0 ? ' s="1"' : ' s="2"';
-                if (typeof value === 'number' && Number.isFinite(value)) {
-                    return `<c r="${reference}"${style}><v>${value}</v></c>`;
-                }
-                return `<c r="${reference}"${style} t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
-            }).join('');
-            const rowHeight = rowIndex === 0 ? ' ht="30" customHeight="1"' : '';
-            return `<row r="${rowNumber}"${rowHeight}>${cellXml}</row>`;
-        }).join('');
-        const lastRow = values.length;
-        const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
-            `<dimension ref="A1:F${lastRow}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>` +
-            `<sheetFormatPr defaultRowHeight="20"/><cols><col min="1" max="1" width="14" customWidth="1"/><col min="2" max="2" width="32" customWidth="1"/><col min="3" max="3" width="18" customWidth="1"/><col min="4" max="4" width="20" customWidth="1"/><col min="5" max="5" width="60" customWidth="1"/><col min="6" max="6" width="18" customWidth="1"/></cols>` +
-            `<sheetData>${sheetRows}</sheetData><autoFilter ref="A1:F${lastRow}"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>`;
-        const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${escapeXml(uiText('구성 목록'))}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
-        const workbookRelationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
-        const rootRelationships = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
-        const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
-        const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-            `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF7941D"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9E2F3"/></left><right style="thin"><color rgb="FFD9E2F3"/></right><top style="thin"><color rgb="FFD9E2F3"/></top><bottom style="thin"><color rgb="FFD9E2F3"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
-
-        return {
-            '[Content_Types].xml': contentTypes,
-            '_rels/.rels': rootRelationships,
-            'xl/workbook.xml': workbook,
-            'xl/_rels/workbook.xml.rels': workbookRelationships,
-            'xl/worksheets/sheet1.xml': worksheet,
-            'xl/styles.xml': styles
-        };
-    }
-
-    function createStoredZipBlob(files, mimeType) {
-        const encoder = new TextEncoder();
-        const crcTable = new Uint32Array(256);
-        for (let index = 0; index < crcTable.length; index++) {
-            let value = index;
-            for (let bit = 0; bit < 8; bit++) {
-                value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
-            }
-            crcTable[index] = value >>> 0;
-        }
-
-        const getCrc32 = bytes => {
-            let crc = 0xffffffff;
-            for (const byte of bytes) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-            return (crc ^ 0xffffffff) >>> 0;
-        };
-        const localParts = [];
-        const centralParts = [];
-        let localOffset = 0;
-        let entryCount = 0;
-
-        Object.entries(files).forEach(([path, content]) => {
-            const name = encoder.encode(path);
-            const data = encoder.encode(content);
-            const crc32 = getCrc32(data);
-            const localHeader = new Uint8Array(30 + name.length);
-            const localView = new DataView(localHeader.buffer);
-            localView.setUint32(0, 0x04034b50, true);
-            localView.setUint16(4, 20, true);
-            localView.setUint16(6, 0x0800, true);
-            localView.setUint16(8, 0, true);
-            localView.setUint16(10, 0, true);
-            localView.setUint16(12, 0x0021, true);
-            localView.setUint32(14, crc32, true);
-            localView.setUint32(18, data.length, true);
-            localView.setUint32(22, data.length, true);
-            localView.setUint16(26, name.length, true);
-            localView.setUint16(28, 0, true);
-            localHeader.set(name, 30);
-            localParts.push(localHeader, data);
-
-            const centralHeader = new Uint8Array(46 + name.length);
-            const centralView = new DataView(centralHeader.buffer);
-            centralView.setUint32(0, 0x02014b50, true);
-            centralView.setUint16(4, 20, true);
-            centralView.setUint16(6, 20, true);
-            centralView.setUint16(8, 0x0800, true);
-            centralView.setUint16(10, 0, true);
-            centralView.setUint16(12, 0, true);
-            centralView.setUint16(14, 0x0021, true);
-            centralView.setUint32(16, crc32, true);
-            centralView.setUint32(20, data.length, true);
-            centralView.setUint32(24, data.length, true);
-            centralView.setUint16(28, name.length, true);
-            centralView.setUint16(30, 0, true);
-            centralView.setUint16(32, 0, true);
-            centralView.setUint16(34, 0, true);
-            centralView.setUint16(36, 0, true);
-            centralView.setUint32(38, 0, true);
-            centralView.setUint32(42, localOffset, true);
-            centralHeader.set(name, 46);
-            centralParts.push(centralHeader);
-
-            localOffset += localHeader.length + data.length;
-            entryCount++;
-        });
-
-        const centralDirectorySize = centralParts.reduce((total, part) => total + part.length, 0);
-        const endRecord = new Uint8Array(22);
-        const endView = new DataView(endRecord.buffer);
-        endView.setUint32(0, 0x06054b50, true);
-        endView.setUint16(4, 0, true);
-        endView.setUint16(6, 0, true);
-        endView.setUint16(8, entryCount, true);
-        endView.setUint16(10, entryCount, true);
-        endView.setUint32(12, centralDirectorySize, true);
-        endView.setUint32(16, localOffset, true);
-        endView.setUint16(20, 0, true);
-
-        return new Blob([...localParts, ...centralParts, endRecord], { type: mimeType });
+        if (category === 'Communication') return uiText('Communication');
+        if (category === 'Expansion Card') return uiText('확장 카드');
+        if (category === 'Remote Coupler') return uiText('리모트 커플러');
+        return uiText('기타 악세서리');
     }
 
     function getConfigurationWorkbookFilename(items) {
-        const safeModel = String(items[0]?.modelId || items[0]?.modelName || 'Robot')
+        const safeModel = String(items[0]?.modelId || items[0]?.modelName || items[0]?.code || 'Robot')
             .replace(/[\\/:*?"<>|]+/g, '_');
         const date = new Date().toISOString().slice(0, 10);
         return items.length === 1
@@ -2591,37 +2483,19 @@ document.addEventListener('DOMContentLoaded', () => {
             : `Inovance_Configurations_${date}.xlsx`;
     }
 
-    function renderConfigurationWorkbookPreview(rows) {
+    function renderConfigurationWorkbookPreview(report) {
         const preview = document.createElement('div');
         preview.className = 'model-manual-configuration-sheet';
-        preview.style.cssText = 'box-sizing:border-box; max-width:1120px; min-height:440px; padding:30px; background:#fff; color:#1f2937; font:13px/1.5 "Malgun Gothic", Arial, sans-serif;';
-        const table = document.createElement('table');
-        table.style.cssText = 'width:100%; border-collapse:collapse; table-layout:fixed;';
-        const headers = ['순번', '형번', '코드', '타입', '상세 정보', '수량'].map(uiText);
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        headers.forEach(label => {
-            const cell = document.createElement('th');
-            cell.textContent = label;
-            cell.style.cssText = 'padding:10px; border:1px solid #d9e2f3; background:#f7941d; color:white; text-align:left;';
-            headerRow.appendChild(cell);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-        const tbody = document.createElement('tbody');
-        rows.forEach((row, index) => {
-            const values = [index + 1, row.modelNumber, row.code, row.type, row.details, row.quantity];
-            const tr = document.createElement('tr');
-            values.forEach(value => {
-                const cell = document.createElement('td');
-                cell.textContent = String(value ?? '');
-                cell.style.cssText = 'padding:9px 10px; border:1px solid #d9e2f3; vertical-align:top; overflow-wrap:anywhere;';
-                tr.appendChild(cell);
-            });
-            tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-        preview.appendChild(table);
+        const totalWidth = report.columns.reduce((sum, column) => sum + column.width, 0);
+        const columnTags = report.columns.map(column => `<col style="width:${100 * column.width / totalWidth}%">`);
+        const headers = report.columns.map(column => `<th scope="col">${escapeHtml(column.label)}</th>`);
+        const rows = report.rows.map(({kind, values}) => `<tr class="sheet-${kind}">` +
+            values.map((value, i) => `<td class="sheet-${report.columns[i].format}">${escapeHtml(value)}</td>`).join('') + '</tr>');
+        preview.innerHTML = `<table><colgroup>${columnTags.join('')}</colgroup><thead>
+            <tr class="sheet-summary"><th colspan="3">${escapeHtml(report.title)}</th>
+                <td>${escapeHtml(report.configurationLabel)}</td><td>${report.configurationCount}</td>
+                <td>${escapeHtml(report.quantityLabel)}</td><td>${report.robotQuantity}</td></tr>
+            <tr>${headers.join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
         return preview;
     }
 
@@ -2632,8 +2506,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const rows = buildConfigurationWorkbookRows(selectedItems);
-        if (rows.length === 0) return;
+        const report = createConfigurationReport(selectedItems);
 
         const oldText = button?.textContent;
         if (button) {
@@ -2643,7 +2516,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            const blob = createStoredZipBlob(buildConfigurationWorkbookFiles(rows), mimeType);
+            const blob = InoSite.workbook(configurationWorkbook.buildFiles(report), mimeType);
             const filename = getConfigurationWorkbookFilename(selectedItems);
             if (window.saveAs) {
                 window.saveAs(blob, filename);
@@ -2675,7 +2548,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cartDownloadBtn?.addEventListener('click', () => downloadConfigurationWorkbook(cartItems, cartDownloadBtn));
     document.getElementById('download-cad-btn').addEventListener('click', async () => {
-        if (!currentActiveProduct) return;
+        const product = currentActiveProduct;
+        if (!product) return;
         const btn = document.getElementById('download-cad-btn');
         const oldText = btn.innerText;
         btn.innerText = "준비 중...";
@@ -2683,7 +2557,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const zip = new JSZip();
-            const product = currentActiveProduct;
             const modelId = product.id; // e.g. IR-R15H-145S-K-INT
             const type = product.specs.Type;
             const name = product.name;
@@ -2810,8 +2683,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("CAD Zip Error:", err);
             alert(uiText("CAD 파일 생성 중 오류가 발생했습니다."));
         } finally {
-            btn.innerText = oldText;
-            btn.disabled = false;
+            if (currentActiveProduct === product) {
+                btn.innerText = oldText;
+                btn.disabled = false;
+            }
         }
     });
 
@@ -2834,20 +2709,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.addEventListener('inorobot:languagechange', () => {
+        productCards.clear();
         const activeProductId = currentActiveProduct && modalOverlay.style.display !== 'none'
             ? currentActiveProduct.id
             : null;
         const draft = activeProductId ? collectCurrentCartItem() : null;
-        renderFilters();
-        renderProducts();
+        renderCatalog();
         renderCart();
+        if (hardwareDialog.open) {
+            renderHardwareDetails(hardwareCategories.find(category => category.id === hardwareDialog.dataset.category), hardwareDraft());
+        }
         if (activeProductId && draft) {
-            openOptionsModal(activeProductId, draft);
+            openOptionsModal(activeProductId, {configuration: draft, editingId: editingCartItemId, replaceUrl: true});
         }
     });
 
-    renderFilters();
-    renderProducts();
+    renderCatalog();
     renderCart();
     restoreModelFromLocation();
 
@@ -3145,8 +3022,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const option = category?.options.find(item => item.id === optionId);
                 if (option) option.isSelected = true;
             });
-            renderFilters();
-            renderProducts();
+            renderCatalog();
         }
 
         function manualFiltersMatch(count) {
@@ -3279,7 +3155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeManualPreview();
             const item = collectCurrentCartItem();
             if (!item) return false;
-            const rows = buildConfigurationWorkbookRows([item]);
+            const report = createConfigurationReport([item]);
             const filename = getConfigurationWorkbookFilename([item]);
             const viewer = document.createElement('section');
             viewer.className = 'model-manual-document-viewer';
@@ -3293,7 +3169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             viewer.querySelector('header small').textContent = filename;
             const scrollArea = viewer.querySelector('.model-manual-document-scroll');
-            scrollArea.appendChild(renderConfigurationWorkbookPreview(rows));
+            scrollArea.appendChild(renderConfigurationWorkbookPreview(report));
             document.body.appendChild(viewer);
             manualPreview = { element: viewer, scrollArea };
             manualFocusPoint = { x: window.innerWidth / 2, y: window.innerHeight / 2 };

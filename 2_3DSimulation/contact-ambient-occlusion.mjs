@@ -17,7 +17,7 @@ function isOpaqueLitMaterial(material) {
 }
 
 function attachMaterial(material) {
-    if (hooks.get(material) === material.onBeforeCompile) return;
+    if (hooks.get(material)?.hook === material.onBeforeCompile) return;
     const previous = material.onBeforeCompile;
     const cacheKey = material.customProgramCacheKey();
     const hook = function (shader, renderer) {
@@ -36,8 +36,14 @@ if (contactAoEnabled > 0.5) {
     };
     material.onBeforeCompile = hook;
     material.customProgramCacheKey = () => `${cacheKey}|contact-ao-v1`;
-    hooks.set(material, hook);
+    hooks.set(material, { hook, previous });
     material.needsUpdate = true;
+}
+
+// Replay renders its own materials and attaches its own AO pass.
+export function materialShaderBeforeAO(material) {
+    const entry = hooks.get(material);
+    return entry?.hook === material.onBeforeCompile ? entry.previous : material.onBeforeCompile;
 }
 
 const vertexShader = `varying vec2 vUv;

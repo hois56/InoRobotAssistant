@@ -10,6 +10,7 @@ const localeCodes = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru'];
 const targetLocaleCodes = ['en', 'zh-CN', 'vi', 'tr', 'ru'];
 const localeFileDefinitions = [
     { file: 'home.json', pageKeys: ['home'] },
+    { file: 'servo.json', pageKeys: ['servo'] },
     { file: 'robot-model-select.json', pageKeys: ['robotSelect'] },
     { file: 'robot-3d-viewer.json', pageKeys: ['robot3dViewer'] },
     { file: 'tool-selector.json', pageKeys: ['toolSelector'] },
@@ -38,8 +39,14 @@ function readJson(relativePath) {
     return JSON.parse(read(relativePath));
 }
 
+// Mirrors Language/runtime/i18n.js: dictionary keys are sentences and may contain periods.
 function getByPath(value, keyPath) {
-    return keyPath.split('.').reduce((current, key) => current && current[key], value);
+    const found = keyPath.split('.').reduce((current, key) => current && current[key], value);
+    if (found !== undefined) return found;
+    const separator = keyPath.indexOf('.');
+    const table = separator > 0 && value ? value[keyPath.slice(0, separator)] : undefined;
+    const key = keyPath.slice(separator + 1);
+    return table && typeof table === 'object' && Object.prototype.hasOwnProperty.call(table, key) ? table[key] : undefined;
 }
 
 function parseSiteCardVersions(source) {
@@ -178,6 +185,27 @@ function translateLegacySource(locale, source) {
 }
 
 const locales = Object.fromEntries(localeCodes.map(code => [code, loadMergedLocale(code)]));
+
+// A value in another language that is still the Korean source text was never translated.
+// Pattern sources are matched against Korean text, so they stay identical by design.
+function collectUntranslatedValues(reference, candidate, keyPath, output) {
+    if (typeof reference === 'string') {
+        if (candidate === reference && /[가-힣]/.test(reference)) output.push(keyPath);
+        return;
+    }
+    if (!reference || typeof reference !== 'object' || !candidate || typeof candidate !== 'object') return;
+    Object.keys(reference).forEach(key => {
+        if (key === 'patterns' && !keyPath) return;
+        collectUntranslatedValues(reference[key], candidate[key], keyPath ? keyPath + '.' + key : key, output);
+    });
+}
+localeFileDefinitions.forEach(definition => {
+    localeCodes.filter(code => code !== 'ko').forEach(code => {
+        const untranslated = [];
+        collectUntranslatedValues(locales.ko.sources[definition.file], locales[code].sources[definition.file], '', untranslated);
+        assert(!untranslated.length, code + '/' + definition.file + ' still has Korean source text: ' + untranslated.slice(0, 5).join(', '));
+    });
+});
 assert(fs.existsSync(path.join(root, 'favicon.png')), 'favicon.png is missing.');
 [
     '0_Home/ko/index.html',
@@ -274,8 +302,9 @@ targetLocaleCodes.forEach(code => {
 });
 
 localeCodes.forEach(code => {
-    assert(locales[code].legacy['Debugging Tool'] === 'Debugging Tool', code + ' must keep Debugging Tool in English.');
-    assert(locales[code].pages.debugging.title === 'Debugging Tool | InoRobot Assistant', code + ' has the wrong Debugging Tool page title.');
+    const debuggingName = locales[code].sources['home.json'].legacy['Debugging Tool'];
+    assert(locales[code].sources['debugging-tool.json'].legacy['Debugging Tool'] === debuggingName, code + ' debugging heading differs from its home card.');
+    assert(locales[code].pages.debugging.title.startsWith(debuggingName + ' | '), code + ' has the wrong debugging page title.');
     assert(Object.prototype.hasOwnProperty.call(locales[code].sources['debugging-tool.json'].legacy, 'Trace'), code + ' is missing the Trace card translation.');
 });
 assert(locales.ko.legacy.Trace === '트레이스', 'Korean Trace card title is not localized.');
@@ -344,25 +373,23 @@ expectedToolFolders.forEach(folder => {
     assert(!fs.existsSync(path.join(root, oldPath)), 'Obsolete root path still exists: ' + oldPath + '.');
 });
 assert(!fs.existsSync(path.join(root, 'index.html')), 'The generated Korean index must live under Language/ko.');
-const traceDownloadArchive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.5.zip');
-assert(fs.existsSync(traceDownloadArchive) && fs.statSync(traceDownloadArchive).size > 0, 'The current Trace download archive is missing.');
+const simulationTraceArchive = path.join(root, '2_3DSimulation', 'trace-compat', 'InoRobotTrace_V1.5.zip');
+assert(fs.existsSync(simulationTraceArchive) && fs.statSync(simulationTraceArchive).size > 0, 'The simulation Trace archive is missing.');
 const traceV14Archive = path.join(root, '7_DebuggingTool', 'Trace', 'InoRobotTrace_V1.4.zip');
 assert(!fs.existsSync(traceV14Archive), 'The retired Trace V1.4 download archive is still present.');
-const releaseAssets = [
-    ['7_DebuggingTool/CommunicationTester/InoRobot_Comm_Test_V4.0.zip', 'Communication Tester V4.0 archive'],
-    ['7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip', 'Trace V1.5']
-];
-releaseAssets.forEach(([relativePath, label]) => {
-    const assetPath = path.join(root, relativePath);
-    assert(fs.existsSync(assetPath) && fs.statSync(assetPath).size > 0, label + ' release asset is missing.');
-});
 const debuggingHtml = read('7_DebuggingTool/index.html');
-assert(debuggingHtml.includes('https://github.com/hois56/InoRobotAssistant/releases/download/cad-lightweight-v1.3/CAD_Lightweight_V1.3.zip'), 'CAD Lightweight does not link its current GitHub Release asset.');
-assert(debuggingHtml.includes('https://github.com/hois56/InoRobotAssistant/releases/download/communication-tester-v4.0/InoRobot_Comm_Test_V4.0.zip')
-    && debuggingHtml.includes('Trace/InoRobotTrace_V1.5.zip'), 'Debugging Tool does not link the current release archives.');
-assert(!debuggingHtml.includes('InoRobot_Comm_Test_V2.8.zip') && !debuggingHtml.includes('InoRobotTrace_V1.4.zip'), 'Debugging Tool still links a retired release archive.');
+const debugCards = [...debuggingHtml.matchAll(/data-debug-history="(\w+)" data-current-version="V([\d.]+)"[\s\S]*?<a href="([^"]+\.zip)"/g)];
+const debugHistory = versionHistory.locales.ko.debugVersionHistory.sections;
+assert(debugCards.length === debugHistory.length, 'The debugging download cards and version history have a different number of tools.');
+debugCards.forEach(([, key, version, href]) => {
+    const section = debugHistory.find(section => section.title === key);
+    assert(section?.versions[0].title.split(' ')[1] === version, key + ' card and version history differ.');
+    assert(href.endsWith('_V' + version + '.zip'), key + ' download version differs from its card.');
+    const archive = path.join(root, '7_DebuggingTool', href);
+    assert(fs.existsSync(archive) && fs.statSync(archive).size > 0, key + ' download archive is missing.');
+});
 const simulationHtml = read('2_3DSimulation/index.html');
-assert(simulationHtml.includes('../7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip')
+assert(simulationHtml.includes('./trace-compat/InoRobotTrace_V1.5.zip')
     && !simulationHtml.includes('InoRobotTrace_V1.4.zip'), '3D Simulation does not link the current Trace archive.');
 const documentScript = read('6_Document/script.js');
 assert(documentScript.includes('IR-TS Series User Guide - Mechanical.pdf')
@@ -379,6 +406,10 @@ const routes = [
     { file: '0_Home/ru/index.html', route: '/ru/', locale: 'ru', canonical: 'https://inovancerobot.com/ru/' }
 ];
 const requiredAlternates = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru', 'x-default'];
+const languageOptions = [
+    ['ko', 'Korean'], ['en', 'English'], ['zh-CN', 'Chinese (Simplified)'],
+    ['vi', 'Vietnamese'], ['tr', 'Turkish'], ['ru', 'Russian']
+];
 
 routes.forEach(route => {
     const html = read(route.file);
@@ -397,7 +428,11 @@ routes.forEach(route => {
     );
     assert(html.includes('/Language/runtime/icon-fallback.js'), route.file + ' is missing the local icon fallback.');
     assert(html.includes('id="inorobot-language-switcher"') && html.includes('id="inorobot-language-select"'), route.file + ' is missing the top-right language UI.');
-    assert(html.includes('<span class="inorobot-language-label" aria-hidden="true">Language</span>'), route.file + ' does not show the Language label.');
+    assert(!/<label\b[^>]*for="inorobot-language-select"[^>]*>/.test(html), route.file + ' must show only the current language in the selector.');
+    assert(/<select id="inorobot-language-select"[^>]*aria-label="Language"/.test(html), route.file + ' needs an accessible name for the language selector.');
+    const languageSelect = html.match(/<select id="inorobot-language-select"[^>]*>([\s\S]*?)<\/select>/)?.[1] || '';
+    const options = Array.from(languageSelect.matchAll(/<option value="([^"]+)"(?: selected)?>([^<]+)<\/option>/g), match => [match[1], match[2]]);
+    assert(JSON.stringify(options) === JSON.stringify(languageOptions), route.file + ' must show all six language names in English.');
     assert(!html.includes('>文</span>'), route.file + ' still shows the Chinese language symbol.');
     assert(html.includes('position: fixed !important') && html.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important') && html.includes('right: 18px !important'), route.file + ' does not align the language UI with subpages.');
     assert(html.includes("const routes = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' }") && html.includes('window.location.assign(target)'), route.file + ' is missing the standalone route switch handler.');
@@ -411,7 +446,8 @@ routes.forEach(route => {
     });
     assert(!/data-site-card-version=["'][^"']+["'][^>]*>\s*Ver \d{2}\.\d{2}\.\d{2}\.\d+\s*<\/span>/.test(html), route.file + ' still shows a detailed card-version suffix.');
     if (targetLocaleCodes.includes(route.locale)) {
-        assert(!/[가-힣]/.test(visibleHtml(html)), route.file + ' contains Korean visible initial HTML.');
+        const initialContent = visibleHtml(html).replace(/\sdata-i18n(?:-title|-placeholder|-aria-label|-alt)?="[^"]*"/g, '');
+        assert(!/[가-힣]/.test(initialContent), route.file + ' contains Korean visible initial HTML.');
         assert(html.includes('<title>' + locales[route.locale].pages.home.title + '</title>'), route.file + ' has an untranslated title.');
     }
 });
@@ -443,8 +479,11 @@ subpages.forEach(({ file, localeFile, pageKey }) => {
         });
     }
 
-    for (const match of visibleHtml(html).matchAll(/>([^<>]+)</g)) {
-        const source = match[1].replace(/\s+/g, ' ').trim();
+    for (const match of visibleHtml(html).matchAll(/(<[^>]+>)([^<>]+)(?=<)/g)) {
+        if (/\sdata-i18n=["']/.test(match[1])) continue;
+        // Text explicitly marked as Korean (for example the Hangul glyph in the patcher icon) is intentional.
+        if (/\slang=["']ko["']/.test(match[1])) continue;
+        const source = match[2].replace(/\s+/g, ' ').trim();
         if (!/[가-힣]/.test(source)) continue;
         targetLocaleCodes.forEach(code => {
             assert(translateLegacySource(locales[code].pageTranslations[pageKey], source) !== source, file + ' leaves a Korean text node outside its ' + code + ' page locale file: ' + source);
@@ -454,7 +493,7 @@ subpages.forEach(({ file, localeFile, pageKey }) => {
 
 const runtime = read('Language/runtime/i18n.js');
 assert(runtime.includes("const STORAGE_KEY = 'inorobot.locale'"), 'Runtime session key is missing.');
-assert(runtime.includes('function translateFromPageData') && runtime.includes("get('pageTranslations.' + detectPageKey()"), 'Runtime does not prioritize the active page locale file.');
+assert(runtime.includes('function translateFromPageData') && /get\('pageTranslations\.' \+ (?:detectPageKey\(\)|pageKey)/.test(runtime), 'Runtime does not prioritize the active page locale file.');
 assert(runtime.includes('const storedLocale = readSharedLocale() || readSessionLocale();')
     && runtime.includes('const initialLocale = storedLocale || DEFAULT_LOCALE;'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
 assert(runtime.includes("currentPath === '/' && storedLocale && storedLocale !== DEFAULT_LOCALE")
@@ -465,7 +504,7 @@ assert(runtime.includes('function formatNumber') && runtime.includes('function f
 assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
 assert(runtime.includes('new BroadcastChannel(CHANNEL_NAME)') && runtime.includes("window.addEventListener('storage'") && runtime.includes("window.addEventListener('pageshow'"), 'Locale changes are not synchronized across pages, tabs, and back-forward restoration.');
 assert(runtime.includes('window.location.replace(targetPath)'), 'A restored landing page does not move to the current locale route.');
-assert(runtime.includes("label.textContent = 'Language'") && !runtime.includes("icon.textContent = '文'"), 'Runtime language switcher has the wrong label.');
+assert(runtime.includes("select.setAttribute('aria-label', 'Language')"), 'Runtime language selector needs an accessible name.');
 assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") && runtime.includes("container.dataset.embedded = languageSlot ? 'true' : 'false'"), 'Runtime does not support page-specific language switcher slots.');
 ['/', '/kr/', '/en/', '/cn/', '/vn/', '/tr/', '/ru/'].forEach(route => {
     assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
@@ -557,8 +596,6 @@ if (updateHomeLinksSource) {
 const localeStyles = read('Language/runtime/i18n.css');
 assert(localeStyles.includes('position: fixed !important') && localeStyles.includes('right: 18px !important') && localeStyles.includes('left: auto !important'), 'The language UI is not fixed to the upper-right corner.');
 assert(localeStyles.includes('top: calc(16px + env(safe-area-inset-top, 0px)) !important'), 'The language UI is not positioned inside the desktop top bar.');
-const languageLabelStyle = localeStyles.match(/\.inorobot-language-label\s*\{([\s\S]*?)\}/)?.[1] || '';
-assert(!/text-transform\s*:\s*uppercase/i.test(languageLabelStyle), 'The Language label is still forced to uppercase.');
 assert(localeStyles.includes('.inorobot-language-switcher[data-embedded="true"]') && localeStyles.includes('position: static !important'), 'Embedded language switchers are not detached from the global fixed position.');
 
 const projectHtml = read('4_ProjectGenerator/index.html');
@@ -571,23 +608,25 @@ assert(viewerLanguageSlot > viewerHtml.indexOf('<div class="topbar-right">')
 assert(viewerStyles.includes('.viewer-language-row .inorobot-language-switcher')
     && viewerStyles.includes('position: static;'), '3D Simulation language switcher is not embedded in the top-right bar.');
 assert(read('6_Document/index.html').includes('data-cat="pendant">Pendant</button>'), 'Document Pendant tab is not using the translatable source label.');
-assert(/<h1\b[^>]*data-i18n-skip[^>]*>\s*Software Download Center\s*<\/h1>/.test(read('5_Software/index.html')), 'Software page header name is not fixed in English.');
-assert(/<h1\b[^>]*data-i18n-skip[^>]*>\s*Technical Manual Center\s*<\/h1>/.test(read('6_Document/index.html')), 'Document page header name is not fixed in English.');
+assert(/<h1\b[^>]*data-i18n="legacy\.Software Download Center"/.test(read('5_Software/index.html')), 'Software heading is missing its translation key.');
+assert(/<h1\b[^>]*data-i18n="legacy\.Technical Manual Center"/.test(read('6_Document/index.html')), 'Document heading is missing its translation key.');
 
 const protectedScripts = read('6_Document/script.js') + '\n' + read('5_Software/script.js');
 assert(!protectedScripts.includes('data.message ||'), 'A raw server error message can still be shown to users.');
 assert(protectedScripts.includes('translateUiText'), 'Protected content prompts are not localized.');
-assert(protectedScripts.includes('fetch(WORKER_URL'), 'Protected Manual/Software authentication requests are missing.');
+// Password-protected downloads were retired; if a prompt returns it must authenticate through the worker.
+assert(!/비밀번호|password/i.test(protectedScripts) || protectedScripts.includes('fetch(WORKER_URL'), 'Protected Manual/Software authentication requests are missing.');
 
 const robotSelectScript = read('1_RobotModelSelect/script.js');
-assert(robotSelectScript.includes('html2pdf().set(sheet.dlObj)'), 'Robot Select PDF generation hook is missing.');
+// Configurations are exported as an XLSX report (the PDF export was replaced).
+assert(robotSelectScript.includes('configurationWorkbook.createReport(parts, uiText') && robotSelectScript.includes('InoSite.workbook(configurationWorkbook.buildFiles(report)'), 'Robot Select configuration workbook hook is missing.');
 assert(robotSelectScript.includes('new JSZip()') && robotSelectScript.includes('saveAs(content'), 'Robot Select CAD ZIP generation hook is missing.');
 assert(robotSelectScript.includes('uiText(filterCategory.label)') && robotSelectScript.includes("uiText('가반 하중 (kg)')"), 'Robot Select dynamic filters or specification labels are not localized.');
-assert(robotSelectScript.includes('window.InoRobotI18n.apply(modalBody)') && robotSelectScript.includes('pdfFooterText'), 'Robot Select options or PDF footer are not localized.');
+assert(robotSelectScript.includes('window.InoRobotI18n.apply(modalBody)'), 'Robot Select options are not localized.');
 assert(robotSelectScript.includes("uiText('현재 구매 코드')") && robotSelectScript.includes("uiText('제품 상세 및 구성')"), 'Robot Select composed headings are not localized.');
-assert(robotSelectScript.includes("uiText('파워/엔코더 케이블')") && robotSelectScript.includes('uiText(cableType)'), 'Robot Select PDF cable details are not localized.');
+assert(robotSelectScript.includes("uiText('파워/엔코더 케이블')") && robotSelectScript.includes('<span>${uiText(t)}</span>'), 'Robot Select cable details are not localized.');
 assert(robotSelectScript.includes('uiText(acc.description)') && robotSelectScript.includes('localizeDisplayText(option.spec)'), 'Robot Select option descriptions are not localized.');
-assert(robotSelectScript.includes("['클린 사양 없음', 'Option :']") && robotSelectScript.includes("uiText('Pins')") && robotSelectScript.includes('formatSignalPins('), 'Robot Select Option or Pin composites are not localized.');
+assert(robotSelectScript.includes("uiText('Pins')") && robotSelectScript.includes('formatSignalPins('), 'Robot Select Pin composites are not localized.');
 assert(robotSelectScript.includes('(?:Signal\\s+)?lines?'), 'Robot Select detail specifications can still show Lines instead of localized Pins.');
 assert(robotSelectScript.includes('captureModalSelections') && robotSelectScript.includes('restoreModalSelections'), 'Robot Select does not preserve modal selections while changing language.');
 const projectScript = read('4_ProjectGenerator/app.js');
@@ -619,9 +658,10 @@ simulationModels.forEach(model => {
         assert(fs.existsSync(linkPath) && fs.statSync(linkPath).size > 0, model.name + ` is missing P${index}.stl.`);
     });
 });
-assert(articulatedRobotCount === 29, '3D Simulation robot catalog count is not 29.');
+assert(articulatedRobotCount === 31, '3D Simulation robot catalog count is not 31.');
+// Software rows are prerendered into index.html (checked as text nodes above); the script localizes counts.
 const softwareScript = read('5_Software/script.js');
-assert(softwareScript.includes('translateUiText(dl.label)') && softwareScript.includes('translateUiText(ver.description)'), 'Software descriptions or download buttons are not localized.');
+assert(softwareScript.includes("translateUiText('개')"), 'Software result counts are not localized.');
 const toolSelector = read('3_ToolSelector/index.html');
 assert(toolSelector.includes('function calculate()'), 'Tool Selector calculation hook is missing.');
 assert(toolSelector.includes("uiText('형식 SCARA')") && toolSelector.includes("uiText('부하 무게중심 기준 관성모멘트 산출값')"), 'Tool Selector dynamic labels are not localized.');
@@ -685,7 +725,7 @@ assert(homeTemplate.includes('src="/0_Home/site-card-versions.js') && homeTempla
 ['ko', 'kr', 'en', 'zh-CN', 'vi', 'tr', 'ru'].forEach(code => {
     assert(!fs.existsSync(path.join(root, 'Language', code, 'index.html')), 'Generated home page still exists inside Language/' + code + '.');
 });
-assert(read('7_DebuggingTool/index.html').includes('data-i18n-skip>Debugging Tool</h1>'), 'Debugging Tool page heading is not fixed in English.');
+assert(/<h1\b[^>]*data-i18n="legacy\.Debugging Tool"/.test(read('7_DebuggingTool/index.html')), 'Debugging heading is missing its translation key.');
 
 localeCodes.forEach(code => {
     const homeSource = locales[code].sources['home.json'];

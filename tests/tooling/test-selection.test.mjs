@@ -39,10 +39,10 @@ test('saving simulation changes runs light tests; completion adds simulation UI 
 });
 
 test('native bridge execution is limited to bridge changes and completion checks', () => {
-  const files = ['2_3DSimulation/VirtualControllerBridge/NativeRobotClient.cs'];
+  const files = ['2_3DSimulation/VirtualControllerBridge/src/sdk.rs'];
   assert.equal(plan(files).bridge, false);
   assert.equal(plan(files, true).bridge, true);
-  assert.equal(plan(['tests/dotnet/BridgeOutputScheduling/Program.cs'], true).bridge, true);
+  assert.equal(plan(['2_3DSimulation/bridge/InoRobotVirtualControllerBridge.zip'], true).bridge, true);
 });
 
 test('external generator checks are explicit and do not run on unrelated web edits', () => {
@@ -91,6 +91,23 @@ test('test tooling changes run their own checks without starting all browsers', 
   assert.deepEqual(result.ui, []);
   assert.equal(result.bridge, false);
   assert.equal(result.generator, false);
+});
+
+test('validator scripts run with their page area and whenever a validator changes', () => {
+  const runners = ['tests/fast/validators-simulation.test.mjs', 'tests/fast/validators-tool.test.mjs', 'tests/fast/validators-site.test.mjs'];
+  const changedValidator = plan(['tools/validate-motion-program.mjs'], true);
+  assert.ok(runners.every(runner => changedValidator.fast.includes(runner)));
+  assert.ok(!changedValidator.fast.some(file => file.includes('simulation-')));
+  assert.deepEqual(changedValidator.ui, []);
+  const simulation = plan(['2_3DSimulation/main.js']).fast;
+  assert.ok(simulation.includes(runners[0]) && !simulation.includes(runners[1]) && !simulation.includes(runners[2]));
+  const tool = plan(['3_ToolSelector/mode-d.js']).fast;
+  assert.ok(tool.includes(runners[1]) && !tool.includes(runners[0]));
+  // Site-wide checks follow translations, entry pages and the deployed workers, not every script edit.
+  for (const file of ['Language/en/software.json', '6_Document/index.html', '5_Software/visitor-counter-worker/worker.js']) {
+    assert.ok(plan([file]).fast.includes(runners[2]), file);
+  }
+  assert.ok(!plan(['5_Software/script.js']).fast.includes(runners[2]));
 });
 
 test('individual page translations stay scoped while the shared runtime expands coverage', () => {

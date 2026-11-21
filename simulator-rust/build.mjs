@@ -8,7 +8,7 @@ const project = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.dirname(project);
 const engine = '2_3DSimulation/wasm/simulation.wasm';
 const bridgeDownload = '2_3DSimulation/bridge/InoRobotVirtualControllerBridge.zip';
-const rustBridge = process.argv.find(arg => arg.startsWith('--rust-bridge-zip='))?.slice('--rust-bridge-zip='.length);
+const bridgeZip = process.argv.find(arg => arg.startsWith('--bridge-zip='))?.slice('--bridge-zip='.length);
 
 if (!process.argv.includes('--package-only')) {
     await buildEngine();
@@ -36,21 +36,23 @@ for (const name of await readdir(path.join(repo, '2_3DSimulation'))) {
     }
 }
 for (const name of [
-    '2_3DSimulation/models', '2_3DSimulation/test-assets', '2_3DSimulation/wasm',
+    '2_3DSimulation/models', '2_3DSimulation/test-assets', '2_3DSimulation/wasm', '2_3DSimulation/vendor/webm-muxer',
     '2_3DSimulation/urdf', '2_3DSimulation/usd',
-    '7_DebuggingTool/Trace/InoRobotTrace_V1.5.zip', '1_RobotModelSelect/INOVANCE_Logo.png',
+    '2_3DSimulation/trace-compat/InoRobotTrace_V1.5.zip', '7_DebuggingTool/Trace/IMC100API.dll',
+    '1_RobotModelSelect/INOVANCE_Logo.png',
     '3_ToolSelector/continuous-transform-rotation.mjs', '3_ToolSelector/mass-properties.mjs',
-    '3_ToolSelector/snap-geometry.mjs', 'Language/runtime', '0_Home/tool-guide-embed.js',
+    '3_ToolSelector/snap-geometry.mjs', 'shared/site-engine.js', 'Language/runtime', '0_Home/tool-guide-embed.js',
     'favicon.png', 'analytics-config.js', 'analytics.js', 'tools/serve-local.cjs',
     'tools/virtual-vision-server.cjs', 'tools/virtual-vision-protocols.cjs', 'tools/collaboration-server.cjs',
     'simulator-rust/src', 'simulator-rust/Cargo.toml', 'simulator-rust/Cargo.lock', 'simulator-rust/build-engine.mjs',
-    '2_3DSimulation/RustControllerBridge/src', '2_3DSimulation/RustControllerBridge/Cargo.toml',
-    '2_3DSimulation/RustControllerBridge/Cargo.lock', '2_3DSimulation/RustControllerBridge/README.md',
-    '2_3DSimulation/RustControllerBridge/start-rust-bridge.cmd'
+    '2_3DSimulation/VirtualControllerBridge/src', '2_3DSimulation/VirtualControllerBridge/Cargo.toml',
+    '2_3DSimulation/VirtualControllerBridge/Cargo.lock', '2_3DSimulation/VirtualControllerBridge/build.rs',
+    '2_3DSimulation/VirtualControllerBridge/README.md', '2_3DSimulation/VirtualControllerBridge/Assets/bridge.ico',
+    '2_3DSimulation/VirtualControllerBridge/Assets/bridge.rc', '2_3DSimulation/VirtualControllerBridge/Native/MSVCR120.dll'
 ]) await copy(name);
-if (rustBridge) {
+if (bridgeZip) {
     await mkdir(path.dirname(path.join(stage, bridgeDownload)), { recursive: true });
-    await copyFile(rustBridge, path.join(stage, bridgeDownload));
+    await copyFile(bridgeZip, path.join(stage, bridgeDownload));
 } else {
     await copy(bridgeDownload);
 }

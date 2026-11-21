@@ -172,6 +172,15 @@ pub(super) const BODY: &[Node] = &[
                     ]),
                     text("\n          "),
                 ]),
+                tag("label", &[("class", "vision-check")], &[
+                    tag("input", &[("name", "autoCapture"), ("type", "checkbox")], &[]),
+                    text(" 센서 감지 시 자동 촬영"),
+                ]),
+                tag("label", &[("class", "vision-field")], &[
+                    tag("span", &[], &[text("촬영 지연거리 (mm)")]),
+                    tag("input", &[("name", "captureDistance"), ("type", "number"), ("min", "0"), ("max", "1000000"), ("step", "any"), ("value", "0"), ("disabled", "")], &[]),
+                ]),
+                tag("p", &[("class", "vision-help")], &[text("센서 감지 후 벨트가 이동한 거리로 촬영 시점을 정합니다. 자동 촬영을 사용할 때는 프로그램에서 CnvTrigVis를 호출하지 마세요.")]),
                 tag("p", &[("class", "vision-help")], &[text("비전 패널의 카메라 시야로 장면의 물체 좌표를 검출합니다.")]),
             ]),
             text("\n          "),

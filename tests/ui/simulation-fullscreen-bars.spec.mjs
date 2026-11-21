@@ -1,5 +1,23 @@
 import { expect, test } from '@playwright/test';
 
+test('전체 화면과 프로그램 버튼은 선택 언어의 화면 글꼴을 따른다', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/2_3DSimulation/');
+    await page.waitForFunction(() => window.InoRobotI18n);
+
+    const fullscreen = page.locator('#btn-fullscreen-mode span');
+    const program = page.locator('[data-panel-toggle="program-panel"]');
+    await expect(fullscreen).toHaveText('전체 화면');
+    await expect(program).toHaveText('프로그램');
+
+    for (const locale of ['ko', 'zh-CN']) {
+        await page.evaluate(value => window.InoRobotI18n.setLocale(value, { persist: false }), locale);
+        const family = await page.locator('body').evaluate(element => getComputedStyle(element).fontFamily);
+        await expect.soft(fullscreen, `${locale} fullscreen`).toHaveCSS('font-family', family);
+        await expect.soft(program, `${locale} program`).toHaveCSS('font-family', family);
+    }
+});
+
 test('fullscreen top bar waits 500 ms and the bottom bar opens immediately at the edge', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/2_3DSimulation/');

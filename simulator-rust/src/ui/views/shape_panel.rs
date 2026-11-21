@@ -7,8 +7,6 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "shape-panel"), ("class", "s
         text("\n                    "),
         tag("div", &[], &[
             text("\n                        "),
-            tag("span", &[("data-i18n", "legacy.3D PRIMITIVES")], &[text("3D PRIMITIVES")]),
-            text("\n                        "),
             tag("h2", &[], &[
                 tag("i", &[("class", "fa-solid fa-cubes-stacked"), ("aria-hidden", "true")], &[]),
                 text(" "),

@@ -20,6 +20,7 @@ mod position_points_panel;
 mod position_value_dialog;
 mod program_panel;
 mod program_step_context_menu;
+mod recording_editor;
 mod robot_model_choice_dialog;
 mod shape_panel;
 mod simulation_reset_dialog;
@@ -65,6 +66,7 @@ pub(super) const BODY: &[Node] = &[
     work_origin_dialog::VIEW,
     text("\n\n    "),
     main_content::VIEW,
+    recording_editor::VIEW,
     text("\n\n    "),
     interference_zone_dialog::VIEW,
     text("\n\n    "),

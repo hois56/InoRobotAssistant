@@ -206,7 +206,7 @@
     "{format} 파일을 해석할 수 없습니다. {message}": "{format} 파일을 해석할 수 없습니다. {message}",
     "{format} 파일 분석 완료": "{format} 파일 분석 완료",
     "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP 파일 내보내기 완료 · {count}개 부품 · {name}",
-    "InoRobot Tool Select": "InoRobot Tool Select",
+    "InoRobot Tool Select": "로봇 툴 선정",
     "3D marker legend": "3D 마커 범례",
     " · 대용량 최적화 {count}개 부품": " · 대용량 최적화 {count}개 부품",
     "계산할 수 없습니다.": "계산할 수 없습니다.",

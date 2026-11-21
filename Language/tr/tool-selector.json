@@ -202,7 +202,7 @@
     "{format} 파일을 해석할 수 없습니다. {message}": "{format} dosyası ayrıştırılamadı. {message}",
     "{format} 파일 분석 완료": "{format} dosya analizi tamamlandı",
     "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP dışa aktarma tamamlandı · {count} parçalar · {name}",
-    "InoRobot Tool Select": "InoRobot Aracı Seçimi",
+    "InoRobot Tool Select": "Robot Takımı Seçimi",
     "3D marker legend": "3B işaretleyici açıklaması",
     "계산할 수 없습니다.": "Hesaplama başarısız oldu.",
     "내보낼 부품을 하나 이상 선택하세요.": "Dışa aktarılacak en az bir parçayı seçin.",

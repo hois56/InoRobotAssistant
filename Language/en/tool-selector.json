@@ -206,7 +206,7 @@
     "{format} 파일을 해석할 수 없습니다. {message}": "Could not parse the {format} file. {message}",
     "{format} 파일 분석 완료": "{format} file analysis complete",
     "STEP 파일 내보내기 완료 · {count}개 부품 · {name}": "STEP export complete · {count} parts · {name}",
-    "InoRobot Tool Select": "InoRobot Tool Select",
+    "InoRobot Tool Select": "Robot Tool Selector",
     "3D marker legend": "3D marker legend",
     " · 대용량 최적화 {count}개 부품": " · Large-file optimization: {count} parts",
     "계산할 수 없습니다.": "Calculation failed.",

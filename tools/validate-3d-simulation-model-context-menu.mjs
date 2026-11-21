@@ -27,7 +27,7 @@ assert.match(markup, /id="model-change-zero-point"/);
 const deleteBlock = source.match(/function deleteSelectedModel\([\s\S]*?\n\}/)?.[0] || '';
 assert.match(deleteBlock, /allowDuringMotion = false/);
 assert.match(deleteBlock, /isModelMotionActive\(model\)/);
-assert.match(source, /function isModelMotionActive\(model\)[\s\S]*?isOlpRuntimeRunning/);
+assert.match(source, /function isModelMotionActive\(model[^)]*\)[\s\S]*?isOlpRuntimeRunning/);
 
 const toolAttachBlock = source.match(/function installSceneModelAsTool\([\s\S]*?\n\}/)?.[0] || '';
 assert.match(toolAttachBlock, /allowDuringMotion = false/);

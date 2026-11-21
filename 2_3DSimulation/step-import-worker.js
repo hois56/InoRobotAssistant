@@ -137,11 +137,28 @@ function normalizeColor(source) {
 
 // Only products explicitly authored by CAD_Lightweight are atomic. Ordinary
 // STEP products keep the existing per-solid selection and assembly behavior.
+function mayHaveMergedStepMarker(source) {
+    const marker = 'CAD_Lightweight merged part';
+    // STEP entities are normally uppercase. Search for a rare lowercase byte
+    // using the typed array's native scan before tokenizing the whole file.
+    const anchor = marker.indexOf('w');
+    for (let index = source.indexOf(119, anchor); index >= 0; index = source.indexOf(119, index + 1)) {
+        const start = index - anchor;
+        let offset = 0;
+        while (offset < marker.length && source[start + offset] === marker.charCodeAt(offset)) offset += 1;
+        if (offset === marker.length) return true;
+    }
+    // An escaped STEP string can encode part or all of the marker.
+    return source.includes(92);
+}
+
 function prepareMergedStepImport(fileBuffer) {
     const source = new Uint8Array(fileBuffer);
+    const tags = new Map();
+    if (!mayHaveMergedStepMarker(source)) return { fileBuffer, mergedTags: tags };
     const decoder = new TextDecoder();
     const products = new Map(), formations = new Map(), definitions = new Map(), occurrences = [];
-    const tags = new Map(), edits = [];
+    const edits = [];
     let start = 0, quote = 0, comment = false;
     const trivia = (position, end) => {
         while (position < end) {
@@ -733,6 +750,7 @@ function collectXcafParts(document, labelNames = new Map(), mergedTags = new Map
                     assemblyPath,
                     ...(atomic || {}),
                     labelPath: currentLabelPath.join('/'),
+                    rootLabel: currentLabelPath[0],
                     prototypeLabel: referred ?? label,
                     shapeHandle: prototype.shapeHandle,
                     placement: document.getLocation ? placement : null,
@@ -845,13 +863,13 @@ function resolveXcafFaceColors(kernel, document, mesh, part, placedShape = part.
         for (const label of document.getSubShapes(part.prototypeLabel)) {
             const info = document.getLabelInfo(label);
             if (info.shapeHandle == null) continue;
-            entries.push(info);
+            if (info.hasColor) entries.push(info);
+            else kernel.release(info.shapeHandle);
         }
         // A face's own style takes precedence over a containing body's style.
-        entries.sort((a, b) => Number(kernel.getShapeType(a.shapeHandle) === 'face')
-            - Number(kernel.getShapeType(b.shapeHandle) === 'face'));
+        for (const entry of entries) entry.face = kernel.getShapeType(entry.shapeHandle) === 'face';
+        entries.sort((a, b) => Number(a.face) - Number(b.face));
         for (const info of entries) {
-            if (!info.hasColor) continue;
             const hashes = kernel.subShapeHashes(info.shapeHandle, 'face', 2147483647);
             const color = stepSrgbToLinear(info.color);
             for (const hash of hashes) colors.set(hash, color);
@@ -879,18 +897,39 @@ function resolveXcafFaceColors(kernel, document, mesh, part, placedShape = part.
         ? { surfaceFaceColors: faceColors } : {}) };
 }
 
+function getXcafRootDeflections(kernel, document, ratio) {
+    const deflections = new Map();
+    for (const label of document.getRoots()) {
+        const { shapeHandle } = document.getLabelInfo(label);
+        if (shapeHandle == null) throw new Error('STEP assembly root has no shape.');
+        try {
+            const box = kernel.getBoundingBox(shapeHandle);
+            // Match the standard importer's bounding_box_ratio calculation.
+            const average = ((box.xmax - box.xmin) + (box.ymax - box.ymin) + (box.zmax - box.zmin)) / 3;
+            const deflection = average * ratio;
+            if (!Number.isFinite(deflection)) throw new Error('Invalid STEP assembly bounds.');
+            deflections.set(label, deflection >= 1e-7 ? deflection : 1);
+        } finally {
+            kernel.release(shapeHandle);
+        }
+    }
+    return deflections;
+}
+
 async function parseLargeStepFile(message, requestId) {
     const startedAt = performance.now();
     const kernel = await ensureLargeOcctKernel();
-    const timings = { engineInitMs: performance.now() - startedAt, readingMs: 0, tessellationMs: 0, packingMs: 0 };
+    const timings = { engineInitMs: performance.now() - startedAt, preparingMs: 0, readingMs: 0, tessellationMs: 0, packingMs: 0 };
     let completed = false;
     let shape = null;
     let document = null;
-    const prepared = prepareMergedStepImport(message.fileBuffer);
-    let sourceBuffer = prepared.fileBuffer;
-    prepared.fileBuffer = null;
+    const relative = message.engine === 'xcaf';
+    let sourceBuffer = null;
     try {
         self.postMessage({ type: 'progress', requestId, phase: 'reading' });
+        const prepared = measureStepPhase(timings, 'preparingMs', () => prepareMergedStepImport(message.fileBuffer));
+        sourceBuffer = prepared.fileBuffer;
+        prepared.fileBuffer = null;
         // Keep the original transferred buffer. Decoding a large STEP file to
         // a JavaScript string here creates another ~2x-sized representation and
         // makes otherwise valid 100-500 MB files fail before OCCT can read them.
@@ -900,11 +939,17 @@ async function parseLargeStepFile(message, requestId) {
         // the part identities even when the source contains a full assembly.
         let parts = [];
         const labelNames = new Map();
+        let rootDeflections;
         if (typeof kernel.importXCAFFromSTEP === 'function') {
             try {
                 document = measureStepPhase(timings, 'readingMs', () => kernel.importXCAFFromSTEP(sourceBuffer));
+                if (relative) {
+                    rootDeflections = measureStepPhase(timings, 'readingMs',
+                        () => getXcafRootDeflections(kernel, document, message.parameters.linearDeflection));
+                }
                 parts = measureStepPhase(timings, 'readingMs', () => collectXcafParts(document, labelNames, prepared.mergedTags));
             } catch (error) {
+                if (relative) throw error;
                 console.warn('XCAF STEP hierarchy import failed; trying direct import.', error);
                 document?.close();
                 document = null;
@@ -926,10 +971,10 @@ async function parseLargeStepFile(message, requestId) {
                 try {
                     if (part.placement) placedShape = kernel.located(part.shapeHandle, part.placement);
                     const mesh = measureStepPhase(timings, 'tessellationMs', () => kernel.meshShape(placedShape ?? part.shapeHandle, {
-                        linearDeflection: Number(message.parameters?.linearDeflectionAbsolute) || 1,
+                        linearDeflection: rootDeflections?.get(part.rootLabel) ?? (Number(message.parameters?.linearDeflectionAbsolute) || 1),
                         angularDeflection: Number(message.parameters?.angularDeflection) || 0.8
                     }));
-                    if (!mesh?.positions?.length || !mesh?.indices?.length) {
+                    if (!mesh?.positions?.length || !mesh?.indices?.length || (relative && !getCompleteLargeMeshFaceRanges(mesh))) {
                         throw new Error('STEP part contains no triangulated mesh: ' + part.partName);
                     }
                     const coloredPart = resolveXcafFaceColors(kernel, document, mesh, part, placedShape ?? part.shapeHandle);
@@ -956,6 +1001,7 @@ async function parseLargeStepFile(message, requestId) {
             completed = true;
             return;
         }
+        if (relative) throw new Error('The STEP assembly has no importable parts.');
         // Close the assembly before the fallback so two representations are
         // never retained together. Part conversion errors above must propagate.
         if (document) {
@@ -1038,7 +1084,7 @@ async function handleStepImportMessage(event) {
     const requestId = message.requestId;
     const startedAt = performance.now();
     try {
-        if (message.type === 'parse' && message.engine === 'large') {
+        if (message.type === 'parse' && (message.engine === 'large' || message.engine === 'xcaf')) {
             await parseLargeStepFile(message, requestId);
             return;
         }
@@ -1121,12 +1167,19 @@ async function handleStepImportMessage(event) {
             }
         });
     } catch (error) {
+        if (message.type === 'init') {
+            console.warn('STEP worker warm-up failed:', error);
+            return;
+        }
+        if (message.type === 'parse' && message.engine !== 'large' && message.engine !== 'xcaf') occtPromise = null;
         self.postMessage({ type: 'error', requestId, message: errorMessage(error) });
     }
 }
 
 // Initialization awaits must not allow two imports to share live kernel state.
 self.addEventListener('message', (event) => {
+    // Standard WASM compilation can overlap work using the other kernel.
+    if (event.data?.type === 'init') return handleStepImportMessage(event);
     const job = stepImportQueue.then(() => handleStepImportMessage(event));
     stepImportQueue = job.catch(() => {});
     return job;
