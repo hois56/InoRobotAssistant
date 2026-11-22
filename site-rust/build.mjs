@@ -7,7 +7,8 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const target = 'wasm32-unknown-unknown';
 for (const [feature, adapter, destination] of [
     ['site', 'browser.js', '../shared/site-engine.js'],
-    ['controller', 'controller.js', '../4_ProjectGenerator/generator.js']
+    ['controller', 'controller.js', '../4_ProjectGenerator/generator.js'],
+    ['tool', 'tool.js', '../3_ToolSelector/tool-engine.mjs']
 ]) {
     const build = spawnSync('cargo', ['build', '--locked', '--release', '--target', target,
         '--no-default-features', '--features', feature], { cwd: root, stdio: 'inherit' });

@@ -3,6 +3,8 @@
 mod catalog;
 #[cfg(feature = "controller")]
 mod controller;
+#[cfg(feature = "tool")]
+mod edges;
 #[cfg(feature = "site")]
 mod geometry;
 #[cfg(feature = "site")]

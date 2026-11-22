@@ -10,6 +10,7 @@
 | 재질·형상별 질량, 무게중심, 관성, 허용 부하 판정, STEP 삼각망 적분 및 좌표 변환 | `src/geometry.rs` |
 | STEP 스냅 점의 정점 병합, 삼각형 법선·면적, 특징 모서리, B-rep 면 중심 (툴 선정·3D 시뮬레이션) | `src/snap.rs` |
 | 프로젝트 파일의 줄 단위 비교, 로봇 프로그램·라벨·포인트·프로젝트 파일 생성 | `src/project.rs`, `src/controller/` |
+| 툴 선정 부품 외곽선 (three.js `EdgesGeometry`와 같은 결과) | `src/edges.rs` |
 
 ## 빌드
 
@@ -20,7 +21,7 @@ rustup target add wasm32-unknown-unknown
 node site-rust/build.mjs
 ```
 
-빌드는 일반 도구용 `shared/site-engine.js`와 프로젝트 생성용 `4_ProjectGenerator/generator.js`를 만든다. 각 파일에는 해당 모듈이 들어 있어 별도의 WASM 다운로드 없이 첫 호출 시 초기화한다. Rust 원본 또는 연결 코드인 `browser.js`, `controller.js`를 수정한 후 두 배포 파일을 다시 생성한다.
+빌드는 일반 도구용 `shared/site-engine.js`, 프로젝트 생성용 `4_ProjectGenerator/generator.js`, 툴 선정 전용 `3_ToolSelector/tool-engine.mjs`를 만든다. 각 파일에는 해당 모듈이 들어 있어 별도의 WASM 다운로드 없이 첫 호출 시 초기화한다. 툴 선정 전용 기능은 모든 화면이 불러오는 `site-engine.js`에 넣지 않는다. Rust 원본 또는 연결 코드인 `browser.js`, `controller.js`, `tool.js`를 수정한 후 배포 파일을 다시 생성한다.
 
 프로젝트 생성 결과를 기존 구현과 대조하려면 이전 소스의 `generator.js`를 인수로 넘긴다. 같은 로봇 데이터와 고정한 시각으로 공정 11종과 옵션 조합 64개를 실행해 프로그램과 데이터 파일의 내용을 2,176회 비교한다.
 

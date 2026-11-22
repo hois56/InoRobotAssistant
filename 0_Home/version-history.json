@@ -790,6 +790,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[개선]` 큰 STEP 모델의 외곽선 표시를 약 5배 빠르게 계산합니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[개선]` 큰 STEP 모델을 불러올 때 꼭짓점·원 중심·면 중심 등 스냅 점을 더 빠르게 계산합니다.",
@@ -2588,6 +2594,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[Improved]` Outlines of large STEP models are calculated about 5 times faster."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -4388,6 +4400,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[改进]` 大型 STEP 模型的轮廓线计算速度提升约 5 倍。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[改进]` 载入大型 STEP 模型时，顶点、圆心、面中心等捕捉点的计算更快。",
@@ -6186,6 +6204,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[Cải tiến]` Đường viền của mô hình STEP lớn được tính nhanh hơn khoảng 5 lần."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -7986,6 +8010,12 @@
             "title": "Robot Tool Selector",
             "versions": [
               {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[İyileştirildi]` Büyük STEP modellerinin dış hatları yaklaşık 5 kat daha hızlı hesaplanır."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[İyileştirildi]` Büyük bir STEP modeli yüklendiğinde köşe, daire merkezi ve yüz merkezi gibi yakalama noktaları daha hızlı hesaplanır.",
@@ -9784,6 +9814,12 @@
           {
             "title": "Robot Tool Selector",
             "versions": [
+              {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[Улучшено]` Контуры крупных STEP-моделей рассчитываются примерно в 5 раз быстрее."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [

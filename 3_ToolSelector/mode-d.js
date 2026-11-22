@@ -10,6 +10,7 @@ import {
   pointInFrame
 } from './tool-mass.mjs';
 import { averagePoints, buildStepSnapCandidates } from './snap-geometry.mjs';
+import { geometryEdges } from './tool-engine.mjs?v=20261122-edges-1';
 import { cadColorToHex } from './step-export-transform.mjs?v=20260719-ry-trackball-1';
 
 const OCCT_IMPORT_BASE_URL = './vendor/occt/';
@@ -712,6 +713,16 @@ function disposePartOutlines() {
   });
 }
 
+// The same segments as THREE.EdgesGeometry, computed by the Tool Selector engine
+// (site-rust/src/edges.rs); three.js handles input the engine leaves to it.
+function partEdgesGeometry(geometry, thresholdAngle) {
+  const lines = geometryEdges(geometry.getAttribute('position'), geometry.getIndex(), thresholdAngle);
+  if (!lines) return new THREE.EdgesGeometry(geometry, thresholdAngle);
+  const edges = new THREE.BufferGeometry();
+  edges.setAttribute('position', new THREE.BufferAttribute(lines, 3));
+  return edges;
+}
+
 function syncPartOutlines() {
   if (!state.outlineMode) {
     disposePartOutlines();
@@ -721,7 +732,7 @@ function syncPartOutlines() {
     const mesh = part.mesh;
     if (!mesh?.geometry?.getAttribute?.('position') || mesh.userData.outlineLine) return;
     const line = new THREE.LineSegments(
-      new THREE.EdgesGeometry(mesh.geometry, 28),
+      partEdgesGeometry(mesh.geometry, 28),
       new THREE.LineBasicMaterial({
         color: 0x000000,
         transparent: true,

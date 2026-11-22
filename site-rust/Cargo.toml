@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 default = ["site"]
 site = []
 controller = []
+tool = []
 
 [profile.release]
 opt-level = 3
