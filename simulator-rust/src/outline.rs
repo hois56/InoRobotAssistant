@@ -23,7 +23,7 @@ fn mix(mut x: u64) -> u64 {
 }
 
 // JavaScript Math.round: nearest integer, ties toward positive infinity.
-fn js_round(value: f64) -> f64 {
+pub(crate) fn js_round(value: f64) -> f64 {
     let lower = value.floor();
     if value - lower >= 0.5 {
         lower + 1.0
@@ -34,7 +34,7 @@ fn js_round(value: f64) -> f64 {
 
 // Rounded coordinates join into the same key text exactly when these match:
 // -0 prints as "0".
-fn text_key(value: f64) -> u64 {
+pub(crate) fn text_key(value: f64) -> u64 {
     if value == 0.0 {
         0
     } else {
@@ -143,7 +143,7 @@ fn face_hash(key: [u32; 3]) -> u64 {
 }
 
 // Math.min / Math.max: NaN wins, and -0 is below +0.
-fn js_min(a: f64, b: f64) -> f64 {
+pub(crate) fn js_min(a: f64, b: f64) -> f64 {
     if a.is_nan() || b.is_nan() {
         f64::NAN
     } else if a == b {
@@ -154,7 +154,7 @@ fn js_min(a: f64, b: f64) -> f64 {
         b
     }
 }
-fn js_max(a: f64, b: f64) -> f64 {
+pub(crate) fn js_max(a: f64, b: f64) -> f64 {
     if a.is_nan() || b.is_nan() {
         f64::NAN
     } else if a == b {

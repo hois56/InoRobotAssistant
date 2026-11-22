@@ -1,6 +1,7 @@
 mod cad;
 mod camera;
 mod collision;
+mod collision_bvh;
 mod conveyor;
 #[cfg(target_arch = "wasm32")]
 mod dxf;

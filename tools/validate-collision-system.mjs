@@ -332,7 +332,8 @@ const staleCachedFallbackHits = continuousJogSystem.checkAll([cacheProbe, cacheO
 assert.ok(staleCachedFallbackHits.length, 'Invalid cached surface metadata must fall back to a full collision search.');
 assert.equal(staleCachedFallbackHits[0].stats.meshPairs, 1, 'A stale cached surface must retain the full BVH fallback.');
 
-const nodeBoundsReuseSystem = new MeshCollisionSystem();
+// Node-bound boxes belong to the JavaScript BVH; the engine path keeps them in Rust.
+const nodeBoundsReuseSystem = new MeshCollisionSystem({ native: false });
 const nodeBoundsReuseLeft = createBoxRoot(0);
 const nodeBoundsReuseRight = createBoxRoot(0.5);
 nodeBoundsReuseSystem.checkAll([nodeBoundsReuseLeft, nodeBoundsReuseRight], { now: 0, allowWarmHitReuse: false });

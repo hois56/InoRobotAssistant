@@ -52,7 +52,7 @@ import {
     createCoordinateFrame,
     integrateStepMesh
 } from '../3_ToolSelector/tool-mass.mjs';
-import { MeshCollisionSystem } from './collision-system.mjs?v=20261103-mount-faces-1';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261122-rust-bvh';
 import { isSimulationCollisionPair, shouldReportSimulationCollision } from './collision-policy-core.mjs?v=20261103-mount-faces-1';
 import {
     MOTION_PROJECT_SCHEMA_VERSION,

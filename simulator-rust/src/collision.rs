@@ -73,7 +73,7 @@ fn overlap(a: Point2, b: Point2, c: Point2, d: Point2, eps: f64) -> bool {
         || o4.abs() <= eps && within(b, c, d, eps)
 }
 
-fn intersect(a: Triangle, b: Triangle, eps: f64) -> bool {
+pub(crate) fn intersect(a: Triangle, b: Triangle, eps: f64) -> bool {
     for axis in 0..3 {
         let bounds = |t: Triangle| {
             (

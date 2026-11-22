@@ -135,21 +135,124 @@ class GeometryBVH {
     }
 
     readTriangleWorld(mesh, triangleIndex, target, local = new Float64Array(9)) {
-        readLocalTriangle(this.geometry, triangleIndex, local);
-        const matrix = mesh.matrixWorld.elements;
-        for (let vertex = 0; vertex < 3; vertex += 1) {
-            const source = vertex * 3;
-            const x = local[source];
-            const y = local[source + 1];
-            const z = local[source + 2];
-            const w = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
-            const invW = Math.abs(w) > Number.EPSILON ? 1 / w : 1;
-            target[source] = (matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12]) * invW;
-            target[source + 1] = (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13]) * invW;
-            target[source + 2] = (matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14]) * invW;
-        }
-        return target;
+        return readTriangleWorld(this.geometry, mesh, triangleIndex, target, local);
     }
+}
+
+function readTriangleWorld(geometry, mesh, triangleIndex, target, local = new Float64Array(9)) {
+    readLocalTriangle(geometry, triangleIndex, local);
+    const matrix = mesh.matrixWorld.elements;
+    for (let vertex = 0; vertex < 3; vertex += 1) {
+        const source = vertex * 3;
+        const x = local[source];
+        const y = local[source + 1];
+        const z = local[source + 2];
+        const w = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
+        const invW = Math.abs(w) > Number.EPSILON ? 1 / w : 1;
+        target[source] = (matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12]) * invW;
+        target[source + 1] = (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13]) * invW;
+        target[source + 2] = (matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14]) * invW;
+    }
+    return target;
+}
+
+// The same BVH built and traversed by the simulation engine
+// (simulator-rust/src/collision_bvh.rs), which mirrors the JavaScript above and
+// below step for step. `reference` builds the JavaScript BVH on demand for a
+// pair that mixes it with a geometry the engine declined.
+class NativeGeometryBVH {
+    constructor(geometry, handle, triangleCount, leafSize) {
+        this.geometry = geometry;
+        this.handle = handle;
+        this.triangleCount = triangleCount;
+        this.leafSize = leafSize;
+        this.root = true;
+        this.native = true;
+    }
+
+    get reference() {
+        this.javascript ??= new GeometryBVH(this.geometry, this.leafSize);
+        return this.javascript;
+    }
+
+    readTriangleWorld(mesh, triangleIndex, target, local = new Float64Array(9)) {
+        return readTriangleWorld(this.geometry, mesh, triangleIndex, target, local);
+    }
+
+    dispose() {
+        if (this.handle >= 0) engine.collision_bvh_free(this.handle);
+        this.handle = -1;
+    }
+}
+
+function buildNativeBVH(geometry, leafSize) {
+    if (!engine.collision_bvh_build) return null;
+    const position = geometry.getAttribute('position');
+    const triangleCount = triangleCountForGeometry(geometry);
+    const count = position.count;
+    const input = numbers(count * 3);
+    if (!position.isInterleavedBufferAttribute && !position.normalized && position.itemSize === 3 && ArrayBuffer.isView(position.array)) {
+        input.set(position.array.subarray(0, count * 3));
+    } else {
+        for (let vertex = 0; vertex < count; vertex += 1) {
+            input[vertex * 3] = position.getX(vertex);
+            input[vertex * 3 + 1] = position.getY(vertex);
+            input[vertex * 3 + 2] = position.getZ(vertex);
+        }
+    }
+    const index = geometry.index;
+    if (index) {
+        const length = triangleCount * 3;
+        // Reserving can grow the engine's memory, so read the buffer afterwards.
+        const address = engine.collision_indices(length);
+        const target = new Uint32Array(engine.memory.buffer, address, length);
+        for (let offset = 0; offset < length; offset += 1) {
+            const value = index.getX(offset);
+            if (!Number.isInteger(value) || value < 0) return null;
+            target[offset] = value;
+        }
+    }
+    const handle = engine.collision_bvh_build(count * 3, index ? 1 : 0, triangleCount, leafSize);
+    return handle < 0 ? null : new NativeGeometryBVH(geometry, handle, triangleCount, leafSize);
+}
+
+function boundsValues(bounds) {
+    return [bounds.min.x, bounds.min.y, bounds.min.z, bounds.max.x, bounds.max.y, bounds.max.z];
+}
+
+function nativeMeshPairIntersects(meshA, bvhA, rootA, meshB, bvhB, rootB, epsilon, stats, mount) {
+    const input = numbers(48);
+    input.set(meshA.matrixWorld.elements, 0);
+    input.set(meshB.matrixWorld.elements, 16);
+    input.set(boundsValues(rootA), 32);
+    input.set(boundsValues(rootB), 38);
+    input.set(mount ? [mount.x, mount.y, mount.z, mount.constant] : [0, 0, 0, 0], 44);
+    const kind = engine.collision_pair(bvhA.handle, bvhB.handle, epsilon, mount ? (mount.robotIsLeft ? 1 : 2) : 0);
+    const [, triangleA, triangleB, x, y, z, tests] = numbers(7);
+    stats.triangleTests += tests;
+    if (kind === 0) return null;
+    return {
+        meshA,
+        meshB,
+        triangleA,
+        triangleB,
+        point: new THREE.Vector3(x, y, z),
+        kind: kind === 1 ? 'surface' : 'containment'
+    };
+}
+
+function nativePointInside(mesh, bvh, point, epsilon) {
+    const input = numbers(19);
+    input.set(mesh.matrixWorld.elements, 0);
+    input.set([Number(point.x), Number(point.y), Number(point.z)], 16);
+    return engine.collision_point_inside(bvh.handle, epsilon, POINT_ON_SURFACE_TOLERANCE) === 1;
+}
+
+function nativeWithinDistance(left, a, right, b, limitSquared) {
+    const input = numbers(32);
+    input.set(left.mesh.matrixWorld.elements, 0);
+    input.set(right.mesh.matrixWorld.elements, 16);
+    return engine.collision_within_distance(a.handle, b.handle, limitSquared) === 1;
 }
 
 function dot(ax, ay, az, bx, by, bz) {
@@ -415,6 +518,10 @@ function geometryVertexKey(geometry, vertexIndex) {
 
 function geometryHasClosedSurface(bvh) {
     if (typeof bvh.hasClosedSurface === 'boolean') return bvh.hasClosedSurface;
+    if (bvh.native) {
+        bvh.hasClosedSurface = engine.collision_bvh_closed(bvh.handle) === 1;
+        return bvh.hasClosedSurface;
+    }
     const edgeCounts = new Map();
     const addEdge = (first, second) => {
         if (first === second) return false;
@@ -467,9 +574,18 @@ function hasMatrixWorldChanged(meshEntry) {
 }
 
 function meshPairIntersects(colliderA, colliderB, epsilon, stats, isMountContact) {
-    const { mesh: meshA, bvh: bvhA, collider: meshColliderA } = colliderA;
-    const { mesh: meshB, bvh: bvhB, collider: meshColliderB } = colliderB;
+    const { mesh: meshA, collider: meshColliderA } = colliderA;
+    const { mesh: meshB, collider: meshColliderB } = colliderB;
+    let { bvh: bvhA } = colliderA;
+    let { bvh: bvhB } = colliderB;
     if (!bvhA.root || !bvhB.root || !meshColliderA.worldBounds || !meshColliderB.worldBounds) return null;
+    if (bvhA.native && bvhB.native && (!isMountContact || isMountContact.mount)) {
+        if (!meshColliderA.worldBounds.intersectsBox(meshColliderB.worldBounds)) return null;
+        return nativeMeshPairIntersects(meshA, bvhA, meshColliderA.worldBounds, meshB, bvhB, meshColliderB.worldBounds,
+            epsilon, stats, isMountContact?.mount);
+    }
+    if (bvhA.native) bvhA = bvhA.reference;
+    if (bvhB.native) bvhB = bvhB.reference;
     const getBoundsA = (node) => getWorldNodeBounds(meshColliderA, bvhA, node);
     const getBoundsB = (node) => getWorldNodeBounds(meshColliderB, bvhB, node);
     const rootA = meshColliderA.worldBounds;
@@ -606,7 +722,7 @@ function createMountContactFilter(leftRoot, leftMesh, rightRoot, rightMesh) {
         .applyMatrix4(frame.matrixWorld);
     const { x, y, z } = plane.normal;
     const tolerance = 0.01; // mm, numerical contact tolerance, not a fit/clearance allowance.
-    return (triangleA, triangleB) => {
+    const filter = (triangleA, triangleB) => {
         const robot = robotIsLeft ? triangleA : triangleB;
         const other = robotIsLeft ? triangleB : triangleA;
         let minRobot = Infinity, maxOther = -Infinity;
@@ -617,6 +733,9 @@ function createMountContactFilter(leftRoot, leftMesh, rightRoot, rightMesh) {
         return minRobot >= -tolerance && minRobot <= tolerance
             && maxOther <= tolerance && maxOther >= -tolerance;
     };
+    // The engine applies the same test to its candidate triangle pairs.
+    filter.mount = { x, y, z, constant: plane.constant, robotIsLeft };
+    return filter;
 }
 
 
@@ -637,10 +756,13 @@ export class MeshCollisionSystem {
     constructor({
         epsilon = DEFAULT_EPSILON,
         leafSize = DEFAULT_LEAF_SIZE,
-        persistentHitGraceMs = 240
+        persistentHitGraceMs = 240,
+        native = true
     } = {}) {
         this.epsilon = epsilon;
         this.leafSize = leafSize;
+        // false keeps every BVH in JavaScript (the reference the engine is tested against).
+        this.native = native;
         this.persistentHitGraceMs = persistentHitGraceMs;
         this.geometryCache = new Map();
         this.geometryBoundsCache = new Map();
@@ -665,7 +787,8 @@ export class MeshCollisionSystem {
         const key = geometry.uuid || geometry;
         let bvh = this.geometryCache.get(key);
         if (!bvh || bvh.geometry !== geometry) {
-            bvh = new GeometryBVH(geometry, this.leafSize);
+            bvh?.dispose?.();
+            bvh = (this.native && buildNativeBVH(geometry, this.leafSize)) || new GeometryBVH(geometry, this.leafSize);
             this.geometryCache.set(key, bvh);
         }
         return bvh;
@@ -730,6 +853,10 @@ export class MeshCollisionSystem {
                 // This deliberately ignores open shells and the root AABB, so
                 // a point in a frame or other hollow model remains available.
                 if (!bvh?.root || !geometryHasClosedSurface(bvh)) continue;
+                if (bvh.native) {
+                    if (nativePointInside(collider.mesh, bvh, point, this.epsilon)) return true;
+                    continue;
+                }
                 const getBounds = (node) => getWorldNodeBounds(collider, bvh, node);
                 // A target on a CAD face is a valid contact point. Treat only
                 // points meaningfully below the surface as being inside; this
@@ -953,8 +1080,14 @@ export class MeshCollisionSystem {
         for (const left of this.collectMeshes(leftRoot)) for (const right of this.collectMeshes(rightRoot)) {
             if (!left.worldBounds || !right.worldBounds
                 || boundsDistanceSquared(left.worldBounds, right.worldBounds) > limitSquared) continue;
-            const a = this.getGeometryBVH(left.geometry), b = this.getGeometryBVH(right.geometry);
+            let a = this.getGeometryBVH(left.geometry), b = this.getGeometryBVH(right.geometry);
             if (!a?.root || !b?.root) continue;
+            if (a.native && b.native) {
+                if (nativeWithinDistance(left, a, right, b, limitSquared)) return true;
+                continue;
+            }
+            if (a.native) a = a.reference;
+            if (b.native) b = b.reference;
             const stack = [[a.root, b.root]];
             while (stack.length) {
                 const [nodeA, nodeB] = stack.pop();
@@ -1017,7 +1150,10 @@ export class MeshCollisionSystem {
             colliders.flatMap((collider) => collider.meshes.map(({ geometry }) => geometry))
         );
         for (const [key, bvh] of this.geometryCache) {
-            if (!activeGeometries.has(bvh.geometry)) this.geometryCache.delete(key);
+            if (!activeGeometries.has(bvh.geometry)) {
+                bvh.dispose?.();
+                this.geometryCache.delete(key);
+            }
         }
         for (const [key, entry] of this.geometryBoundsCache) {
             if (!activeGeometries.has(entry.geometry)) this.geometryBoundsCache.delete(key);
@@ -1074,6 +1210,7 @@ export class MeshCollisionSystem {
     }
 
     clear() {
+        this.geometryCache.forEach((bvh) => bvh.dispose?.());
         this.geometryCache.clear();
         this.geometryBoundsCache.clear();
         this.meshCache.clear();

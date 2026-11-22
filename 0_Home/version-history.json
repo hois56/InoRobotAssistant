@@ -314,6 +314,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[개선]` 큰 모델이 많은 장면에서 동작·조그 중 충돌 검사와 흡착 거리 계산을 2~4배 빠르게 처리합니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[추가]` SolidWorks 부품(.SLDPRT)과 조립품(.SLDASM)을 직접 불러올 수 있습니다. 조립품에 참조 부품이 필요할 때만 폴더 선택을 요청합니다. 단독 부품의 표시 형상을 읽을 수 없으면 저장된 본체에서 복원합니다.",
@@ -2106,6 +2112,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[Improved]` Collision checks during motion and jogging, and vacuum distance checks, run 2 to 4 times faster in scenes with many large models."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -3900,6 +3912,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[改进]` 在包含大量大型模型的场景中，运动和点动时的碰撞检测以及吸附距离计算速度提升 2~4 倍。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[新增]` 可直接导入 SolidWorks 零件（.SLDPRT）和装配体（.SLDASM）。装配体需要引用零件时会提示选择文件夹。无法读取单个零件的显示网格时，会根据保存的实体重建。",
@@ -5692,6 +5710,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[Cải tiến]` Kiểm tra va chạm khi chuyển động và chạy jog, cùng phép tính khoảng cách hút, nhanh hơn 2–4 lần trong cảnh có nhiều mô hình lớn."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -7486,6 +7510,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[İyileştirildi]` Çok sayıda büyük model içeren sahnelerde hareket ve jog sırasındaki çarpışma kontrolleri ile vakum mesafesi hesapları 2-4 kat daha hızlı çalışır."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[Eklendi]` SolidWorks parçalarını (.SLDPRT) ve montajlarını (.SLDASM) doğrudan içe aktarın. Montajın başvurulan parçalara ihtiyacı olduğunda klasör istenir. Bağımsız parçanın görüntü ağı okunamadığında kayıtlı gövdelerden yeniden oluşturulur.",
@@ -9278,6 +9308,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.22",
+                "items": [
+                  "`[Улучшено]` В сценах со множеством крупных моделей проверка столкновений при движении и толчковом перемещении, а также расчёт расстояния захвата присоской выполняются в 2–4 раза быстрее."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
