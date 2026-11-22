@@ -154,10 +154,16 @@ export function evaluateS7Dynamics(joints,options={}) {
 function biasRange(sample,index,vMax,u,gravity) {
   const c=sample.coriolis[index],f=LINKS[index].viscous*u[index];
   const constant=gravity[index]+(u[index]===0?0:LINKS[index].coulomb*Math.sign(u[index]));
-  const speeds=[0,vMax],vertex=c===0?-1:-f/(2*c);
-  if(vertex>0&&vertex<vMax) speeds.push(vertex);
-  const values=speeds.map(v=>constant+f*v+c*v*v);
-  return [Math.min(...values),Math.max(...values)];
+  const vertex=c===0?-1:-f/(2*c);
+  // Torque at 0, at full speed and at the vertex, compared in the same order as
+  // Math.min/Math.max over an array, without allocating for every sample.
+  const atZero=constant+f*0+c*0*0,atSpeed=constant+f*vMax+c*vMax*vMax;
+  let low=Math.min(atZero,atSpeed),high=Math.max(atZero,atSpeed);
+  if(vertex>0&&vertex<vMax) {
+    const atVertex=constant+f*vertex+c*vertex*vertex;
+    low=Math.min(low,atVertex);high=Math.max(high,atVertex);
+  }
+  return [low,high];
 }
 /**
  * Joint positions: [J1 deg, J2 deg, J3 mm (+Z up), J4 deg].

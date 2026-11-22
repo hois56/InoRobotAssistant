@@ -83,10 +83,16 @@ export function evaluateRobotDynamics(joints,options={}) {
 function biasRange(sample,index,speed,u,links) {
     const c=sample.coriolis[index],friction=links[index].viscousFric*u[index];
     const constant=sample.gravityTorqueNm[index]+(u[index]===0?0:links[index].coulombFric*Math.sign(u[index]));
-    const speeds=[0,speed],vertex=c===0?-1:-friction/(2*c);
-    if(vertex>0&&vertex<speed)speeds.push(vertex);
-    const values=speeds.map(v=>constant+friction*v+c*v*v);
-    return [Math.min(...values),Math.max(...values)];
+    const vertex=c===0?-1:-friction/(2*c);
+    // The torque at 0, at full speed and at the parabola's vertex, compared in that
+    // order as Math.min/Math.max did over an array; this runs for every sample.
+    const atZero=constant+friction*0+c*0*0,atSpeed=constant+friction*speed+c*speed*speed;
+    let low=Math.min(atZero,atSpeed),high=Math.max(atZero,atSpeed);
+    if(vertex>0&&vertex<speed) {
+        const atVertex=constant+friction*vertex+c*vertex*vertex;
+        low=Math.min(low,atVertex);high=Math.max(high,atVertex);
+    }
+    return [low,high];
 }
 
 const profileCache=new Map();
