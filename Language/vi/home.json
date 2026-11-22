@@ -362,7 +362,8 @@
     "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "Tra cứu hướng dẫn robot, tài liệu đào tạo, chứng chỉ và hồ sơ truyền thông.",
     "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "Kiểm tra kết nối và chẩn đoán sự cố khi chạy thử.",
     "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "Xem cấu hình điều khiển chuyển động servo qua Ethernet từ PC và các thông số chính.",
-    "메인 페이지로": "Trang chủ"
+    "메인 페이지로": "Trang chủ",
+    "선택한 CAD 스냅 위치": "Vị trí bắt dính CAD đã chọn"
   },
   "patterns": [
     {

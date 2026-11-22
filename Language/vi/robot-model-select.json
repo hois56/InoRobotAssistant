@@ -312,7 +312,8 @@
     "Body I/O 케이블 (8핀)": "Cáp I/O thân robot (8 chân)",
     "Body I/O 케이블 (12핀)": "Cáp I/O thân robot (12 chân)",
     "Arm I/O 케이블 (기본핀)": "Cáp I/O cánh tay robot (chân tiêu chuẩn)",
-    "Body I/O 케이블 (기본핀)": "Cáp I/O thân robot (chân tiêu chuẩn)"
+    "Body I/O 케이블 (기본핀)": "Cáp I/O thân robot (chân tiêu chuẩn)",
+    "천장 설치": "Lắp treo trần"
   },
   "patterns": [
     {

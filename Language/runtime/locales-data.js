@@ -615,7 +615,8 @@ window.INOROBOT_LOCALES = {
 "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.",
 "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.",
 "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.",
-"메인 페이지로": "메인 페이지로"
+"메인 페이지로": "메인 페이지로",
+"선택한 CAD 스냅 위치": "선택한 CAD 스냅 위치"
 },
 "patterns": [
 {
@@ -940,7 +941,8 @@ window.INOROBOT_LOCALES = {
 "Body I/O 케이블 (8핀)": "Body I/O 케이블 (8핀)",
 "Body I/O 케이블 (12핀)": "Body I/O 케이블 (12핀)",
 "Arm I/O 케이블 (기본핀)": "Arm I/O 케이블 (기본핀)",
-"Body I/O 케이블 (기본핀)": "Body I/O 케이블 (기본핀)"
+"Body I/O 케이블 (기본핀)": "Body I/O 케이블 (기본핀)",
+"천장 설치": "천장 설치"
 },
 "patterns": [
 {
@@ -1131,8 +1133,6 @@ window.INOROBOT_LOCALES = {
 "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.",
 "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.",
 "선 또는 유효한 스냅 지점을 클릭하세요.": "선 또는 유효한 스냅 지점을 클릭하세요.",
-"3D 파일": "3D 파일",
-"DXF 삽입": "DXF 삽입",
 "겹친 면 보정": "겹친 면 보정",
 "SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.",
 "SolidWorks 참조 부품": "SolidWorks 참조 부품",
@@ -1142,6 +1142,8 @@ window.INOROBOT_LOCALES = {
 "같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.",
 "참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.",
 "SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.",
+"3D 파일": "3D 파일",
+"DXF 삽입": "DXF 삽입",
 "스케치에 DXF 삽입": "스케치에 DXF 삽입",
 "DXF를 스케치로 삽입": "DXF를 스케치로 삽입",
 "3D 파일 불러오기": "3D 파일 불러오기",
@@ -5251,7 +5253,8 @@ window.INOROBOT_LOCALES = {
 "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "Find robot manuals, training materials, certificates and communication profiles.",
 "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "Check communication and diagnose problems during commissioning.",
 "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "Explore PC-based Ethernet motion control for servo systems and review key specifications.",
-"메인 페이지로": "Home"
+"메인 페이지로": "Home",
+"선택한 CAD 스냅 위치": "Selected CAD snap point"
 },
 "patterns": [
 {
@@ -5576,7 +5579,8 @@ window.INOROBOT_LOCALES = {
 "Body I/O 케이블 (8핀)": "Body I/O cable (8-pin)",
 "Body I/O 케이블 (12핀)": "Body I/O cable (12-pin)",
 "Arm I/O 케이블 (기본핀)": "Arm I/O cable (standard pin)",
-"Body I/O 케이블 (기본핀)": "Body I/O cable (standard pin)"
+"Body I/O 케이블 (기본핀)": "Body I/O cable (standard pin)",
+"천장 설치": "Ceiling mounting"
 },
 "patterns": [
 {
@@ -5767,10 +5771,6 @@ window.INOROBOT_LOCALES = {
 "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "Click a line or edge for a length dimension, or select valid snap points in sequence for a single-axis X or Y position dimension.",
 "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "Click a line or edge for a length dimension, or select snap points in sequence for a single-axis X or Y position dimension.",
 "선 또는 유효한 스냅 지점을 클릭하세요.": "Click a line or a valid snap point.",
-"3D 파일": "3D File",
-"DXF 삽입": "Insert DXF",
-"스케치에 DXF 삽입": "Insert DXF into Sketch",
-"DXF를 스케치로 삽입": "Insert DXF into Sketch",
 "겹친 면 보정": "Reduce surface flicker",
 "SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Could not read the part's saved display geometry or solid bodies. Resave it in CAD or export it as STEP.",
 "SolidWorks 참조 부품": "SolidWorks referenced parts",
@@ -5780,6 +5780,10 @@ window.INOROBOT_LOCALES = {
 "같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "Multiple referenced parts named {name} were found. Select the folder containing the part you need.",
 "참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "Referenced part {name} is empty or exceeds 500 MB.",
 "SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Could not read the saved display geometry or the referenced part configuration. Resave the file in CAD or export it as STEP.",
+"3D 파일": "3D File",
+"DXF 삽입": "Insert DXF",
+"스케치에 DXF 삽입": "Insert DXF into Sketch",
+"DXF를 스케치로 삽입": "Insert DXF into Sketch",
 "3D 파일 불러오기": "Import 3D File",
 "3D 모델 가져오기 방식": "3D model import options",
 "3D 모델링": "3D Model",
@@ -9887,7 +9891,8 @@ window.INOROBOT_LOCALES = {
 "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "查找机器人手册、培训资料、证书和通信配置文件。",
 "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "检查通信状态，诊断调试过程中出现的问题。",
 "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "查看伺服系统基于 PC 的以太网运动控制配置和主要规格。",
-"메인 페이지로": "返回首页"
+"메인 페이지로": "返回首页",
+"선택한 CAD 스냅 위치": "所选 CAD 捕捉位置"
 },
 "patterns": [
 {
@@ -10212,7 +10217,8 @@ window.INOROBOT_LOCALES = {
 "Body I/O 케이블 (8핀)": "机身 I/O 电缆（8 针）",
 "Body I/O 케이블 (12핀)": "机身 I/O 电缆（12 针）",
 "Arm I/O 케이블 (기본핀)": "机械臂 I/O 电缆（默认针脚）",
-"Body I/O 케이블 (기본핀)": "机身 I/O 电缆（默认针脚）"
+"Body I/O 케이블 (기본핀)": "机身 I/O 电缆（默认针脚）",
+"천장 설치": "吊装安装"
 },
 "patterns": [
 {
@@ -10403,12 +10409,6 @@ window.INOROBOT_LOCALES = {
 "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "单击线或边创建长度尺寸，依次选择有效捕捉点创建单轴 X 或 Y 位置尺寸。",
 "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "单击线或边创建长度尺寸，依次选择捕捉点创建单轴 X 或 Y 位置尺寸。",
 "선 또는 유효한 스냅 지점을 클릭하세요.": "请单击线或有效的捕捉点。",
-"3D 파일": "3D 文件",
-"DXF 삽입": "插入 DXF",
-"스케치에 DXF 삽입": "将 DXF 插入草图",
-"DXF를 스케치로 삽입": "将 DXF 插入草图",
-"3D 파일 불러오기": "导入 3D 文件",
-"3D 모델 가져오기 방식": "3D 模型导入选项",
 "겹친 면 보정": "减少重叠面闪烁",
 "SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "无法读取零件中保存的显示几何体或实体。请在 CAD 中重新保存文件，或将其导出为 STEP。",
 "SolidWorks 참조 부품": "SolidWorks 引用零件",
@@ -10418,6 +10418,12 @@ window.INOROBOT_LOCALES = {
 "같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "找到多个名为 {name} 的引用零件。请选择包含所需文件的文件夹。",
 "참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "引用的零件 {name} 为空或超过 500 MB。",
 "SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "无法读取 SolidWorks 文件中保存的显示几何体或引用零件配置。请在 CAD 中重新保存文件或导出为 STEP。",
+"3D 파일": "3D 文件",
+"DXF 삽입": "插入 DXF",
+"스케치에 DXF 삽입": "将 DXF 插入草图",
+"DXF를 스케치로 삽입": "将 DXF 插入草图",
+"3D 파일 불러오기": "导入 3D 文件",
+"3D 모델 가져오기 방식": "3D 模型导入选项",
 "3D 모델링": "3D 模型",
 "3D 모델": "3D 模型",
 "카탈로그 모델": "目录模型",
@@ -14523,7 +14529,8 @@ window.INOROBOT_LOCALES = {
 "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "Tra cứu hướng dẫn robot, tài liệu đào tạo, chứng chỉ và hồ sơ truyền thông.",
 "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "Kiểm tra kết nối và chẩn đoán sự cố khi chạy thử.",
 "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "Xem cấu hình điều khiển chuyển động servo qua Ethernet từ PC và các thông số chính.",
-"메인 페이지로": "Trang chủ"
+"메인 페이지로": "Trang chủ",
+"선택한 CAD 스냅 위치": "Vị trí bắt dính CAD đã chọn"
 },
 "patterns": [
 {
@@ -14848,7 +14855,8 @@ window.INOROBOT_LOCALES = {
 "Body I/O 케이블 (8핀)": "Cáp I/O thân robot (8 chân)",
 "Body I/O 케이블 (12핀)": "Cáp I/O thân robot (12 chân)",
 "Arm I/O 케이블 (기본핀)": "Cáp I/O cánh tay robot (chân tiêu chuẩn)",
-"Body I/O 케이블 (기본핀)": "Cáp I/O thân robot (chân tiêu chuẩn)"
+"Body I/O 케이블 (기본핀)": "Cáp I/O thân robot (chân tiêu chuẩn)",
+"천장 설치": "Lắp treo trần"
 },
 "patterns": [
 {
@@ -15039,14 +15047,6 @@ window.INOROBOT_LOCALES = {
 "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "Nhấp vào đường hoặc cạnh để tạo kích thước chiều dài, hoặc chọn lần lượt các điểm bắt hợp lệ để tạo kích thước vị trí một trục X hoặc Y.",
 "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "Nhấp vào đường hoặc cạnh để tạo kích thước chiều dài, hoặc chọn lần lượt các điểm bắt để tạo kích thước vị trí một trục X hoặc Y.",
 "선 또는 유효한 스냅 지점을 클릭하세요.": "Hãy nhấp vào đường hoặc điểm bắt hợp lệ.",
-"3D 파일": "Tệp 3D",
-"DXF 삽입": "Chèn DXF",
-"스케치에 DXF 삽입": "Chèn DXF vào phác thảo",
-"DXF를 스케치로 삽입": "Chèn DXF vào phác thảo",
-"3D 파일 불러오기": "Nhập tệp 3D",
-"3D 모델 가져오기 방식": "Tùy chọn nhập mô hình 3D",
-"3D 모델링": "Mô hình 3D",
-"3D 모델": "Mô hình 3D",
 "겹친 면 보정": "Giảm nhấp nháy mặt chồng",
 "SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Không đọc được hình học hiển thị hoặc khối hình học đã lưu của chi tiết. Hãy lưu lại tệp trong CAD hoặc xuất sang STEP.",
 "SolidWorks 참조 부품": "Chi tiết tham chiếu SolidWorks",
@@ -15056,6 +15056,14 @@ window.INOROBOT_LOCALES = {
 "같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "Có nhiều chi tiết tham chiếu cùng tên {name}. Chọn thư mục chứa tệp cần dùng.",
 "참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "Chi tiết tham chiếu {name} trống hoặc vượt quá 500 MB.",
 "SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Không đọc được hình học hiển thị đã lưu hoặc cấu hình của chi tiết tham chiếu. Hãy lưu lại tệp trong CAD hoặc xuất sang STEP.",
+"3D 파일": "Tệp 3D",
+"DXF 삽입": "Chèn DXF",
+"스케치에 DXF 삽입": "Chèn DXF vào phác thảo",
+"DXF를 스케치로 삽입": "Chèn DXF vào phác thảo",
+"3D 파일 불러오기": "Nhập tệp 3D",
+"3D 모델 가져오기 방식": "Tùy chọn nhập mô hình 3D",
+"3D 모델링": "Mô hình 3D",
+"3D 모델": "Mô hình 3D",
 "카탈로그 모델": "Mô hình danh mục",
 "Tool": "Tool",
 "암 로드": "Tải trên tay máy",
@@ -19159,7 +19167,8 @@ window.INOROBOT_LOCALES = {
 "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "Robot kılavuzlarına, eğitim belgelerine, sertifikalara ve haberleşme profillerine ulaşın.",
 "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "Haberleşmeyi kontrol edin ve devreye alma sırasında karşılaşılan sorunları tanılayın.",
 "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "Servo sistemleri için PC tabanlı Ethernet hareket kontrolü yapılandırmasını ve temel özellikleri inceleyin.",
-"메인 페이지로": "Ana sayfa"
+"메인 페이지로": "Ana sayfa",
+"선택한 CAD 스냅 위치": "Seçili CAD yakalama konumu"
 },
 "patterns": [
 {
@@ -19484,7 +19493,8 @@ window.INOROBOT_LOCALES = {
 "Body I/O 케이블 (8핀)": "Robot gövde G/Ç kablosu (8 pinli)",
 "Body I/O 케이블 (12핀)": "Robot gövde G/Ç kablosu (12 pinli)",
 "Arm I/O 케이블 (기본핀)": "Robot kolu G/Ç kablosu (varsayılan pin)",
-"Body I/O 케이블 (기본핀)": "Robot gövde G/Ç kablosu (varsayılan pin)"
+"Body I/O 케이블 (기본핀)": "Robot gövde G/Ç kablosu (varsayılan pin)",
+"천장 설치": "Tavana montaj"
 },
 "patterns": [
 {
@@ -19675,6 +19685,15 @@ window.INOROBOT_LOCALES = {
 "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "Uzunluk boyutu için bir çizgiye veya kenara tıklayın veya tek eksenli X veya Y konum boyutu için geçerli yakalama noktalarını sırayla seçin.",
 "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "Uzunluk boyutu için bir çizgiye veya kenara tıklayın veya tek eksenli X veya Y konum boyutu için yakalama noktalarını sırayla seçin.",
 "선 또는 유효한 스냅 지점을 클릭하세요.": "Bir çizgiye veya geçerli bir yakalama noktasına tıklayın.",
+"겹친 면 보정": "Çakışan yüzey titreşimini azalt",
+"SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Parçanın kaydedilmiş görüntü geometrisi veya katı gövdeleri okunamadı. CAD’de yeniden kaydedin veya STEP olarak dışa aktarın.",
+"SolidWorks 참조 부품": "Başvurulan SolidWorks parçaları",
+"폴더 선택": "Klasör seç",
+"지원하지 않는 형식입니다. {formats} 파일을 선택해 주세요.": "Desteklenmeyen biçim. Şu biçimlerden birinde dosya seçin: {formats}.",
+"참조 부품 {name}이 들어 있는 폴더를 선택해 주세요.": "Başvurulan {name} parçasını içeren klasörü seçin.",
+"같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "{name} adlı birden çok başvuru parçası bulundu. Gerekli dosyayı içeren klasörü seçin.",
+"참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "Başvurulan {name} parçası boş veya 500 MB sınırını aşıyor.",
+"SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Kaydedilmiş görüntü geometrisi veya başvurulan parça yapılandırması okunamadı. Dosyayı CAD’de tekrar kaydedin veya STEP olarak dışa aktarın.",
 "3D 파일": "3D Dosya",
 "DXF 삽입": "DXF'yi ekle",
 "스케치에 DXF 삽입": "DXF'yi Çizime Ekle",
@@ -19685,15 +19704,6 @@ window.INOROBOT_LOCALES = {
 "3D 모델": "3D Modeli",
 "카탈로그 모델": "Katalog Modeli",
 "Tool": "Araç",
-"겹친 면 보정": "Çakışan yüzey titreşimini azalt",
-"SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Parçanın kaydedilmiş görüntü geometrisi veya katı gövdeleri okunamadı. CAD’de yeniden kaydedin veya STEP olarak dışa aktarın.",
-"SolidWorks 참조 부품": "Başvurulan SolidWorks parçaları",
-"폴더 선택": "Klasör seç",
-"지원하지 않는 형식입니다. {formats} 파일을 선택해 주세요.": "Desteklenmeyen biçim. Şu biçimlerden birinde dosya seçin: {formats}.",
-"참조 부품 {name}이 들어 있는 폴더를 선택해 주세요.": "Başvurulan {name} parçasını içeren klasörü seçin.",
-"같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "{name} adlı birden çok başvuru parçası bulundu. Gerekli dosyayı içeren klasörü seçin.",
-"참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "Başvurulan {name} parçası boş veya 500 MB sınırını aşıyor.",
-"SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Kaydedilmiş görüntü geometrisi veya başvurulan parça yapılandırması okunamadı. Dosyayı CAD’de tekrar kaydedin veya STEP olarak dışa aktarın.",
 "암 로드": "Kol yükü",
 "암 로드 부착 축": "Kol yükü bağlantı ekseni",
 "부착 축": "Bağlantı ekseni",
@@ -23795,7 +23805,8 @@ window.INOROBOT_LOCALES = {
 "로봇 매뉴얼, 교육 자료, 인증서와 통신 프로파일을 찾아보세요.": "Найдите руководства, учебные материалы, сертификаты и профили связи.",
 "통신 상태를 점검하고, 시운전 중 발생한 문제를 진단하세요.": "Проверьте связь и диагностируйте неполадки при пусконаладке.",
 "서보의 PC 기반 Ethernet 모션 제어 구성과 주요 사양을 확인하세요.": "Изучите конфигурацию управления сервоприводами с ПК по Ethernet и основные характеристики.",
-"메인 페이지로": "На главную"
+"메인 페이지로": "На главную",
+"선택한 CAD 스냅 위치": "Выбранная точка привязки CAD"
 },
 "patterns": [
 {
@@ -24120,7 +24131,8 @@ window.INOROBOT_LOCALES = {
 "Body I/O 케이블 (8핀)": "Кабель ввода-вывода корпуса (8-контактный)",
 "Body I/O 케이블 (12핀)": "Кабель ввода-вывода корпуса (12-контактный)",
 "Arm I/O 케이블 (기본핀)": "Кабель ввода-вывода манипулятора (стандартные контакты)",
-"Body I/O 케이블 (기본핀)": "Кабель ввода-вывода корпуса (стандартные контакты)"
+"Body I/O 케이블 (기본핀)": "Кабель ввода-вывода корпуса (стандартные контакты)",
+"천장 설치": "Потолочный монтаж"
 },
 "patterns": [
 {
@@ -24311,6 +24323,15 @@ window.INOROBOT_LOCALES = {
 "선 또는 모서리를 클릭하면 길이 치수를 만들고, 유효한 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 만듭니다.": "Щелкните линию или ребро для размера длины или последовательно выберите допустимые точки привязки для одноосного размера положения X или Y.",
 "선 또는 모서리를 클릭하면 길이 치수, 스냅 지점을 차례로 클릭하면 X 또는 Y 한 축 위치 치수를 기입하세요.": "Щелкните линию или ребро для размера длины или выберите последовательно точки привязки для одноосного размера положения X или Y.",
 "선 또는 유효한 스냅 지점을 클릭하세요.": "Щелкните линию или допустимую точку привязки.",
+"겹친 면 보정": "Убрать мерцание поверхностей",
+"SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Не удалось прочитать сохранённую геометрию отображения или тела детали. Сохраните файл в CAD заново или экспортируйте его в STEP.",
+"SolidWorks 참조 부품": "Ссылочные детали SolidWorks",
+"폴더 선택": "Выбрать папку",
+"지원하지 않는 형식입니다. {formats} 파일을 선택해 주세요.": "Формат не поддерживается. Выберите файл одного из следующих форматов: {formats}.",
+"참조 부품 {name}이 들어 있는 폴더를 선택해 주세요.": "Выберите папку со ссылочной деталью {name}.",
+"같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "Найдено несколько ссылочных деталей с именем {name}. Выберите папку с нужным файлом.",
+"참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "Файл ссылочной детали {name} пуст или превышает 500 МБ.",
+"SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Не удалось прочитать сохранённую геометрию или конфигурацию ссылочной детали. Сохраните файл в CAD заново или экспортируйте его в STEP.",
 "3D 파일": "3D-файл",
 "DXF 삽입": "Вставить DXF",
 "스케치에 DXF 삽입": "Вставка DXF в эскиз",
@@ -24323,15 +24344,6 @@ window.INOROBOT_LOCALES = {
 "Tool": "Инструмент",
 "암 로드": "Нагрузка на рычаг",
 "암 로드 부착 축": "Ось крепления груза на рычаге",
-"겹친 면 보정": "Убрать мерцание поверхностей",
-"SolidWorks 부품의 저장된 표시 형상과 정밀 본체를 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Не удалось прочитать сохранённую геометрию отображения или тела детали. Сохраните файл в CAD заново или экспортируйте его в STEP.",
-"SolidWorks 참조 부품": "Ссылочные детали SolidWorks",
-"폴더 선택": "Выбрать папку",
-"지원하지 않는 형식입니다. {formats} 파일을 선택해 주세요.": "Формат не поддерживается. Выберите файл одного из следующих форматов: {formats}.",
-"참조 부품 {name}이 들어 있는 폴더를 선택해 주세요.": "Выберите папку со ссылочной деталью {name}.",
-"같은 이름의 참조 부품 {name}이 여러 개 있습니다. 필요한 파일이 들어 있는 폴더를 선택해 주세요.": "Найдено несколько ссылочных деталей с именем {name}. Выберите папку с нужным файлом.",
-"참조 부품 {name}이 비어 있거나 500 MB를 초과합니다.": "Файл ссылочной детали {name} пуст или превышает 500 МБ.",
-"SolidWorks 파일의 저장된 표시 형상이나 참조 부품 구성을 읽을 수 없습니다. CAD에서 파일을 다시 저장하거나 STEP으로 변환해 주세요.": "Не удалось прочитать сохранённую геометрию или конфигурацию ссылочной детали. Сохраните файл в CAD заново или экспортируйте его в STEP.",
 "부착 축": "Ось крепления",
 "암 로드 설정": "Настройки нагрузки на руку",
 "암 로드 설정을 별도 창으로 분리": "Открыть настройки загрузки Arm в отдельном окне",

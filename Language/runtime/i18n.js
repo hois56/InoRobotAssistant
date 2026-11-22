@@ -451,8 +451,38 @@
         container.dataset.landing = isLandingPage() ? 'true' : 'false';
     }
 
+    function translateMutations(mutations) {
+        mutations.forEach(function (mutation) {
+            // A record queued before this batch may describe a value this runtime has already
+            // translated (for example while walking a newly added node). Re-capturing it would
+            // store the translation as the source and break the next language change.
+            if (mutation.type === 'characterData') {
+                const current = mutation.target.data.trim();
+                if (textSources.has(mutation.target) && translateSource(textSources.get(mutation.target)) === current) return;
+                textSources.delete(mutation.target);
+                translateTextNode(mutation.target, true);
+            } else if (mutation.type === 'attributes') {
+                const sources = getAttributeSourceMap(mutation.target);
+                const name = mutation.attributeName;
+                const current = mutation.target.getAttribute(name);
+                if (current !== null && hasOwn.call(sources, name) && translateSource(sources[name]) === current) return;
+                delete sources[name];
+                translateAttribute(mutation.target, name, true);
+            } else {
+                mutation.addedNodes.forEach(function (node) {
+                    walkAndTranslate(node, true);
+                });
+            }
+        });
+    }
+
     function stopObserver() {
-        if (mutationObserver) mutationObserver.disconnect();
+        if (!mutationObserver) return;
+        // disconnect() discards records not yet delivered, such as a dialog appended just
+        // before a page translates another element, so translate those first.
+        const pending = mutationObserver.takeRecords();
+        mutationObserver.disconnect();
+        if (pending.length) translateMutations(pending);
     }
 
     function startObserver() {
@@ -460,28 +490,7 @@
         if (!mutationObserver) {
             mutationObserver = new MutationObserver(function (mutations) {
                 stopObserver();
-                mutations.forEach(function (mutation) {
-                    // A record queued before this batch may describe a value this runtime has already
-                    // translated (for example while walking a newly added node). Re-capturing it would
-                    // store the translation as the source and break the next language change.
-                    if (mutation.type === 'characterData') {
-                        const current = mutation.target.data.trim();
-                        if (textSources.has(mutation.target) && translateSource(textSources.get(mutation.target)) === current) return;
-                        textSources.delete(mutation.target);
-                        translateTextNode(mutation.target, true);
-                    } else if (mutation.type === 'attributes') {
-                        const sources = getAttributeSourceMap(mutation.target);
-                        const name = mutation.attributeName;
-                        const current = mutation.target.getAttribute(name);
-                        if (current !== null && hasOwn.call(sources, name) && translateSource(sources[name]) === current) return;
-                        delete sources[name];
-                        translateAttribute(mutation.target, name, true);
-                    } else {
-                        mutation.addedNodes.forEach(function (node) {
-                            walkAndTranslate(node, true);
-                        });
-                    }
-                });
+                translateMutations(mutations);
                 startObserver();
             });
         }

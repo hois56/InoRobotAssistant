@@ -46,6 +46,14 @@ function uiText(value) {
     return window.InoRobotI18n ? window.InoRobotI18n.translate(String(value)) : String(value);
 }
 
+// Process-row selects keep their option values untranslated (data-i18n-skip), so their
+// accessible names follow the column headers here when the language changes.
+document.addEventListener('inorobot:languagechange', () => {
+    document.querySelectorAll('#stepsList select[data-aria-key]').forEach(select => {
+        select.setAttribute('aria-label', uiText(select.dataset.ariaKey));
+    });
+});
+
 function uiFormat(value, replacements = {}) {
     return uiText(value).replace(/\{([A-Za-z0-9_]+)\}/g, (match, key) => (
         Object.prototype.hasOwnProperty.call(replacements, key) ? String(replacements[key]) : match
@@ -663,10 +671,10 @@ function renderSteps() {
         el.innerHTML = `
             <div class="w-6 h-6 rounded bg-blue-600 flex-shrink-0 flex items-center justify-center font-bold text-xs">${s.No}</div>
             <button type="button" onclick="window.openNameModal(${idx})" aria-label="Edit Process Name" title="Edit Process Name" class="w-10 h-8 rounded bg-slate-800 border border-slate-600 flex items-center justify-center hover:bg-slate-700 flex-shrink-0"><i data-lucide="more-horizontal" class="w-4 h-4 text-slate-400"></i></button>
-            <select data-i18n-skip onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t => `<option ${s.WorkType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
-            <select data-i18n-skip onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${mOpts.map(m => `<option ${s.WorkMethod === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
-            <select data-i18n-skip onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t => `<option ${s.ToolType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
-            <select data-i18n-skip onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v => `<option ${s.VisionUse === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+            <select data-i18n-skip data-aria-key="Type" aria-label="${uiText('Type')}" onchange="window.uStep(${idx}, 'WorkType', this.value)" class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${WorkTypes.map(t => `<option ${s.WorkType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <select data-i18n-skip data-aria-key="Method" aria-label="${uiText('Method')}" onchange="window.uStep(${idx}, 'WorkMethod', this.value)" ${disM} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${mOpts.map(m => `<option ${s.WorkMethod === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
+            <select data-i18n-skip data-aria-key="Tool" aria-label="${uiText('Tool')}" onchange="window.uStep(${idx}, 'ToolType', this.value)" ${disT} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${tOpts.map(t => `<option ${s.ToolType === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+            <select data-i18n-skip data-aria-key="Vision offset" aria-label="${uiText('Vision offset')}" onchange="window.uStep(${idx}, 'VisionUse', this.value)" ${disV} class="flex-1 min-w-0 bg-slate-800 border-slate-600 rounded text-sm px-1 py-1 text-slate-300 text-left">${vOpts.map(v => `<option ${s.VisionUse === v ? 'selected' : ''}>${v}</option>`).join('')}</select>
             <button onclick="window.rStep(${idx})" class="text-slate-500 hover:text-red-400 font-bold ml-1 w-6 h-6 flex items-center justify-center flex-shrink-0">X</button>
         `;
         if (s.WorkType === 'Tray') {

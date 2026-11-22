@@ -312,7 +312,8 @@
     "Body I/O 케이블 (8핀)": "Body I/O cable (8-pin)",
     "Body I/O 케이블 (12핀)": "Body I/O cable (12-pin)",
     "Arm I/O 케이블 (기본핀)": "Arm I/O cable (standard pin)",
-    "Body I/O 케이블 (기본핀)": "Body I/O cable (standard pin)"
+    "Body I/O 케이블 (기본핀)": "Body I/O cable (standard pin)",
+    "천장 설치": "Ceiling mounting"
   },
   "patterns": [
     {

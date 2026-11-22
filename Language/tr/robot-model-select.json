@@ -312,7 +312,8 @@
     "Body I/O 케이블 (8핀)": "Robot gövde G/Ç kablosu (8 pinli)",
     "Body I/O 케이블 (12핀)": "Robot gövde G/Ç kablosu (12 pinli)",
     "Arm I/O 케이블 (기본핀)": "Robot kolu G/Ç kablosu (varsayılan pin)",
-    "Body I/O 케이블 (기본핀)": "Robot gövde G/Ç kablosu (varsayılan pin)"
+    "Body I/O 케이블 (기본핀)": "Robot gövde G/Ç kablosu (varsayılan pin)",
+    "천장 설치": "Tavana montaj"
   },
   "patterns": [
     {
