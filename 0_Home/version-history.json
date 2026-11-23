@@ -317,6 +317,7 @@
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[개선]` 업데이트한 K14 가상 컨트롤러와 브리지 V2.1은 관절·TCP·출력을 초당 60회 목표로 함께 전송하며, 프레임 사이의 진공 출력 전환도 해당 위치에서 반영합니다.",
+                  "`[수정]` K14 컨베이어 트래킹에서 진공 흡착을 로봇 자세와 같은 시각의 작업물 위치로 판정해, 고속 픽업 후 트레이에서 작업물이 어긋나는 문제를 수정했습니다. 화면 보간 지연도 48ms에서 16ms로 줄였습니다.",
                   "`[수정]` 모델을 선택한 뒤에도 컨베이어 센서는 물체를 감지하는 동안 레이저와 상태 표시등을 초록색으로 유지합니다.",
                   "`[수정]` 진공을 미리 켜 두면 컨베이어 이동 중에도 흡착 면에서 0.5 mm 이내로 들어온 작업물 한 개를 파기까지 유지합니다. 면이 비스듬히 닿거나 화면 갱신 사이에 접촉할 때 흡착을 놓치던 문제를 수정했습니다.",
                   "`[수정]` 외부 아이콘 서버에 연결할 수 없는 환경에서도 3D 시뮬레이션 버튼 아이콘이 표시됩니다.",
@@ -2135,6 +2136,7 @@
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Improved]` The updated K14 virtual controller and Bridge V2.1 send joints, TCP and outputs together at a target of 60 Hz. Vacuum changes between frames retain their corresponding poses.",
+                  "`[Fixed]` K14 conveyor tracking checks vacuum contact against the workpiece position at the robot pose timestamp. This fixes placement offsets after high-speed pickups. Display interpolation delay is down from 48 ms to 16 ms.",
                   "`[Fixed]` The conveyor sensor laser and status light stay green while a workpiece remains detected, even after selecting a model.",
                   "`[Fixed]` With vacuum on, the pad picks up one workpiece within 0.5 mm and holds it until release, even while tracking a moving conveyor. Contact is also detected at an angle and between display frames.",
                   "`[Fixed]` 3D Simulation button icons appear even when the external icon server is unreachable.",
@@ -3953,6 +3955,7 @@
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[改进]` 更新后的 K14 虚拟控制器和 V2.1 网桥以 60 Hz 为目标同步发送关节、TCP 和输出，并在帧间真空信号切换时保留对应位姿。",
+                  "`[修复]` K14 输送带跟踪使用与机器人位姿同一时刻的工件位置判断真空吸附，修复高速取件后工件在托盘内偏移的问题。画面插值延迟从 48 毫秒减至 16 毫秒。",
                   "`[修复]` 选择模型后，只要输送带传感器持续检测到工件，激光和状态指示灯就会保持绿色。",
                   "`[修复]` 提前开启真空后，即使在跟踪运动的输送带时，吸盘也会吸住进入吸附面 0.5 mm 范围内的一个工件，直至收到释放信号。修复了表面倾斜接触或在两次画面刷新之间接触时漏吸的问题。",
                   "`[修复]` 无法连接外部图标服务器时，3D 仿真按钮图标仍可显示。",
@@ -5771,6 +5774,7 @@
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Cải tiến]` Bộ điều khiển ảo K14 đã cập nhật và Bridge V2.1 gửi đồng thời vị trí khớp, TCP và đầu ra với tần số mục tiêu 60 Hz. Tín hiệu chân không thay đổi giữa hai khung hình được áp dụng tại đúng vị trí.",
+                  "`[Đã sửa]` Tính năng bám băng tải K14 dùng vị trí phôi tại cùng thời điểm với tư thế robot để kiểm tra tiếp xúc của giác hút, khắc phục lỗi đặt phôi lệch trên khay sau khi gắp ở tốc độ cao. Độ trễ nội suy hiển thị giảm từ 48 ms xuống 16 ms.",
                   "`[Sửa lỗi]` Sau khi chọn mô hình, tia laser và đèn trạng thái của cảm biến băng tải vẫn sáng xanh khi còn phát hiện phôi.",
                   "`[Đã sửa]` Khi bật chân không trước, giác hút sẽ giữ một phôi cách mặt hút không quá 0,5 mm cho đến khi có tín hiệu nhả, kể cả khi bám theo băng tải đang chạy. Đã sửa lỗi bỏ sót khi các bề mặt tiếp xúc nghiêng hoặc chạm nhau giữa hai khung hình.",
                   "`[Đã sửa]` Biểu tượng nút trong mô phỏng 3D vẫn hiển thị khi không thể kết nối với máy chủ biểu tượng bên ngoài.",
@@ -7589,6 +7593,7 @@
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[İyileştirme]` Güncellenen K14 sanal kontrolör ve Köprü V2.1, eklem konumlarını, TCP ve çıkışları 60 Hz hedefiyle birlikte gönderir. Kareler arasındaki vakum geçişleri ilgili konumda uygulanır.",
+                  "`[Düzeltildi]` K14 konveyör takibi, vakum temasını robot duruşuyla aynı anda kaydedilen iş parçası konumuyla denetler. Böylece yüksek hızlı alımdan sonra tepside oluşan yerleştirme sapması giderildi. Ekran enterpolasyonu gecikmesi 48 ms’den 16 ms’ye düşürüldü.",
                   "`[Düzeltildi]` Model seçildikten sonra da konveyör sensörünün lazeri ve durum ışığı, iş parçası algılandığı sürece yeşil kalır.",
                   "`[Düzeltildi]` Vakum önceden açıldığında vantuz, hareketli konveyörü takip ederken de yüzeyine en fazla 0,5 mm uzaklıktaki tek bir iş parçasını bırakma sinyaline kadar tutar. Açılı yüzeylerde ve iki ekran karesi arasında gerçekleşen temaslar artık algılanır.",
                   "`[Düzeltildi]` 3D Simülasyon düğme simgeleri, harici simge sunucusuna erişilemediğinde de görüntülenir.",
@@ -9407,6 +9412,7 @@
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Улучшено]` Обновлённый виртуальный контроллер K14 и мост V2.1 передают положения суставов, TCP и выходы одним кадром с целевой частотой 60 Гц. Переключения вакуума между кадрами учитываются в соответствующем положении.",
+                  "`[Исправлено]` При слежении за конвейером K14 контакт присоски проверяется по положению детали в момент измерения позы робота. Это устраняет смещение деталей в лотке после скоростного захвата. Задержка интерполяции изображения снижена с 48 до 16 мс.",
                   "`[Исправлено]` После выбора модели лазер и индикатор датчика конвейера остаются зелёными, пока датчик обнаруживает деталь.",
                   "`[Исправлено]` При заранее включённом вакууме присоска захватывает одну деталь на расстоянии до 0,5 мм и удерживает её до сигнала сброса, в том числе при слежении за движущимся конвейером. Исправлен пропуск контакта под углом и между кадрами.",
                   "`[Исправлено]` Значки кнопок 3D-симуляции отображаются даже при недоступности внешнего сервера значков.",

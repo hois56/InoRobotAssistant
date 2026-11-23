@@ -44,3 +44,24 @@ test('playback uses the new endpoint on a bridge clock reset and settles at the 
     assert.equal(buffer.getTrackingRenderPose(180), null);
     assert.deepEqual(buffer.getLatest().joints, [8]);
 });
+
+test('native 60 Hz feedback uses the 16 ms display clock and holds at the latest sample', () => {
+    const buffer = new VirtualControllerSampleBuffer();
+    const send = (sampledAt, delay) => buffer.push({ kind: 'state', sampledAt,
+        receivedAt: sampledAt + delay, joints: [.44 * sampledAt] });
+    send(0, 5);
+    send(1000 / 60, 2);
+    send(2000 / 60, 9);
+    send(50, 3);
+    const pose = buffer.getTrackingRenderPose(60);
+    assert.equal(pose.time, 44);
+    assert.ok(Math.abs(pose.joints[0] - .44 * 44) < 1e-8);
+    assert.deepEqual(buffer.getTrackingRenderPose(88), { time: 50, joints: [22] });
+});
+
+test('16 ms display interpolation keeps the fitted pose inside the measured travel after a stop', () => {
+    const buffer = new VirtualControllerSampleBuffer();
+    [0, 10, 10, 10].forEach((position, index) => buffer.push({ kind: 'state',
+        sampledAt: index * 16, receivedAt: index * 16 + 2, joints: [position] }));
+    assert.equal(buffer.getTrackingRenderPose(60).joints[0], 10);
+});

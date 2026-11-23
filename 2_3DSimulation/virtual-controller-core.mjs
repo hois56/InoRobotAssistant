@@ -1,4 +1,4 @@
-import { conveyorDisplayTime } from './conveyor-display.mjs';
+import { conveyorDisplayTime } from './conveyor-display.mjs?v=20261123-grip-time';
 
 export const VIRTUAL_CONTROLLER_HOST = '127.0.0.1';
 export const VIRTUAL_CONTROLLER_TARGET_PORT = 2222;
@@ -170,11 +170,13 @@ export class VirtualControllerSampleBuffer {
             : sample.receivedAt;
         this.latestSample = { ...sample, receivedAt: timestamp, sampleId: this.nextSampleId };
         const history = this.renderSamples;
-        let time = timestamp;
-        if (last && (timestamp - last.receivedAt > TRACKING_SAMPLE_GAP_MS || sample.joints.length !== last.joints.length)) {
+        const timed = Number.isFinite(sample.sampledAt);
+        let time = timed ? sample.sampledAt : timestamp;
+        if (last && (timestamp - last.receivedAt > TRACKING_SAMPLE_GAP_MS || sample.joints.length !== last.joints.length
+            || timed !== Number.isFinite(last.sampledAt))) {
             history.length = 0;
         }
-        if (history.length && Number.isFinite(sample.sequence) && Number.isFinite(last.sequence)
+        if (!timed && history.length && Number.isFinite(sample.sequence) && Number.isFinite(last.sequence)
             && Number.isFinite(sample.controllerTime) && Number.isFinite(last.controllerTime)) {
             // The bridge timestamps the joint read in milliseconds. Transfer its intervals
             // to the browser clock, correcting the offset slowly as transport latency varies.
@@ -185,9 +187,11 @@ export class VirtualControllerSampleBuffer {
                 time = expected + Math.max(-.25, Math.min(.25, error / 32));
             } else history.length = 0;
         }
-        if (history.length && time <= history.at(-1).time) history.length = 0;
+        if (history.length && (time <= history.at(-1).time || time - history.at(-1).time > TRACKING_SAMPLE_GAP_MS)) {
+            history.length = 0;
+        }
         history.push({ time, joints: sample.joints });
-        const cutoffTime = conveyorDisplayTime(timestamp) - TRACKING_SMOOTH_RADIUS_MS;
+        const cutoffTime = Math.min(conveyorDisplayTime(timestamp), time) - 2 * TRACKING_SMOOTH_RADIUS_MS;
         while (history.length > 1 && history[1].time <= cutoffTime) history.shift();
         this.nextSampleId += 1;
         // An output transition carries its own pickup/release pose between
@@ -210,28 +214,48 @@ export class VirtualControllerSampleBuffer {
     getTrackingRenderPose(now) {
         const latest = this.latestSample;
         if (!latest || now - latest.receivedAt > TRACKING_SAMPLE_GAP_MS) return null;
-        const renderTime = conveyorDisplayTime(now);
         const history = this.renderSamples;
-        if (renderTime <= history[0].time) return history[0];
-        if (renderTime >= history.at(-1).time) return history.at(-1);
-        // Integrate the linear segments over a symmetric time window. This preserves
-        // constant velocity and gives a burst of packets only its actual time weight.
-        const radius = Math.min(TRACKING_SMOOTH_RADIUS_MS, renderTime - history[0].time, history.at(-1).time - renderTime);
-        const start = renderTime - radius, end = renderTime + radius;
-        const anchor = history[0].joints;
+        const first = history[0], last = history.at(-1);
+        const targetTime = conveyorDisplayTime(now);
+        if (first === last || targetTime <= first.time) return first;
+        if (targetTime >= last.time && now - latest.receivedAt > TRACKING_SMOOTH_RADIUS_MS) return last;
+        const time = Math.min(targetTime, last.time);
+        // Fit a line to the time-weighted samples. Near the newest sample the
+        // window shifts back while the evaluated pose stays on the display clock.
+        const span = 2 * TRACKING_SMOOTH_RADIUS_MS;
+        const end = Math.min(last.time, Math.max(time + TRACKING_SMOOTH_RADIUS_MS, first.time + span));
+        const start = Math.max(first.time, end - span);
+        const center = (start + end) / 2, duration = end - start;
+        const correction = 12 * (time - center) / (duration * duration);
+        const anchor = first.joints;
         const joints = anchor.slice();
+        const minimum = anchor.map(() => Infinity), maximum = anchor.map(() => -Infinity);
         for (let i = 1; i < history.length; i++) {
             const from = history[i - 1], to = history[i];
             const left = Math.max(start, from.time), right = Math.min(end, to.time);
             if (right <= left) continue;
-            const fraction = ((left - from.time) + (right - left) / 2) / (to.time - from.time);
-            const weight = (right - left) / (2 * radius);
+            const mid = (left + right) / 2, length = right - left;
             for (let axis = 0; axis < joints.length; axis++) {
-                const middle = from.joints[axis] + (to.joints[axis] - from.joints[axis]) * fraction;
-                joints[axis] += (middle - anchor[axis]) * weight;
+                const velocity = (to.joints[axis] - from.joints[axis]) / (to.time - from.time);
+                const value = from.joints[axis] + velocity * (mid - from.time) - anchor[axis];
+                const moment = value * (mid - center) + velocity * length * length / 12;
+                joints[axis] += (value + correction * moment) * (length / duration);
+                const halfTravel = Math.abs(velocity * length / 2);
+                minimum[axis] = Math.min(minimum[axis], value - halfTravel);
+                maximum[axis] = Math.max(maximum[axis], value + halfTravel);
             }
         }
-        return { time: renderTime, joints };
+        // Limit overshoot after a stop or reversal. During steady motion the
+        // newest measurement can still be noisy, so leave the fit in place.
+        const previous = history.at(-2), earlier = history.at(-3);
+        if (earlier) joints.forEach((joint, axis) => {
+            const incoming = previous.joints[axis] - earlier.joints[axis];
+            const outgoing = last.joints[axis] - previous.joints[axis];
+            if (incoming * outgoing <= 0) {
+                joints[axis] = Math.max(anchor[axis] + minimum[axis], Math.min(anchor[axis] + maximum[axis], joint));
+            }
+        });
+        return { time, joints };
     }
 
     getRateHz(now = this.latestSample?.receivedAt ?? 0) {

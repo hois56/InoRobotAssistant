@@ -144,16 +144,16 @@ import {
     refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261123-vacuum-single';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261123-grip-time';
 import { createVisionApp } from './vision-app.mjs?v=20261123-conveyor-theta';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
-import { equipmentObjectRef } from './equipment-scene.mjs?v=20261123-vacuum-single';
+import { equipmentObjectRef } from './equipment-scene.mjs?v=20261123-grip-time';
 import { normalizeModelGroupTree, walkModelGroups, modelGroupPath, modelGroupAtPath, dissolveModelGroup, moveModelsToGroup } from './model-group-tree-core.mjs';
 import { conveyorSensorLayout } from './conveyor-sensor-preview.mjs?v=20261123-sensor-light';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
 import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261123-tracking-sync';
 import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
-import { conveyorDisplayTime, createConveyorDisplay } from './conveyor-display.mjs';
+import { conveyorDisplayTime, createConveyorDisplay } from './conveyor-display.mjs?v=20261123-grip-time';
 import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261123-display';
 import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261123-display';
 import { forEachConveyorTrackingStep } from './conveyor-tracking-core.mjs?v=20261119-tracking-step-1';
@@ -35501,7 +35501,7 @@ function getVirtualControllerForRobot(robot) {
 async function ensureVirtualControllerCore(controller = state.virtualController) {
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20261123-feedback')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20261123-grip-time-3')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -35786,11 +35786,19 @@ function monitorVirtualControllerStream(controller = state.virtualController) {
     );
 }
 
+function localControllerSampleTime(controller, sample) {
+    if (controller.source !== 'bridge' || controller.controllerKind === 'real' || !/^127\./.test(controller.ipAddress || '')) return null;
+    // The loopback bridge forwards K14's Unix timestamp in milliseconds.
+    const time = sample.controllerTime - performance.timeOrigin;
+    return time >= 0 && time <= sample.receivedAt + 1 ? Math.min(time, sample.receivedAt) : null;
+}
+
 function handleVirtualControllerMessage(raw, controller = state.virtualController) {
     if (!controller.wanted) return;
     if (!controller.core || !controller.samples) return;
     const parsed = controller.core.parseVirtualControllerMessage(raw, performance.now());
     if (parsed.kind === 'state') {
+        parsed.sampledAt = localControllerSampleTime(controller, parsed);
         controller.samples.push(parsed);
         controller.lastSampleAt = parsed.receivedAt;
         const robot = getVirtualControllerTargetRobot(controller);
@@ -35800,10 +35808,15 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
         const needsPose = robot && (waiting.length || equipmentApp.needsVacuumIoPose(robot, 'OUT', parsed.outputs)
             || equipmentApp.needsVacuumIoPose(robot, 'IN', inputs));
         const poseMoved = needsPose && applyVirtualControllerFrameForController(parsed.receivedAt, controller);
+        const trackingVacuum = needsPose && parsed.sampledAt !== null && conveyorTrackingApp.isTrackingController(controller);
+        if (trackingVacuum && (conveyorLastTimestamp === null || parsed.sampledAt > conveyorLastTimestamp)) {
+            // Make the latest transport positions available before applying this packet's IO.
+            updateConveyorSimulation(parsed.receivedAt, false);
+        }
         applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
         applyVirtualControllerIo(inputs, 'IN', controller);
         // The pad can make contact between render frames. Apply the packet's release signal first.
-        if (poseMoved && waiting.length) equipmentApp.updateActiveVacuum(state.ioFunctionMappings, waiting);
+        if ((poseMoved || trackingVacuum) && waiting.length) equipmentApp.updateActiveVacuum(state.ioFunctionMappings, waiting);
         if (controller.status !== 'streaming') {
             setVirtualControllerStatus('streaming', '', controller);
         } else if (controller.statusMessage) {
@@ -37946,6 +37959,15 @@ const equipmentApp = createEquipmentApp({
     hide() { if (state.panelWindows.has('equipment-dialog')) restorePanelFromWindow('equipment-dialog', true, true); },
     read: readOlpSimulatorBit,
     robotRead: readRobotEquipmentIo,
+    withVacuumCandidates(robot, candidates, acquire) {
+        if (!conveyorTrackingApp.active) return acquire(candidates);
+        const controller = getVirtualControllerForRobot(robot);
+        if (!controller || !conveyorTrackingApp.isTrackingController(controller)) return acquire(candidates);
+        const sample = controller.samples?.getLatest();
+        if (!Number.isFinite(sample?.sampledAt) || sample.sampleId !== controller.lastAppliedSampleId
+            || sample.joints.length < robot.userData.joints.length) return acquire(candidates);
+        return conveyorDisplay.withProductPositionsAt(candidates, sample.sampledAt, conveyorLastTimestamp, acquire);
+    },
     sensor(address, value, def) {
         const robot = equipmentApp.ioRobot(def);
         if (robot) writeRobotEquipmentIo(robot, 'IN', { [address]: value ? 1 : 0 });
@@ -38418,7 +38440,7 @@ function activeConveyorMappings() {
         && resolveConveyorBelt(mapping)?.visible !== false && resolveConveyorBelt(mapping))
         .map(mapping => conveyorTrackingApp.testMapping(mapping));
 }
-function updateConveyorSimulation(timestamp) {
+function updateConveyorSimulation(timestamp, checkVacuum = true) {
     const mappings = activeConveyorMappings();
     const seconds = conveyorElapsedSeconds(conveyorLastTimestamp, timestamp, document.hidden);
     conveyorLastTimestamp = mappings.length || conveyorTrackingApp.active || conveyorTrackingApp.monitoring ? timestamp : null;
@@ -38429,15 +38451,15 @@ function updateConveyorSimulation(timestamp) {
     if (conveyorTrackingApp.active) {
         // A throttled browser timer can supply more than one valid tracking sample.
         forEachConveyorTrackingStep(seconds, elapsed => {
-            advanceConveyorSimulation(mappings, elapsed, stepStart);
+            advanceConveyorSimulation(mappings, elapsed, stepStart, checkVacuum);
             stepStart += elapsed * 1000;
         });
     } else if (mappings.length || conveyorTrackingApp.monitoring) {
-        advanceConveyorSimulation(mappings, seconds, stepStart);
+        advanceConveyorSimulation(mappings, seconds, stepStart, checkVacuum);
     }
 }
 
-function advanceConveyorSimulation(mappings, seconds, stepStart) {
+function advanceConveyorSimulation(mappings, seconds, stepStart, checkVacuum) {
     conveyorFeedApp.beforeStep(mappings, seconds);
     const candidates = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost).map(item => item.object);
     conveyorTrackingApp.beforeStep(candidates);
@@ -38447,7 +38469,7 @@ function advanceConveyorSimulation(mappings, seconds, stepStart) {
     });
     moved.forEach(object => markSceneCollisionDirty(equipmentApp.objects().find(item => item.object === object)?.model || object));
     conveyorTrackingApp.afterStep(seconds, mappings, candidates);
-    if (moved.size) equipmentApp.updateActiveVacuum(state.ioFunctionMappings);
+    if (checkVacuum && moved.size) equipmentApp.updateActiveVacuum(state.ioFunctionMappings);
     conveyorFeedApp.afterStep();
 }
 function ioFunctionMappingActionLabel(action) {

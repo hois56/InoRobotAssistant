@@ -445,12 +445,18 @@ export class EquipmentScene {
             return !candidate.model.userData.tcpFrame;
         });
         if (!candidates.length) return;
+        const acquire = available => this.acquireVacuum(def, attachment.robot, available);
+        if (this.adapter.withVacuumCandidates) this.adapter.withVacuumCandidates(attachment.robot, candidates, acquire);
+        else acquire(candidates);
+    }
+
+    acquireVacuum(def, robot, candidates) {
         for (const { candidate, source } of this.contact.find(def, candidates, this.adapter.resolve)) {
             source.mesh.updateWorldMatrix(true, false); candidate.object.updateWorldMatrix(true, false);
             const local = source.mesh.matrixWorld.clone().invert().multiply(candidate.object.matrixWorld).toArray();
-            if (candidate.object === candidate.model && !this.adapter.grab(candidate, attachment.robot)) continue;
+            if (candidate.object === candidate.model && !this.adapter.grab(candidate, robot)) continue;
             candidate.object.userData.equipmentOwner = def.id;
-            held.push({ ref: candidate.ref, anchorRef: source.ref, meshPath: source.meshPath, local });
+            def.runtime.heldObjects.push({ ref: candidate.ref, anchorRef: source.ref, meshPath: source.meshPath, local });
             def.runtime.heldRef = candidate.ref;
             this.followVacuum(def);
             break;

@@ -1,6 +1,6 @@
 import { uiText } from './ui-language.mjs';
 import * as THREE from 'three';
-import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261123-vacuum-single';
+import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261123-grip-time';
 import { createEquipmentUi } from './equipment-ui.mjs?v=20261123-vacuum-single';
 import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261107-object-home-1';
 

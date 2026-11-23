@@ -6,7 +6,9 @@ async function openSimulation(page, model) {
         await route.fulfill({ response, body: `${await response.text()}
 window.__trackingFeedback = { state, ensureVirtualControllerCore, registerVirtualControllerSession,
     createPrimitiveShapeRoot, ensureWorkspaceModelId, equipmentApp, writeOlpSimulatorBit,
-    conveyorTrackingApp, conveyorVisuals, frame(time, render, paintTime = time) {
+    conveyorTrackingApp, conveyorVisuals, conveyorDisplay, THREE, getRobotToolMountFrame, setJointAngle,
+    handleVirtualControllerMessage, applyVirtualControllerFrameForController, disconnectVirtualController,
+    updateConveyorSimulation, frame(time, render, paintTime = time) {
         const original = renderSimulationScene;
         renderSimulationScene = render;
         try { animate(time, paintTime); } finally { renderSimulationScene = original; }
@@ -50,11 +52,11 @@ test('conveyor tracking paints between controller samples and restores the live 
         };
         send(0, 0);
         frame(0);
-        send(20, 10);
-        send(40, 20);
-        const first = frame(58);
-        send(60, 30);
-        const second = frame(72);
+        send(10, 10);
+        send(20, 20);
+        const first = frame(21);
+        send(30, 30);
+        const second = frame(32);
         const drained = frame(120);
         send(220, 80);
         const resumed = frame(220);
@@ -63,7 +65,7 @@ test('conveyor tracking paints between controller samples and restores the live 
         const unlinked = frame(244);
         return { first, second, drained, resumed, unlinked };
     });
-    for (const [key, expected] of Object.entries({ first: [5, 20, 20, 20], second: [12, 30, 30, 30],
+    for (const [key, expected] of Object.entries({ first: [5, 20, 20, 20], second: [16, 30, 30, 30],
         drained: [30, 30, 30, 30], resumed: [80, 80, 80, 80], unlinked: [90, 90, 90, 90] })) {
         expected.forEach((value, index) => expect(result[key][index], `${key}[${index}]`).toBeCloseTo(value, 5));
     }
@@ -153,10 +155,130 @@ test(`440 mm/s belt and workpiece follow the display clock with ${mode} robot`, 
     for (const { time, late, painted: [robot, product, belt, camera], live, liveTravel } of frames) {
         expect(live).toBeCloseTo(Math.min(time + late, 216) * .44, 5);
         expect(liveTravel).toBeCloseTo(live, 5);
-        expect(product, `workpiece at ${time} ms`).toBeCloseTo(Math.min(time - 48, 216) * .44, 5);
+        expect(product, `workpiece at ${time} ms`).toBeCloseTo(Math.min(time - 16, 216) * .44, 5);
         expect(belt, `belt surface at ${time} ms`).toBeCloseTo(product, 5);
         expect(camera, `camera following the workpiece at ${time} ms`).toBeCloseTo(belt, 5);
-        expect(robot).toBeCloseTo(mode === 'tracking' ? Math.min(time - 48, 140) * .44 : 0, 5);
+        expect(robot).toBeCloseTo(mode === 'tracking' ? Math.min(time - 16, 140) * .44 : 0, 5);
     }
 });
+}
+
+test('a delayed K14 pose acquires and releases at the workpiece position of that same sample', async ({ page }) => {
+    await openSimulation(page, 'robot:IR-S7-50Z20');
+    const results = await page.evaluate(exerciseConveyorGrip);
+    expect(results).toHaveLength(21);
+    for (const row of results) {
+        expect(row.gripError, JSON.stringify(row)).toBeCloseTo(0, 5);
+        expect(row.trayError, JSON.stringify(row)).toBeCloseTo(0, 5);
+    }
+});
+
+async function exerciseConveyorGrip() {
+    const a = window.__trackingFeedback;
+    const { THREE, state, equipmentApp, conveyorTrackingApp, conveyorDisplay } = a;
+    const robot = state.activeArticulatedModel;
+    const controller = state.virtualController;
+    await a.ensureVirtualControllerCore(controller);
+    a.registerVirtualControllerSession(controller);
+    Object.assign(controller, { targetRobotId: robot.userData.motionInstanceId, ipAddress: '127.0.0.2',
+        source: 'bridge', controllerKind: 'virtual', wanted: true, status: 'streaming',
+        socket: { readyState: WebSocket.OPEN, bufferedAmount: 0, send() {}, close() {} } });
+
+    // A linear test axis isolates pickup timing from inverse kinematics.
+    const joint = robot.userData.joints[0];
+    joint.definition = { ...joint.definition, type: 'prismatic', min: -1000, max: 1000 };
+    robot.updateMatrixWorld(true);
+    joint.axis.set(1, 0, 0).transformDirection(joint.group.parent.matrixWorld.clone().invert());
+    a.setJointAngle(joint, 0, false, true);
+    const joints = robot.userData.joints.map(axis => axis.angle);
+    const box = (name, dimensions) => a.createPrimitiveShapeRoot('box', dimensions, { name });
+    const ref = model => 'equipment-model:' + a.ensureWorkspaceModelId(model) + '/-1';
+    const position = model => model.getWorldPosition(new THREE.Vector3());
+    const tool = box('Vacuum pad', { x: 20, y: 20, z: 20 });
+    a.getRobotToolMountFrame(robot).add(tool);
+    tool.position.z = 100;
+    tool.userData.placement = 'tcp';
+    tool.userData.attachmentHost = robot;
+    state.models.push(tool);
+    const product = box('Workpiece', { x: 20, y: 20, z: 20 });
+    const origin = tool.localToWorld(new THREE.Vector3(0, 0, 20.25));
+    const orientation = tool.getWorldQuaternion(new THREE.Quaternion());
+    product.position.copy(origin);
+    product.quaternion.copy(orientation);
+    state.scene.add(product);
+    state.models.push(product);
+    const belt = box('Fixture belt', { x: 1000, y: 160, z: 30 });
+    const bottom = new THREE.Box3().setFromObject(product).min.z;
+    belt.position.set(origin.x, origin.y, bottom + 0.1 - new THREE.Box3().setFromObject(belt).max.z);
+    state.scene.add(belt);
+    state.models.push(belt);
+    equipmentApp.save({ id: 'sync-part', type: 'OBJECT', movingRef: ref(product) });
+    const vacuum = equipmentApp.save({ id: 'sync-vacuum', type: 'VACUUM', movingRef: ref(tool),
+        vacuumMode: 'WHOLE' }, { forward: 10, reverse: 11 });
+    const mapping = { id: 'sync-belt', action: 'CONVEYOR', gripObjectRef: 'conveyor:' + a.ensureWorkspaceModelId(belt),
+        conveyorAxis: 'X', conveyorSpeed: 100, direction: 'OUT', address: 512, triggerValue: 1, enabled: true };
+    state.ioFunctionMappings.push(mapping);
+    conveyorTrackingApp.open();
+    document.querySelector('#conveyor-tracking-dialog [data-action="connect"]').click();
+    if (!conveyorTrackingApp.isTrackingController(controller)) throw new Error('Tracking link did not open');
+
+    const initialGap = origin.clone().sub(position(tool));
+    let now = Math.ceil(performance.now()), sequence = 0;
+    const step = time => { now = time; a.updateConveyorSimulation(time); };
+    const send = (travel, time, forward = 0, reverse = 0, type = 'robotState') => {
+        const pose = [...joints];
+        pose[0] = travel;
+        a.handleVirtualControllerMessage({ type, data: { sequence: ++sequence,
+            timestamp: performance.timeOrigin + time, joints: pose, outputs: { 10: forward, 11: reverse } } }, controller);
+        a.applyVirtualControllerFrameForController(now, controller);
+    };
+    const results = [];
+    const trials = [100, 440].flatMap(speed => Array.from({ length: 9 }, (_, index) => ({ speed, delay: index * 3 })));
+    trials.push({ speed: 440, delay: 80, stop: true }, { speed: 440, delay: 20, waiting: true },
+        { speed: 440, delay: 5, catchUp: true });
+    Object.defineProperty(performance, 'now', { configurable: true, value: () => now });
+    try {
+        for (const trial of trials) {
+            const { speed, delay, stop, waiting, catchUp } = trial;
+            const start = now + 20;
+            a.writeOlpSimulatorBit('OUT', 512, 0);
+            step(start);
+            send(0, start);
+            product.position.copy(origin);
+            product.quaternion.copy(orientation);
+            product.updateWorldMatrix(true, true);
+            mapping.conveyorSpeed = speed;
+            a.writeOlpSimulatorBit('OUT', 512, 1);
+            const sampleTime = start + 40;
+            const arrival = sampleTime + delay;
+            const travel = speed * .04;
+            step(start + 20);
+            if (waiting) {
+                send(-100, now - 2, 1, 0, 'robotOutputEdge');
+                if (!vacuum.runtime.vacuumActive || vacuum.runtime.heldRef) throw new Error('Expected vacuum to wait for contact');
+                if (Math.abs(position(product).x - origin.x - speed * .02) > 1e-6) throw new Error('Unpicked workpiece did not stay at its live position');
+            }
+            if (catchUp) step(sampleTime - 6);
+            else {
+                step(sampleTime + (stop ? 8 : 0));
+                if (stop) a.writeOlpSimulatorBit('OUT', 512, 0);
+                step(arrival);
+            }
+            if (stop) conveyorDisplay.paint(arrival - 16, () => {});
+            now = arrival;
+            const liveTravel = position(product).x - origin.x;
+            send(travel, sampleTime, 1, 0, waiting ? 'robotState' : 'robotOutputEdge');
+            if (product.userData.equipmentOwner !== vacuum.id) throw new Error(`Workpiece was not acquired: ${JSON.stringify(trial)}`);
+            const gripError = position(product).sub(position(tool)).sub(initialGap).x;
+            now += 20;
+            send(150, now, 0, 1, 'robotOutputEdge');
+            if (product.userData.equipmentOwner || vacuum.runtime.heldRef) throw new Error('Workpiece was not released');
+            const trayError = position(product).x - origin.x - 150;
+            results.push({ ...trial, liveTravel, gripError, trayError });
+        }
+        return results;
+    } finally {
+        a.disconnectVirtualController(controller);
+        delete performance.now;
+    }
 }
