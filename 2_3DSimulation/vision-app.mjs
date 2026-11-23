@@ -1237,8 +1237,9 @@ export function createVisionApp(adapter) {
                 const position = toConveyor(center), direction = toConveyor(axisPoint);
                 const type = Number(object.userData?.conveyorObjectType ?? defaultType);
                 if (!Number.isInteger(type) || type < 0 || type > 15) throw new Error('컨베이어 물체 종류는 0~15여야 합니다.');
-                found.push({ id: adapter.modelId(object), type,
-                    pose: [...position, 0, 0, Math.atan2(direction[1] - position[1], direction[0] - position[0]) / DEG] });
+                // K14's detected object pose is XYZABC, with A rotating about Z.
+                const theta = Math.atan2(direction[1] - position[1], direction[0] - position[0]) / DEG;
+                found.push({ id: adapter.modelId(object), type, pose: [...position, theta, 0, 0] });
             }
             return found;
         },

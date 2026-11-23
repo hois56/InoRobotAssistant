@@ -7,6 +7,37 @@ const panels = [
     'tcp-profile-panel', 'workobject-panel', 'program-panel', 'virtual-controller-panel'
 ];
 
+async function readHeaderLayout(header) {
+    return header.evaluate(element => {
+        const box = element.getBoundingClientRect();
+        const panelBox = element.parentElement.getBoundingClientRect();
+        const titleBox = element.querySelector('h2').getBoundingClientRect();
+        const actions = element.querySelector('.panel-header-actions');
+        const buttons = [...actions.querySelectorAll('[data-panel-action]')].map(button => {
+            const css = getComputedStyle(button);
+            const rect = button.getBoundingClientRect();
+            return {
+                action: button.dataset.panelAction,
+                icon: button.querySelector('i').className,
+                width: rect.width,
+                height: rect.height,
+                top: rect.top - box.top,
+                radius: css.borderRadius,
+                border: css.borderColor,
+                background: css.backgroundColor,
+                color: css.color
+            };
+        });
+        return {
+            headerTop: box.top - panelBox.top,
+            titleInset: titleBox.left - panelBox.left,
+            actionsInset: panelBox.right - actions.getBoundingClientRect().right,
+            actionsGap: getComputedStyle(actions).columnGap,
+            buttons
+        };
+    });
+}
+
 async function expectCompactHeader(header, font = 'Noto Sans KR') {
     const title = header.getByRole('heading', { level: 2 });
     await expect(title).toBeVisible();
@@ -19,14 +50,19 @@ async function expectCompactHeader(header, font = 'Noto Sans KR') {
     await expect.poll(async () => (await header.boundingBox())?.height).toBe(40);
 }
 
-test('시뮬레이션 주요 패널은 제목 줄 높이와 글꼴, 색상을 통일한다', async ({ page }) => {
+test('시뮬레이션 하단 패널의 헤더와 버튼을 모델 트리와 같은 디자인으로 표시한다', async ({ page }) => {
+    test.slow();
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/2_3DSimulation/', { waitUntil: 'domcontentloaded' });
     await page.locator('#model-select').selectOption('robot:IR-S7-60Z20');
     const dock = page.locator('#panel-launcher');
     await expect(dock.locator('[data-panel-toggle="jog-panel"]')).toBeEnabled();
+    const dockPanels = await dock.locator('button[data-panel-toggle]').evaluateAll(buttons =>
+        buttons.map(button => button.dataset.panelToggle));
+    expect(dockPanels.sort()).toEqual([...panels].sort());
     for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 900 });
+        let modelLayout;
         for (const id of panels) {
             await test.step(`${width}px - ${id}`, async () => {
                 const panel = page.locator(`#${id}`);
@@ -34,6 +70,10 @@ test('시뮬레이션 주요 패널은 제목 줄 높이와 글꼴, 색상을 �
                 if (!(await panel.isVisible())) await button.click();
                 const header = panel.locator(':scope > div:first-child');
                 await expectCompactHeader(header);
+                await page.mouse.move(0, 0);
+                const layout = await readHeaderLayout(header);
+                if (id === 'model-browser-panel') modelLayout = layout;
+                else expect.soft(layout, `${width}px - ${id}`).toEqual(modelLayout);
                 if (id === 'conveyor-tracking-dialog') {
                     const icon = header.getByRole('heading').locator('svg');
                     await expect(icon).toBeVisible();
@@ -42,7 +82,7 @@ test('시뮬레이션 주요 패널은 제목 줄 높이와 글꼴, 색상을 �
                 if (id === 'shape-panel' || id === 'measurement-panel') {
                     await expect(header.locator(':scope > div:first-child > span')).toHaveCount(0);
                 }
-                await button.click();
+                await header.locator('[data-panel-action="hide"]').click();
                 await expect(panel).toBeHidden();
             });
         }
@@ -51,12 +91,16 @@ test('시뮬레이션 주요 패널은 제목 줄 높이와 글꼴, 색상을 �
 
 test('별도 창으로 분리한 도형 패널도 같은 높이로 제목만 표시한다', async ({ page }) => {
     await page.goto('/2_3DSimulation/', { waitUntil: 'domcontentloaded' });
+    const modelHeader = page.locator('.model-browser-header');
+    await expectCompactHeader(modelHeader);
+    const modelLayout = await readHeaderLayout(modelHeader);
     await page.locator('#panel-launcher [data-panel-toggle="shape-panel"]').click();
     const popupReady = page.waitForEvent('popup');
     await page.locator('#shape-panel [data-panel-action="popout"]').click();
     const popup = await popupReady;
     const header = popup.locator('.shape-panel-header');
     await expectCompactHeader(header);
+    expect(await readHeaderLayout(header)).toEqual(modelLayout);
     await expect(header.locator(':scope > div:first-child > span')).toHaveCount(0);
     await page.evaluate(() => window.InoRobotI18n.setLocale('zh-CN'));
     await expectCompactHeader(header, 'Noto Sans SC');

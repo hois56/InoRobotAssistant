@@ -314,6 +314,19 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.23",
+                "items": [
+                  "`[개선]` 업데이트한 K14 가상 컨트롤러와 브리지 V2.1은 관절·TCP·출력을 초당 60회 목표로 함께 전송하며, 프레임 사이의 진공 출력 전환도 해당 위치에서 반영합니다.",
+                  "`[수정]` 모델을 선택한 뒤에도 컨베이어 센서는 물체를 감지하는 동안 레이저와 상태 표시등을 초록색으로 유지합니다.",
+                  "`[수정]` 진공을 미리 켜 두면 컨베이어 이동 중에도 흡착 면에서 0.5 mm 이내로 들어온 작업물 한 개를 파기까지 유지합니다. 면이 비스듬히 닿거나 화면 갱신 사이에 접촉할 때 흡착을 놓치던 문제를 수정했습니다.",
+                  "`[수정]` 외부 아이콘 서버에 연결할 수 없는 환경에서도 3D 시뮬레이션 버튼 아이콘이 표시됩니다.",
+                  "`[수정]` 외부 케이블관이 있는 SCARA 모델에서 J2 케이블 체결부가 케이블 방향을 따라 함께 회전합니다.",
+                  "`[수정]` 모델 트리에서 여러 모델을 선택한 뒤 Delete 키를 누르거나 우클릭 메뉴에서 삭제를 선택하면 한 번에 삭제됩니다.",
+                  "`[수정]` K14 컨베이어 트래킹에서 가상 비전으로 검출한 공작물의 회전각이 로봇 A축 자세에 반영됩니다.",
+                  "`[수정]` 컨베이어가 흐를 때 벨트 무늬와 제품이 같은 시각의 위치로 표시되어, 로봇이 정지해 있어도 제품이 앞뒤로 튀던 현상을 줄였습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.22",
                 "items": [
                   "`[개선]` 큰 모델이 많은 장면에서 동작·조그 중 충돌 검사와 흡착 거리 계산을 2~4배 빠르게 처리합니다."
@@ -2118,6 +2131,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.23",
+                "items": [
+                  "`[Improved]` The updated K14 virtual controller and Bridge V2.1 send joints, TCP and outputs together at a target of 60 Hz. Vacuum changes between frames retain their corresponding poses.",
+                  "`[Fixed]` The conveyor sensor laser and status light stay green while a workpiece remains detected, even after selecting a model.",
+                  "`[Fixed]` With vacuum on, the pad picks up one workpiece within 0.5 mm and holds it until release, even while tracking a moving conveyor. Contact is also detected at an angle and between display frames.",
+                  "`[Fixed]` 3D Simulation button icons appear even when the external icon server is unreachable.",
+                  "`[Fixed]` The J2 cable fitting swivels with the cable on SCARA models equipped with an external conduit.",
+                  "`[Fixed]` Pressing Delete or choosing Delete in the model tree context menu removes all selected models at once.",
+                  "`[Fixed]` During K14 conveyor tracking, the robot’s A-axis orientation now reflects the workpiece angle detected by virtual vision.",
+                  "`[Fixed]` Conveyor markings and workpieces now use the same display time, reducing jumps in workpiece motion even when the robot is stationary."
+                ]
+              },
               {
                 "title": "Ver 26.11.22",
                 "items": [
@@ -3924,6 +3950,19 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.23",
+                "items": [
+                  "`[改进]` 更新后的 K14 虚拟控制器和 V2.1 网桥以 60 Hz 为目标同步发送关节、TCP 和输出，并在帧间真空信号切换时保留对应位姿。",
+                  "`[修复]` 选择模型后，只要输送带传感器持续检测到工件，激光和状态指示灯就会保持绿色。",
+                  "`[修复]` 提前开启真空后，即使在跟踪运动的输送带时，吸盘也会吸住进入吸附面 0.5 mm 范围内的一个工件，直至收到释放信号。修复了表面倾斜接触或在两次画面刷新之间接触时漏吸的问题。",
+                  "`[修复]` 无法连接外部图标服务器时，3D 仿真按钮图标仍可显示。",
+                  "`[修复]` 带有外部线缆导管的 SCARA 机型，其 J2 线缆接头会随线缆方向一起转动。",
+                  "`[修复]` 在模型树中按 Delete 键或从右键菜单选择删除，可一次删除所有选中的模型。",
+                  "`[修复]` K14 输送带跟踪时，机器人 A 轴姿态会应用虚拟视觉检测到的工件旋转角。",
+                  "`[修复]` 输送带条纹和工件现在按同一时刻的位置显示，减少了机器人静止时工件移动中的跳动。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.22",
                 "items": [
                   "`[改进]` 在包含大量大型模型的场景中，运动和点动时的碰撞检测以及吸附距离计算速度提升 2~4 倍。"
@@ -5728,6 +5767,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.23",
+                "items": [
+                  "`[Cải tiến]` Bộ điều khiển ảo K14 đã cập nhật và Bridge V2.1 gửi đồng thời vị trí khớp, TCP và đầu ra với tần số mục tiêu 60 Hz. Tín hiệu chân không thay đổi giữa hai khung hình được áp dụng tại đúng vị trí.",
+                  "`[Sửa lỗi]` Sau khi chọn mô hình, tia laser và đèn trạng thái của cảm biến băng tải vẫn sáng xanh khi còn phát hiện phôi.",
+                  "`[Đã sửa]` Khi bật chân không trước, giác hút sẽ giữ một phôi cách mặt hút không quá 0,5 mm cho đến khi có tín hiệu nhả, kể cả khi bám theo băng tải đang chạy. Đã sửa lỗi bỏ sót khi các bề mặt tiếp xúc nghiêng hoặc chạm nhau giữa hai khung hình.",
+                  "`[Đã sửa]` Biểu tượng nút trong mô phỏng 3D vẫn hiển thị khi không thể kết nối với máy chủ biểu tượng bên ngoài.",
+                  "`[Đã sửa]` Đầu nối cáp J2 xoay theo hướng cáp trên các mẫu SCARA có ống dẫn cáp bên ngoài.",
+                  "`[Đã sửa]` Nhấn phím Delete hoặc chọn Xóa trong menu chuột phải của cây mô hình để xóa tất cả mô hình đã chọn cùng lúc.",
+                  "`[Đã sửa]` Khi theo dõi băng tải K14, tư thế trục A của robot áp dụng góc xoay phôi do thị giác ảo phát hiện.",
+                  "`[Sửa lỗi]` Các vạch trên băng tải và phôi hiện được hiển thị theo cùng một thời điểm, giúp phôi bớt giật khi di chuyển ngay cả khi rô-bốt đứng yên."
+                ]
+              },
               {
                 "title": "Ver 26.11.22",
                 "items": [
@@ -7534,6 +7586,19 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.23",
+                "items": [
+                  "`[İyileştirme]` Güncellenen K14 sanal kontrolör ve Köprü V2.1, eklem konumlarını, TCP ve çıkışları 60 Hz hedefiyle birlikte gönderir. Kareler arasındaki vakum geçişleri ilgili konumda uygulanır.",
+                  "`[Düzeltildi]` Model seçildikten sonra da konveyör sensörünün lazeri ve durum ışığı, iş parçası algılandığı sürece yeşil kalır.",
+                  "`[Düzeltildi]` Vakum önceden açıldığında vantuz, hareketli konveyörü takip ederken de yüzeyine en fazla 0,5 mm uzaklıktaki tek bir iş parçasını bırakma sinyaline kadar tutar. Açılı yüzeylerde ve iki ekran karesi arasında gerçekleşen temaslar artık algılanır.",
+                  "`[Düzeltildi]` 3D Simülasyon düğme simgeleri, harici simge sunucusuna erişilemediğinde de görüntülenir.",
+                  "`[Düzeltildi]` Harici kablo kanalı olan SCARA modellerinde J2 kablo bağlantı parçası kablo yönüne göre döner.",
+                  "`[Düzeltildi]` Model ağacında Delete tuşuna basmak veya sağ tıklama menüsünden Sil'i seçmek, seçili tüm modelleri tek seferde siler.",
+                  "`[Düzeltildi]` K14 konveyör takibinde robotun A ekseni yönelimi, sanal görüntü sisteminin algıladığı iş parçası dönüş açısını uygular.",
+                  "`[Düzeltildi]` Konveyör bant işaretleri ve iş parçaları artık aynı andaki konumlarında gösteriliyor. Böylece robot dururken de iş parçalarının hareketindeki sıçramalar azaldı."
+                ]
+              },
+              {
                 "title": "Ver 26.11.22",
                 "items": [
                   "`[İyileştirildi]` Çok sayıda büyük model içeren sahnelerde hareket ve jog sırasındaki çarpışma kontrolleri ile vakum mesafesi hesapları 2-4 kat daha hızlı çalışır."
@@ -9338,6 +9403,19 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.23",
+                "items": [
+                  "`[Улучшено]` Обновлённый виртуальный контроллер K14 и мост V2.1 передают положения суставов, TCP и выходы одним кадром с целевой частотой 60 Гц. Переключения вакуума между кадрами учитываются в соответствующем положении.",
+                  "`[Исправлено]` После выбора модели лазер и индикатор датчика конвейера остаются зелёными, пока датчик обнаруживает деталь.",
+                  "`[Исправлено]` При заранее включённом вакууме присоска захватывает одну деталь на расстоянии до 0,5 мм и удерживает её до сигнала сброса, в том числе при слежении за движущимся конвейером. Исправлен пропуск контакта под углом и между кадрами.",
+                  "`[Исправлено]` Значки кнопок 3D-симуляции отображаются даже при недоступности внешнего сервера значков.",
+                  "`[Исправлено]` На моделях SCARA с внешним кабельным рукавом ввод на оси J2 поворачивается вслед за кабелем.",
+                  "`[Исправлено]` Клавиша Delete и команда «Удалить» в контекстном меню дерева моделей удаляют все выбранные модели за один раз.",
+                  "`[Исправлено]` При отслеживании конвейера K14 ориентация робота по оси A учитывает угол поворота детали, обнаруженный виртуальной камерой.",
+                  "`[Исправлено]` Метки ленты и детали теперь отображаются на один и тот же момент времени. Это уменьшает рывки деталей на конвейере, в том числе при неподвижном роботе."
+                ]
+              },
               {
                 "title": "Ver 26.11.22",
                 "items": [

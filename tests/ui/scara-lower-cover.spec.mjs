@@ -36,11 +36,16 @@ for (const [folder, mask] of Object.entries(SCARA_LOWER_COVERS)) {
             if (!link) return { accented };
             const g = link.geometry, p = g.attributes.position;
             let area = 0, maxGrayZ = -Infinity;
-            for (let i = 0; i < p.count; i += 3) {
-                const a = new THREE.Vector3().fromBufferAttribute(p, i);
-                const b = new THREE.Vector3().fromBufferAttribute(p, i + 1).sub(a);
-                const c = new THREE.Vector3().fromBufferAttribute(p, i + 2).sub(a);
-                area += b.cross(c).length() / 2;
+            const connector = robot.userData.scaraTubeConnector;
+            const p2Geometries = [g];
+            if (connector && !connector.fitting.cableFaces) p2Geometries.push(connector.group.children[0].geometry);
+            for (const { attributes: { position } } of p2Geometries) {
+                for (let i = 0; i < position.count; i += 3) {
+                    const a = new THREE.Vector3().fromBufferAttribute(position, i);
+                    const b = new THREE.Vector3().fromBufferAttribute(position, i + 1).sub(a);
+                    const c = new THREE.Vector3().fromBufferAttribute(position, i + 2).sub(a);
+                    area += b.cross(c).length() / 2;
+                }
             }
             const group = g.groups.find(group => group.materialIndex === 2);
             for (let i = group.start; i < group.start + group.count; i++) maxGrayZ = Math.max(maxGrayZ, p.getZ(g.index.getX(i)));

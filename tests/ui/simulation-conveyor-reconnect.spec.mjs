@@ -56,6 +56,11 @@ for (const mode of ['normal release', 'lost acknowledgement', 'controller restar
         app.start();app.open();const panel=document.querySelector('#conveyor-tracking-dialog');panel.classList.remove('panel-user-hidden');
         if (!automatic) panel.querySelector('[data-action="connect"]').click();
         window.__reconnect={app,native,move(){app.beforeStep([work]);work.position.x+=30;work.updateMatrixWorld(true);app.afterStep(.02,[mapping],[work]);},stay(){app.beforeStep([work]);app.afterStep(.02,[mapping],[work]);},capture(){app.beforeStep([work]);app.afterStep(.02,[],[work]);}};
+        window.__reconnect.sensorColors = () => {
+            const sensor = scene.children.find(object => object.visible && object.name === 'Tracking sensor IN0');
+            return ['Sensor laser', 'Sensor status light'].map(name =>
+                sensor?.getObjectByName(name)?.material.color.getHexString());
+        };
     }, {lostAck, automatic});
     const panel=page.locator('#conveyor-tracking-dialog');
     if (mode === 'incompatible reconnect') {
@@ -81,12 +86,16 @@ for (const mode of ['normal release', 'lost acknowledgement', 'controller restar
         await panel.locator('[data-action="connect"]').click();
         await expect(panel.locator('[data-links]')).toContainText('연동 중');
         await expect(enable).toBeDisabled();
+        const sensorColors = () => page.evaluate(() => window.__reconnect.sensorColors());
+        expect(await sensorColors()).toEqual(['ef4444', 'ef4444']);
         await page.evaluate(() => window.__reconnect.move());
         await expect.poll(() => page.evaluate(() => window.__reconnect.native.frames.some(frame =>
             frame.events.some(event => event.kind === 'sensor' && event.value === 1)))).toBe(true);
+        expect(await sensorColors()).toEqual(['22c55e', '22c55e']);
         expect(await page.evaluate(() => window.__reconnect.native.objects)).toBe(0);
         await page.evaluate(() => window.__reconnect.move());
         await expect.poll(() => page.evaluate(() => window.__reconnect.native.objects)).toBe(1);
+        expect(await sensorColors()).toEqual(['ef4444', 'ef4444']);
         const {frames} = await page.evaluate(() => window.__reconnect.native);
         const events = frames.flatMap(frame => frame.events);
         const sensor = events.find(event => event.kind === 'sensor' && event.value === 1);

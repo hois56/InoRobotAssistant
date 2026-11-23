@@ -30,6 +30,7 @@ import { collectTeachingPoints, normalizeTeachingPointSettings } from './teachin
 import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.mjs?v=20261023-teaching-labels-2';
 import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from './outline-geometry-core.mjs?v=20261121-rust-outline';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
+import { SCARA_CONDUIT_FITTINGS, createScaraSpanMapping, splitScaraGlandGeometry } from './scara-conduit.mjs?v=20261123-1';
 import { armQuadrant, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
 import { inverseJointStep, scaraInverse } from './inverse-kinematics.mjs';
 import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs?v=20261031-r35-r50-1';
@@ -143,17 +144,18 @@ import {
     refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261118-language-1';
-import { createVisionApp } from './vision-app.mjs?v=20261112-conveyor-k14-1';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261123-vacuum-single';
+import { createVisionApp } from './vision-app.mjs?v=20261123-conveyor-theta';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
-import { equipmentObjectRef } from './equipment-scene.mjs?v=20261107-object-home-1';
+import { equipmentObjectRef } from './equipment-scene.mjs?v=20261123-vacuum-single';
 import { normalizeModelGroupTree, walkModelGroups, modelGroupPath, modelGroupAtPath, dissolveModelGroup, moveModelsToGroup } from './model-group-tree-core.mjs';
-import { conveyorSensorLayout } from './conveyor-sensor-preview.mjs?v=20261114-sensor-input-0';
+import { conveyorSensorLayout } from './conveyor-sensor-preview.mjs?v=20261123-sensor-light';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
-import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261116-feed-1';
+import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261123-tracking-sync';
 import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
-import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261120-record';
-import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261121-compact-icon';
+import { conveyorDisplayTime, createConveyorDisplay } from './conveyor-display.mjs';
+import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261123-display';
+import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261123-display';
 import { forEachConveyorTrackingStep } from './conveyor-tracking-core.mjs?v=20261119-tracking-step-1';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20261121-step-import';
 import {
@@ -21906,7 +21908,7 @@ function setupEventListeners() {
         const target = getModelContextTarget();
         closeModelContextMenu();
         if (!target?.model || target.part) return;
-        if (state.selectedModel !== target.model) selectSceneModel(target.model);
+        if (!state.modelSelection.has(target.model)) selectSceneModel(target.model);
         deleteSelectedModel({ allowDuringMotion: true });
     });
     el.modelHide?.addEventListener('click', toggleModelContextVisibility);
@@ -23293,9 +23295,9 @@ function handleGlobalKeyDown(event) {
     if (el.importDialog?.open) return;
     if (isMotionActive() && !isModelDeleteShortcut) return;
 
-    if ((event.key === 'Delete' || event.key === 'Backspace') && state.selectedModel) {
+    if (isModelDeleteShortcut) {
         event.preventDefault();
-        deleteSelectedModel({ allowDuringMotion: true });
+        if (!event.repeat) deleteSelectedModel({ allowDuringMotion: true });
     }
 }
 
@@ -23636,7 +23638,8 @@ function applyModelTransparencyVisual(model, part, value) {
         }
         if (!child.isMesh
             || child.userData?.collisionDebugMesh
-            || child.userData?.simulationSnapFaceOverlay) return;
+            || child.userData?.simulationSnapFaceOverlay
+            || child.userData?.virtualVisionHelper) return;
         ensureModelPartMaterialIsolation(child);
         getMeshMaterials(child).forEach((material) => {
             applyModelTransparencyToMaterial(material, nextTransparency);
@@ -26764,7 +26767,7 @@ function applyModelColor(model, part, colorValue) {
         : null;
     if (highlightedPart) setModelPartHighlight(highlightedPart, false);
     target.traverse((child) => {
-        if (!child.isMesh) return;
+        if (!child.isMesh || child.userData?.virtualVisionHelper) return;
         ensureModelPartMaterialIsolation(child);
         getMeshMaterials(child).forEach((material) => {
             if (!material?.color) return;
@@ -26798,7 +26801,7 @@ function applyPartSurfaceDepthOffset(part, enabled) {
     if (Boolean(part.userData.surfaceDepthOffset) === enabled) return;
     part.userData.surfaceDepthOffset = enabled;
     part.traverse(mesh => {
-        if (!mesh.isMesh || mesh.userData.collisionDebugMesh || mesh.userData.simulationSnapFaceOverlay) return;
+        if (!mesh.isMesh || mesh.userData.collisionDebugMesh || mesh.userData.simulationSnapFaceOverlay || mesh.userData.virtualVisionHelper) return;
         ensureModelPartMaterialIsolation(mesh);
         for (const material of getMeshMaterials(mesh)) {
             if (!material) continue;
@@ -28433,7 +28436,8 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
             tubeGeometry,
             manifest.tube,
             geometries[0],
-            manifest.joints[1]?.pivot?.[0]
+            manifest.joints[1].pivot[0],
+            modelDefinition.folder
         );
         controllerBaseFrame.add(tubeMesh);
         robot.userData.scaraTube = tubeMesh;
@@ -28459,10 +28463,15 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
 
         const geometry = geometries[index + 1];
         if (geometry) {
+            const tube = robot.userData.scaraTube;
+            const fitting = index === 1 && tube?.userData.fitting;
+            const glandParts = fitting && (tube.userData.glandParts
+                || splitScaraGlandGeometry(THREE, geometry, pivot.x, fitting));
+            const splitLink = glandParts && !fitting.cableFaces;
             const linkMesh = createSTLMesh(
-                geometry,
+                splitLink ? glandParts.fixed : geometry,
                 jointDefinition,
-                meshAssets[index + 1]?.collisionGeometry
+                meshAssets[index + 1]?.collisionGeometry || (splitLink ? geometry : null)
             );
             linkMesh.position.copy(pivot).multiplyScalar(-1);
             // Identify the flange carrier, without exempting its whole body.
@@ -28470,6 +28479,24 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
                 || (manifest.robotType === 'scara' && jointDefinition.name === 'J3');
             linkMesh.userData.robotJointIndex = index;
             jointGroup.add(linkMesh);
+            if (glandParts) {
+                if (fitting.cableFaces) {
+                    const collar = createSTLMesh(glandParts.fixed, { ...jointDefinition, name: 'CD conduit mounting ring' });
+                    collar.position.copy(pivot).negate();
+                    collar.userData.collisionDisabled = true;
+                    jointGroup.add(collar);
+                }
+                const group = new THREE.Group();
+                group.name = 'CD conduit swivel';
+                group.position.z = fitting.seam;
+                const gland = createSTLMesh(glandParts.moving, { ...jointDefinition, name: 'CD conduit fitting' });
+                gland.position.set(-pivot.x, 0, -fitting.seam);
+                gland.userData.collisionDisabled = true;
+                group.add(gland);
+                jointGroup.add(group);
+                robot.userData.scaraTubeConnector = { group, fitting };
+                delete tube.userData.glandParts;
+            }
         }
 
         const armLoadMountOffset = Array.isArray(jointDefinition.armLoadMountOffset)
@@ -28504,7 +28531,9 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
     const logoProjection = ROBOT_LOGO_PROJECTIONS[modelDefinition.folder];
     if (logoProjection) {
         const partIndex = meshDefinitions.findIndex(definition => definition.mesh === logoProjection.mesh);
-        const partMesh = robot.getObjectsByProperty('geometry', geometries[partIndex])[0];
+        const jointIndex = partIndex - 1;
+        const partMesh = partIndex === 0 ? baseMesh : robot.userData.joints[jointIndex]?.group.children
+            .find(child => child.userData.robotJointIndex === jointIndex);
         if (partMesh) {
             // Material.clone() drops shader callbacks. Prepare selection materials first.
             ensureModelPartMaterialIsolation(partMesh);
@@ -28512,9 +28541,6 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         }
     }
 
-    // TUBE.stl already contains the conduit and both rotary connector details.
-    // Keep that complete CAD mesh in the fixed robot frame and only reshape its
-    // longitudinal span after the J1/J2 hierarchy has been assembled.
     if (robot.userData.scaraTube) updateScaraTube(robot);
 
     const tcpPosition = new THREE.Vector3().fromArray(manifest.tcp || parentPivot.toArray());
@@ -32146,191 +32172,82 @@ function getScaraTubeJ1SocketOffset(sourceGeometry, baseGeometry, cadZOffset = 0
     return offset;
 }
 
-function mapScaraTubeLongitudinal(
-    longitudinal,
-    sourcePlanLength,
-    targetPlanLength,
-    j1RigidEndLength
-) {
-    const flexibleStart = j1RigidEndLength;
-    if (longitudinal <= flexibleStart) {
-        return { distance: longitudinal, scale: 1 };
-    }
-
-    const sourceFlexibleLength = Math.max(sourcePlanLength - flexibleStart, 1e-6);
-    const targetFlexibleLength = Math.max(
-        targetPlanLength - flexibleStart,
-        1e-6
-    );
-    const normalized = (longitudinal - flexibleStart) / sourceFlexibleLength;
-    const targetFlexibleScale = targetFlexibleLength / sourceFlexibleLength;
-    // Keep only the J1 socket rigid. After a short smooth transition, distribute
-    // the remaining span change uniformly through the conduit all the way to J2.
-    // No angle or rigid lead is imposed at J2, so short models do not form a
-    // pointed crown when their endpoints approach each other.
-    const transitionFraction = Math.min(0.12, targetFlexibleScale * 0.25);
-    const flowingScale = (targetFlexibleScale - transitionFraction * 0.5)
-        / (1 - transitionFraction * 0.5);
-    const transitionIntegral = (value) => value ** 6
-        - 3 * value ** 5
-        + 2.5 * value ** 4;
-    const transitionScale = (value) => value ** 3
-        * (value * (value * 6 - 15) + 10);
-    const transitionArea = transitionFraction * (1 + flowingScale) * 0.5;
-    let normalizedDistance;
-    let localScale;
-    if (normalized < transitionFraction) {
-        const transition = normalized / transitionFraction;
-        normalizedDistance = normalized
-            + (flowingScale - 1) * transitionFraction * transitionIntegral(transition);
-        localScale = 1 + (flowingScale - 1) * transitionScale(transition);
-    } else {
-        normalizedDistance = transitionArea
-            + flowingScale * (normalized - transitionFraction);
-        localScale = flowingScale;
-    }
-    return {
-        distance: flexibleStart + sourceFlexibleLength * normalizedDistance,
-        scale: Math.max(localScale, 1e-6)
-    };
-}
-
-function createScaraTubeMesh(sourceGeometry, definition, baseGeometry, j2PivotX) {
-    const geometry = sourceGeometry.clone();
+function createScaraTubeMesh(sourceGeometry, definition, baseGeometry, j2PivotX, folder) {
+    const fitting = SCARA_CONDUIT_FITTINGS[folder];
+    const glandParts = fitting.cableFaces && splitScaraGlandGeometry(THREE, sourceGeometry, j2PivotX, fitting, true);
+    const geometry = glandParts ? glandParts.cable : sourceGeometry.clone();
     if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
-    geometry.computeBoundingBox();
-
     const position = geometry.getAttribute('position');
     const normal = geometry.getAttribute('normal');
-    if (!position || position.count === 0) {
-        throw new Error('SCARA CD conduit geometry has no vertices.');
-    }
-
-    // Preserve every TUBE.stl vertex, including the authored polygonal conduit
-    // profile and both connector details. Only the plane/span mapping changes.
-    const originalPositions = Float32Array.from(position.array);
-    const originalNormals = Float32Array.from(normal.array);
-    const sourceFixedEnd = getExtremeSectionCenter(geometry, 2, -1);
-    if (!sourceFixedEnd) throw new Error('SCARA CD conduit has no fixed endpoint.');
-
-    const j1SocketOffset = getScaraTubeJ1SocketOffset(
-        sourceGeometry,
-        baseGeometry,
-        definition.cadZOffset
-    );
-    const fixedEnd = sourceFixedEnd.clone().add(j1SocketOffset);
-    const sourceMovingX = Number.isFinite(Number(j2PivotX))
-        ? Number(j2PivotX)
-        : geometry.boundingBox.max.x;
-    const sourceDeltaX = sourceMovingX - sourceFixedEnd.x;
-    const sourceDeltaY = -sourceFixedEnd.y;
-    const sourcePlanLength = Math.max(Math.hypot(sourceDeltaX, sourceDeltaY), 1);
+    const sourceEnd = getExtremeSectionCenter(geometry, 2, -1);
+    if (!sourceEnd) throw new Error('SCARA CD conduit has no fixed endpoint.');
+    const offset = getScaraTubeJ1SocketOffset(geometry, baseGeometry, definition.cadZOffset);
+    const anchor = sourceEnd.clone().add(offset);
+    const [cableX, cableZ] = fitting.cableEnd;
+    const sourceSpan = j2PivotX + cableX - sourceEnd.x;
 
     position.setUsage(THREE.DynamicDrawUsage);
     normal.setUsage(THREE.DynamicDrawUsage);
     const mesh = createSTLMesh(geometry, definition);
     mesh.frustumCulled = false;
     mesh.userData.excludeFromOutline = true;
-    mesh.userData.scaraTubeOriginalStl = true;
-    mesh.userData.scaraTubeOriginalPositions = originalPositions;
-    mesh.userData.scaraTubeOriginalNormals = originalNormals;
-    mesh.userData.scaraTubeSourceFixedEnd = sourceFixedEnd.toArray();
-    mesh.userData.scaraTubeFixedEnd = fixedEnd.toArray();
-    mesh.userData.scaraTubeSourceDirection = [
-        sourceDeltaX / sourcePlanLength,
-        sourceDeltaY / sourcePlanLength
-    ];
-    mesh.userData.scaraTubeSourcePlanLength = sourcePlanLength;
-    mesh.userData.scaraTubeJ1SocketOffset = j1SocketOffset.toArray();
+    mesh.userData.fitting = fitting;
+    mesh.userData.glandParts = glandParts;
+    mesh.userData.conduit = {
+        sourceEnd, anchor, sourceSpan, cableZ,
+        originalPositions: Float32Array.from(position.array),
+        originalNormals: Float32Array.from(normal.array),
+        lastX: NaN, lastY: NaN
+    };
     return mesh;
 }
 
 function updateScaraTube(robot) {
     const tube = robot?.userData.scaraTube;
-    const j2 = robot?.userData.joints?.[1];
-    if (!tube || !j2) return;
+    const connector = robot?.userData.scaraTubeConnector;
+    if (!tube || !connector) return;
 
-    // The P0-side endpoint is fixed. The authored TUBE.stl curve and connector
-    // geometry are retained while its longitudinal axis is mapped into the one
-    // vertical plane shared by the fixed socket and the moving J2 socket.
-    const controllerBaseFrame = getRobotControllerBaseFrame(robot);
-    if (tube.parent !== controllerBaseFrame) controllerBaseFrame.add(tube);
-    tube.position.set(0, 0, 0);
-    tube.quaternion.identity();
+    const { group, fitting } = connector;
+    const [j1, j2] = robot.userData.joints;
+    const conduit = tube.userData.conduit;
+    const { sourceEnd, anchor, sourceSpan, cableZ, originalPositions, originalNormals } = conduit;
+    const socket = j2.group.position.clone().applyQuaternion(j1.group.quaternion).add(j1.group.position);
+    const dx = socket.x - anchor.x;
+    const dy = socket.y - anchor.y;
+    const span = Math.hypot(dx, dy);
+    const [inletX, inletZ] = fitting.inlet;
+    const targetSpan = span + inletX;
+    if (targetSpan <= 0) return;
 
-    robot.updateMatrixWorld(true);
-    const fixedEnd = new THREE.Vector3().fromArray(tube.userData.scaraTubeFixedEnd);
-    const movingEndWorld = j2.group.getWorldPosition(new THREE.Vector3());
-    const movingEnd = getRobotControllerBaseFrame(robot).worldToLocal(movingEndWorld.clone());
-    const targetDeltaX = movingEnd.x - fixedEnd.x;
-    const targetDeltaY = movingEnd.y - fixedEnd.y;
-    const targetPlanLength = Math.hypot(targetDeltaX, targetDeltaY);
-    if (targetPlanLength < 1e-6) return;
+    // J2 turns the mounting ring. The swivel tracks the conduit in the BASE frame.
+    const armYaw = THREE.MathUtils.degToRad(j1.angle * j1.axis.z + j2.angle * j2.axis.z);
+    group.rotation.z = Math.atan2(dy, dx) - armYaw;
 
-    const sourceFixedEnd = new THREE.Vector3().fromArray(tube.userData.scaraTubeSourceFixedEnd);
-    const [sourceDirectionX, sourceDirectionY] = tube.userData.scaraTubeSourceDirection;
-    const sourceNormalX = -sourceDirectionY;
-    const sourceNormalY = sourceDirectionX;
-    const sourcePlanLength = tube.userData.scaraTubeSourcePlanLength;
-    const targetDirectionX = targetDeltaX / targetPlanLength;
-    const targetDirectionY = targetDeltaY / targetPlanLength;
-    const targetNormalX = -targetDirectionY;
-    const targetNormalY = targetDirectionX;
-
-    // Keep the J1 socket seated while the original conduit changes span in one
-    // vertical plane all the way to the moving J2 socket.
-    const j1RigidEndLength = Math.min(
-        sourcePlanLength * 0.12,
-        45,
-        targetPlanLength * 0.24
-    );
-    const originalPositions = tube.userData.scaraTubeOriginalPositions;
-    const originalNormals = tube.userData.scaraTubeOriginalNormals;
+    if (Math.abs(socket.x - conduit.lastX) < 1e-6 && Math.abs(socket.y - conduit.lastY) < 1e-6) return;
+    conduit.lastX = socket.x;
+    conduit.lastY = socket.y;
+    const ux = dx / span;
+    const uy = dy / span;
+    const zOffset = anchor.z - sourceEnd.z;
+    const map = createScaraSpanMapping(sourceSpan, targetSpan, inletZ - cableZ - zOffset);
     const position = tube.geometry.getAttribute('position');
     const normal = tube.geometry.getAttribute('normal');
-    const positions = position.array;
-    const normals = normal.array;
-    const zOffset = tube.userData.scaraTubeJ1SocketOffset[2];
 
-    for (let vertex = 0; vertex < position.count; vertex += 1) {
-        const offset = vertex * 3;
-        const sourceOffsetX = originalPositions[offset] - sourceFixedEnd.x;
-        const sourceOffsetY = originalPositions[offset + 1] - sourceFixedEnd.y;
-        const longitudinal = sourceOffsetX * sourceDirectionX + sourceOffsetY * sourceDirectionY;
-        const lateral = sourceOffsetX * sourceNormalX + sourceOffsetY * sourceNormalY;
-        const longitudinalMapping = mapScaraTubeLongitudinal(
-            longitudinal,
-            sourcePlanLength,
-            targetPlanLength,
-            j1RigidEndLength
-        );
-        const mappedLongitudinal = longitudinalMapping.distance;
-        const localScale = longitudinalMapping.scale;
-        positions[offset] = fixedEnd.x
-            + targetDirectionX * mappedLongitudinal
-            + targetNormalX * lateral;
-        positions[offset + 1] = fixedEnd.y
-            + targetDirectionY * mappedLongitudinal
-            + targetNormalY * lateral;
-        positions[offset + 2] = originalPositions[offset + 2] + zOffset;
+    for (let i = 0; i < originalPositions.length; i += 3) {
+        const { distance, scale, height, slope } = map(originalPositions[i] - sourceEnd.x);
+        const lateral = originalPositions[i + 1] - sourceEnd.y;
+        position.array[i] = anchor.x + ux * distance - uy * lateral;
+        position.array[i + 1] = anchor.y + uy * distance + ux * lateral;
+        position.array[i + 2] = originalPositions[i + 2] + zOffset + height;
 
-        const sourceNormalU = originalNormals[offset] * sourceDirectionX
-            + originalNormals[offset + 1] * sourceDirectionY;
-        const sourceNormalV = originalNormals[offset] * sourceNormalX
-            + originalNormals[offset + 1] * sourceNormalY;
-        const transformedNormalU = sourceNormalU / Math.max(localScale, 1e-6);
-        let normalX = targetDirectionX * transformedNormalU + targetNormalX * sourceNormalV;
-        let normalY = targetDirectionY * transformedNormalU + targetNormalY * sourceNormalV;
-        let normalZ = originalNormals[offset + 2];
-        const normalLength = Math.hypot(normalX, normalY, normalZ) || 1;
-        normalX /= normalLength;
-        normalY /= normalLength;
-        normalZ /= normalLength;
-        normals[offset] = normalX;
-        normals[offset + 1] = normalY;
-        normals[offset + 2] = normalZ;
+        const nz = originalNormals[i + 2];
+        const nu = (originalNormals[i] - slope * nz) / scale;
+        const nv = originalNormals[i + 1];
+        const length = Math.hypot(nu, nv, nz) || 1;
+        normal.array[i] = (ux * nu - uy * nv) / length;
+        normal.array[i + 1] = (uy * nu + ux * nv) / length;
+        normal.array[i + 2] = nz / length;
     }
-
     position.needsUpdate = true;
     normal.needsUpdate = true;
     tube.geometry.computeBoundingBox();
@@ -33311,7 +33228,9 @@ function setJointAngle(joint, rawValue, syncControl = true, deferUpdates = false
         joint.group.position.copy(joint.basePosition);
         joint.group.quaternion.setFromAxisAngle(joint.axis, THREE.MathUtils.degToRad(value));
     }
-    if (!deferUpdates && joint.definition.name === 'J1') updateScaraTube(joint.robot);
+    if (changed && !deferUpdates && (joint.definition.name === 'J1' || joint.definition.name === 'J2')) {
+        updateScaraTube(joint.robot);
+    }
     if (syncControl && joint.control) {
         const display = joint.control.display || getJointJogDisplaySpec(joint);
         const displayValue = display.toDisplay(value);
@@ -35582,7 +35501,7 @@ function getVirtualControllerForRobot(robot) {
 async function ensureVirtualControllerCore(controller = state.virtualController) {
     if (controller.core) return controller.core;
     if (!controller.corePromise) {
-        controller.corePromise = import('./virtual-controller-core.mjs?v=20261030-fieldbus-io-1')
+        controller.corePromise = import('./virtual-controller-core.mjs?v=20261123-feedback')
             .then((core) => {
                 controller.core = core;
                 controller.samples = new core.VirtualControllerSampleBuffer();
@@ -35875,15 +35794,16 @@ function handleVirtualControllerMessage(raw, controller = state.virtualControlle
         controller.samples.push(parsed);
         controller.lastSampleAt = parsed.receivedAt;
         const robot = getVirtualControllerTargetRobot(controller);
-        if (robot && (equipmentApp.needsVacuumIoPose(robot, 'OUT', parsed.outputs)
-            || equipmentApp.needsVacuumIoPose(robot, 'IN', parsed.inputs))) {
-            // Capture vacuum at the pose delivered with the signal, even when
-            // several controller samples arrive before the next render frame.
-            applyVirtualControllerFrameForController(parsed.receivedAt, controller);
-        }
-        applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
         const standardInput = standardInputClient.view(controller);
-        applyVirtualControllerIo(standardInput.values === null ? parsed.inputs : { ...parsed.inputs, ...standardInput.values }, 'IN', controller);
+        const inputs = standardInput.values === null ? parsed.inputs : { ...parsed.inputs, ...standardInput.values };
+        const waiting = robot ? equipmentApp.waitingVacuums(robot) : [];
+        const needsPose = robot && (waiting.length || equipmentApp.needsVacuumIoPose(robot, 'OUT', parsed.outputs)
+            || equipmentApp.needsVacuumIoPose(robot, 'IN', inputs));
+        const poseMoved = needsPose && applyVirtualControllerFrameForController(parsed.receivedAt, controller);
+        applyVirtualControllerIo(parsed.outputs, 'OUT', controller);
+        applyVirtualControllerIo(inputs, 'IN', controller);
+        // The pad can make contact between render frames. Apply the packet's release signal first.
+        if (poseMoved && waiting.length) equipmentApp.updateActiveVacuum(state.ioFunctionMappings, waiting);
         if (controller.status !== 'streaming') {
             setVirtualControllerStatus('streaming', '', controller);
         } else if (controller.statusMessage) {
@@ -37966,7 +37886,8 @@ function renderIoSimulatorPanel() {
 let conveyorTransportSuspended = false;
 const conveyorResetTransforms = new Map();
 const conveyorManualCommands = new Map();
-const conveyorVisuals = createConveyorVisuals();
+const conveyorDisplay = createConveyorDisplay();
+const conveyorVisuals = createConveyorVisuals(conveyorDisplay);
 let equipmentVacuumPick = null;
 
 function startEquipmentVacuumFacePick(ref, complete) {
@@ -38503,24 +38424,30 @@ function updateConveyorSimulation(timestamp) {
     conveyorLastTimestamp = mappings.length || conveyorTrackingApp.active || conveyorTrackingApp.monitoring ? timestamp : null;
     conveyorVisuals.update(state.ioFunctionMappings, mappings, resolveConveyorBelt, seconds,
         state.models.filter(model => model.userData.testModelAssetId === 'conveyor'
-            || (model.userData.testModel && /^Conveyor\.step$/i.test(model.userData.modelName || ''))));
+            || (model.userData.testModel && /^Conveyor\.step$/i.test(model.userData.modelName || ''))), timestamp);
+    let stepStart = timestamp - seconds * 1000;
     if (conveyorTrackingApp.active) {
         // A throttled browser timer can supply more than one valid tracking sample.
-        forEachConveyorTrackingStep(seconds, elapsed => advanceConveyorSimulation(mappings, elapsed));
+        forEachConveyorTrackingStep(seconds, elapsed => {
+            advanceConveyorSimulation(mappings, elapsed, stepStart);
+            stepStart += elapsed * 1000;
+        });
     } else if (mappings.length || conveyorTrackingApp.monitoring) {
-        advanceConveyorSimulation(mappings, seconds);
+        advanceConveyorSimulation(mappings, seconds, stepStart);
     }
 }
 
-function advanceConveyorSimulation(mappings, seconds) {
+function advanceConveyorSimulation(mappings, seconds, stepStart) {
     conveyorFeedApp.beforeStep(mappings, seconds);
     const candidates = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost).map(item => item.object);
     conveyorTrackingApp.beforeStep(candidates);
-    const moved = moveConveyorObjects(mappings, candidates, resolveConveyorBelt, seconds, model => {
+    const moved = moveConveyorObjects(mappings, candidates, resolveConveyorBelt, seconds, (model, mapping, position, duration) => {
         if (!conveyorResetTransforms.has(model)) conveyorResetTransforms.set(model, captureClipboardTransform(model));
+        conveyorDisplay.recordProduct(model, position, stepStart, stepStart + duration * 1000);
     });
     moved.forEach(object => markSceneCollisionDirty(equipmentApp.objects().find(item => item.object === object)?.model || object));
     conveyorTrackingApp.afterStep(seconds, mappings, candidates);
+    if (moved.size) equipmentApp.updateActiveVacuum(state.ioFunctionMappings);
     conveyorFeedApp.afterStep();
 }
 function ioFunctionMappingActionLabel(action) {
@@ -41472,6 +41399,13 @@ function applyControllerTcpPose(robot, pose, notify = true) {
     }
 }
 
+function getControllerJointModelValue(robot, joint, value, index) {
+    // SCARA J3 arrives as a motor angle and the scene joint uses millimeters.
+    return index === 2 && robot.userData.manifest?.robotType === 'scara'
+        ? getJointJogDisplaySpec(joint).fromDisplay(value)
+        : value;
+}
+
 function applyVirtualControllerFrameForController(timestamp, controller) {
     if (!controller.wanted || !controller.samples || !controller.core) return;
     if (!isVirtualControllerSourceLive(timestamp, controller)) return;
@@ -41494,25 +41428,18 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
         && Array.isArray(sample.rotation) && sample.rotation.length === 3 && sample.rotation.every(Number.isFinite);
     let changed = !hasTcp && restoreControllerToolFrame(robot, false);
     let jointsChanged = false;
-    let firstJointChanged = false;
+    let conduitJointChanged = false;
     joints.forEach((joint, index) => {
-        let value = sample.joints[index];
-        // The controller can report the SCARA vertical axis as a motor/encoder
-        // angle, while the simulator's J3 is prismatic and expects millimeters.
-        // Convert motor angle to millimeters independently of TCP/Wobj; the
-        // received Cartesian endpoint is applied to the TCP frame below.
-        if (index === 2 && robot.userData.manifest?.robotType === 'scara') {
-            value = getJointJogDisplaySpec(joint).fromDisplay(value);
-        }
+        const value = getControllerJointModelValue(robot, joint, sample.joints[index], index);
         if (joint.angle === value) return;
         const previousAngle = joint.angle;
         setJointAngle(joint, value, false, true);
         if (joint.angle !== previousAngle) {
             jointsChanged = true;
-            if (index === 0) firstJointChanged = true;
+            if (index < 2) conduitJointChanged = true;
         }
     });
-    if (firstJointChanged) updateScaraTube(robot);
+    if (conduitJointChanged) updateScaraTube(robot);
     if (jointsChanged) syncOlpHomeStatus(robot);
     let pose = null;
     if (hasTcp) {
@@ -41556,7 +41483,7 @@ function applyVirtualControllerFrameForController(timestamp, controller) {
             }
         }
     }
-
+    return true;
 }
 
 function getArticulatedRobots() {
@@ -41567,6 +41494,43 @@ function applyVirtualControllerFrame(timestamp) {
     getVirtualControllerSessions().forEach((controller) => {
         applyVirtualControllerFrameForController(timestamp, controller);
     });
+}
+
+function renderWithConveyorTrackingFeedback(timestamp, render) {
+    if (!conveyorTrackingApp.active) return render();
+    const restore = [];
+    try {
+        for (const controller of getVirtualControllerSessions()) {
+            if (!controller.wanted || controller.status !== 'streaming' || !conveyorTrackingApp.isTrackingController(controller)) continue;
+            const robot = getVirtualControllerTargetRobot(controller);
+            const latest = controller.samples?.getLatest();
+            const joints = robot?.userData.joints;
+            if (!joints || !latest || latest.sampleId !== controller.lastAppliedSampleId || latest.joints.length < joints.length) continue;
+            const pose = controller.samples.getTrackingRenderPose(timestamp);
+            if (!pose || pose.joints.length < joints.length) continue;
+            const values = pose.joints;
+            if (values === latest.joints) continue;
+            const saved = [];
+            restore.push({ robot, saved });
+            joints.forEach((joint, index) => {
+                if (values[index] === latest.joints[index]) return;
+                const value = getControllerJointModelValue(robot, joint, values[index], index);
+                if (joint.angle === value) return;
+                saved.push({ joint, angle: joint.angle });
+                setJointAngle(joint, value, false, true);
+            });
+            if (saved[0] && (saved[0].joint === joints[0] || saved[0].joint === joints[1])) updateScaraTube(robot);
+        }
+        return render();
+    } finally {
+        for (const { robot, saved } of restore) {
+            if (!saved.length) continue;
+            for (const { joint, angle } of saved) setJointAngle(joint, angle, false, true);
+            const [j1, j2] = robot.userData.joints;
+            if (saved[0].joint === j1 || saved[0].joint === j2) updateScaraTube(robot);
+            robot.updateMatrixWorld(true);
+        }
+    }
 }
 
 function isArticulatedRobotModel(model) {
@@ -45981,7 +45945,7 @@ function getWorkspaceMaterialColor(material, mesh) {
 function captureWorkspaceMaterialColors(model) {
     const records = [];
     model?.traverse?.((object) => {
-        if (!object.isMesh || object.userData?.collisionDebugMesh || object.userData?.simulationSnapFaceOverlay) return;
+        if (!object.isMesh || object.userData?.collisionDebugMesh || object.userData?.simulationSnapFaceOverlay || object.userData?.virtualVisionHelper) return;
         const path = getWorkspaceObjectPath(model, object);
         if (!path) return;
         records.push({
@@ -46001,6 +45965,7 @@ function applyWorkspaceMaterialColors(model, records) {
             if (object.isMesh && object.userData.legacyWorkspacePath?.join('/') === record.path.join('/')) targets.push(object);
         });
         targets.forEach(mesh => {
+            if (mesh.userData?.virtualVisionHelper) return;
             ensureModelPartMaterialIsolation(mesh);
             getMeshMaterials(mesh).forEach((material, index) => {
                 const colorHex = record.colors[index];
@@ -51246,6 +51211,7 @@ function isOutlineMesh(mesh) {
         && mesh.geometry?.getAttribute?.('position')
         && mesh.geometry.getAttribute('position').count > 0
         && !mesh.userData?.outlineSource
+        && !mesh.userData?.virtualVisionHelper
         && !mesh.userData?.excludeFromOutline);
 }
 
@@ -51655,8 +51621,15 @@ function cleanupScene() {
 function deleteSelectedModel({ allowDuringMotion = false } = {}) {
     const model = state.selectedModel;
     if (!model) return;
+    const selectedModels = new Set(state.modelSelection.values());
+    selectedModels.add(model);
+    const modelsToDelete = new Set(state.models.filter((item) => selectedModels.has(item)));
+    if (!modelsToDelete.size) return;
+    for (const item of modelsToDelete) {
+        for (const attachment of getModelTreeAttachedModels(item)) modelsToDelete.add(attachment);
+    }
     if ((!allowDuringMotion && isRobotMotionActive())
-        || (allowDuringMotion && isModelMotionActive(model))) {
+        || (allowDuringMotion && [...modelsToDelete].some((model) => isModelMotionActive(model)))) {
         if (allowDuringMotion) {
             setStatus('현재 실행 중인 로봇은 모션을 정지한 후 삭제할 수 있습니다.', '#f59e0b');
         }
@@ -51668,15 +51641,13 @@ function deleteSelectedModel({ allowDuringMotion = false } = {}) {
     setBaseJogGizmoEnabled(false);
     const historyBefore = captureSceneSnapshot();
 
-    const attachments = state.models.filter((candidate) => candidate.userData.attachmentHost === model);
-    const modelsToDelete = [model, ...attachments];
-    const toolSourceMatches = modelsToDelete.map((item) => ({
+    const toolSourceMatches = [...modelsToDelete].map((item) => ({
         item,
         source: item.userData?.toolAttachmentSource?.mode === 'part-copy'
             ? getToolAttachmentSourcePart(item)
             : null
     }));
-    if (modelsToDelete.includes(state.toolLoadInfo.selectedModel)) closeToolLoadInfoPanel();
+    if (modelsToDelete.has(state.toolLoadInfo.selectedModel)) closeToolLoadInfoPanel();
     state.transformControls.detach();
     toolSourceMatches.forEach(({ item, source }) => {
         if (source) restoreToolAttachmentSourcePart(item);
@@ -51708,12 +51679,12 @@ function deleteSelectedModel({ allowDuringMotion = false } = {}) {
     if (isPrimitiveShapeModel(model)) disposePrimitiveDimensionOverlay();
     markSceneCollisionDirty();
 
-    if (state.activeArticulatedModel === model) {
+    if (modelsToDelete.has(state.activeArticulatedModel)) {
         state.activeArticulatedModel = [...state.models].reverse().find((item) => item.userData.tcpFrame) || null;
         if (state.activeArticulatedModel) renderJogControls(state.activeArticulatedModel);
         else hideJogPanel();
     }
-    if (state.activeProgramRobot === model) state.activeProgramRobot = state.activeArticulatedModel;
+    if (modelsToDelete.has(state.activeProgramRobot)) state.activeProgramRobot = state.activeArticulatedModel;
 
     const formerHost = model.userData.attachmentHost;
     const nextSelection = formerHost && state.models.includes(formerHost)
@@ -51724,10 +51695,13 @@ function deleteSelectedModel({ allowDuringMotion = false } = {}) {
     renderMotionProgramPanel();
     recordHistory('모델 삭제', historyBefore, captureSceneSnapshot());
     scheduleCollaborationRoomSync();
-    sendCollaborationSceneCommand({
-        kind: 'delete',
-        workspaceModelId: ensureWorkspaceModelId(model)
-    });
+    for (const item of modelsToDelete) {
+        if (modelsToDelete.has(item.userData.attachmentHost)) continue;
+        sendCollaborationSceneCommand({
+            kind: 'delete',
+            workspaceModelId: ensureWorkspaceModelId(item)
+        });
+    }
 }
 
 function syncEmptyStateVisibility() {
@@ -52337,6 +52311,7 @@ function requiresContinuousRendering() {
     return state.viewRecording?.active || Boolean(state.viewTransition && state.viewTransition.session?.status !== 'paused')
         || equipmentApp.active(state.ioFunctionMappings)
         || activeConveyorMappings().length > 0
+        || conveyorDisplay.pending
         || isViewWindowOpen()
         || state.trace.running
         || isVirtualControllerActive()
@@ -52430,12 +52405,6 @@ function animate(timestamp = performance.now(), paintTime = timestamp) {
         captureCollisionSafeRobotPoses();
     }
     evaluateInterferenceZones(timestamp);
-    updateSelectedViewPivot();
-    state.controls.update();
-    updateCameraScaledTcpAxes();
-    updateCameraScaledWorkObjectAxes();
-    updateSimulationSnapMarkerCameraScale();
-    updateSimulationSnapCandidateMarkers();
     refreshTraceSelectors();
     sampleTrace(timestamp);
     updateMeasurementOverlay();
@@ -52443,13 +52412,23 @@ function animate(timestamp = performance.now(), paintTime = timestamp) {
     updateSketchPreview();
     updateTeachingPointDisplay();
     visionApp.update();
-    state.viewRecording?.sample(timestamp);
-    if (!state.renderFpsLimited || state.renderFrameLimit.permits(paintTime)) {
-        renderSimulationScene(state.renderer, state.camera);
-        renderViewWindow();
-    } else {
-        requestRender();
+    const draw = !state.renderFpsLimited || state.renderFrameLimit.permits(paintTime);
+    if (draw || state.viewRecording?.active) {
+        conveyorDisplay.paint(conveyorDisplayTime(paintTime), () => renderWithConveyorTrackingFeedback(paintTime, () => {
+            updateSelectedViewPivot();
+            state.controls.update();
+            updateCameraScaledTcpAxes();
+            updateCameraScaledWorkObjectAxes();
+            updateSimulationSnapMarkerCameraScale();
+            updateSimulationSnapCandidateMarkers();
+            state.viewRecording?.sample(paintTime);
+            if (draw) {
+                renderSimulationScene(state.renderer, state.camera);
+                renderViewWindow();
+            }
+        }));
     }
+    if (!draw) requestRender();
     updateZeroPointCurrentMarker();
     if (requiresContinuousRendering()) requestRender();
 }

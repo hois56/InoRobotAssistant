@@ -5,7 +5,7 @@ async function setup(page) {
     page.on('pageerror', error => errors.push(error.message));
     await page.route('**/2_3DSimulation/main.js*', async route => {
         const response = await route.fetch();
-        await route.fulfill({ response, body: `${await response.text()}\nwindow.__feed = { state, equipmentApp, conveyorTrackingApp, conveyorFeedApp, visionApp, THREE, writeOlpAddress, isGripObjectTarget, createPrimitiveShapeRoot, ensureWorkspaceModelId, updateUIStatus, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, conveyorLocalBounds: (await import('./conveyor-scene.mjs')).conveyorLocalBounds, step(seconds, count) { conveyorLastTimestamp = 0; for (let i = 1; i <= count; i++) updateConveyorSimulation(i * seconds * 1000); } };` });
+        await route.fulfill({ response, body: `${await response.text()}\nwindow.__feed = { state, equipmentApp, conveyorTrackingApp, conveyorFeedApp, visionApp, THREE, writeOlpAddress, readOlpSimulatorBit, isGripObjectTarget, createPrimitiveShapeRoot, ensureWorkspaceModelId, getArticulatedRobots, getRobotToolMountFrame, updateUIStatus, serializeWorkspaceSnapshot, restoreWorkspaceSnapshot, conveyorLocalBounds: (await import('./conveyor-scene.mjs')).conveyorLocalBounds, step(seconds, count) { conveyorLastTimestamp = 0; for (let i = 1; i <= count; i++) updateConveyorSimulation(i * seconds * 1000); } };` });
     });
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__feed?.state.workspaceRecovery.ready);
@@ -60,6 +60,70 @@ function readFeed() {
     };
 }
 
+for (const tracking of [false, true]) test('vacuum picks up an automatic supply workpiece ' +
+    (tracking ? 'while the pad tracks the moving belt' : 'that reaches the pad after the signal'), async ({ page }) => {
+    test.setTimeout(90_000);
+    const { panel, errors } = await setup(page);
+    await page.locator('#model-select').selectOption('robot:IR-R7H-90');
+    await page.waitForFunction(() => window.__feed.getArticulatedRobots().length === 1);
+    await enableFeed(panel, '200');
+    const result = await page.evaluate(tracking => {
+        const a = window.__feed, { equipmentApp: app, THREE: T, state } = a;
+        const robot = a.getArticulatedRobots()[0], mount = a.getRobotToolMountFrame(robot);
+        a.step(0.02, 1);
+        const piece = state.models.find(model => model.userData.conveyorFeedSource);
+        const workpieceBounds = new T.Box3().setFromObject(piece, true);
+        const tool = a.createPrimitiveShapeRoot('box', { x:20, y:20, z:20 }, { name:'Vacuum pad' });
+        mount.add(tool);
+        tool.userData.placement = 'tcp';
+        tool.userData.attachmentHost = robot;
+        state.models.push(tool);
+        tool.quaternion.copy(mount.getWorldQuaternion(new T.Quaternion()).invert());
+        const padBounds = new T.Box3().setFromObject(tool, true);
+        const padCenter = padBounds.getCenter(new T.Vector3()), workpieceCenter = workpieceBounds.getCenter(new T.Vector3());
+        const padPosition = tool.getWorldPosition(new T.Vector3()).add(new T.Vector3(
+            workpieceCenter.x - padCenter.x + (tracking ? 0 : 80),
+            workpieceCenter.y - padCenter.y,
+            workpieceBounds.max.z - padBounds.min.z + (tracking ? 0.75 : 0)
+        ));
+        tool.position.copy(mount.worldToLocal(padPosition));
+        tool.updateWorldMatrix(true, true);
+        const vacuum = app.save({
+            id:'feed-vacuum', type:'VACUUM', movingRef:'equipment-model:' + a.ensureWorkspaceModelId(tool) + '/-1',
+            vacuumMode:'FACE', vacuumFace:{ meshPath:[0], triangleRanges:[{ first:10, last:11 }] }, feedbackGrip:620
+        }, { forward:512, reverse:513 });
+        const output = (address, value) => a.writeOlpAddress('Out[' + address + ']', value);
+        output(512, 1);
+        output(512, 0);
+        const waiting = vacuum.runtime.vacuumActive && !vacuum.runtime.heldRef;
+        let trackedDistance = 0;
+        if (tracking) {
+            const startPiece = piece.getWorldPosition(new T.Vector3()), startPad = tool.getWorldPosition(new T.Vector3());
+            for (let step = 0; step < 5; step++) {
+                a.step(0.02, 1);
+                const delta = piece.getWorldPosition(new T.Vector3()).sub(startPiece);
+                tool.position.copy(mount.worldToLocal(startPad.clone().add(delta)));
+            }
+            trackedDistance = tool.getWorldPosition(new T.Vector3()).distanceTo(startPad);
+            const pad = tool.getWorldPosition(new T.Vector3());
+            pad.x += trackedDistance / 5;
+            pad.z -= 0.25;
+            tool.position.copy(mount.worldToLocal(pad));
+            a.step(0.02, 1);
+        } else {
+            for (let step = 0; step < 60 && !vacuum.runtime.heldRef; step++) a.step(0.02, 1);
+        }
+        const acquired = piece.userData.attachmentHost === robot && piece.userData.equipmentOwner === vacuum.id;
+        const feedback = a.readOlpSimulatorBit('IN', 620);
+        output(513, 1);
+        output(513, 0);
+        return { waiting, acquired, feedback, trackedDistance, released: !piece.userData.attachmentHost && !vacuum.runtime.vacuumActive };
+    }, tracking);
+    expect(result).toMatchObject({ waiting:true, acquired:true, feedback:1, released:true });
+    if (tracking) expect(result.trackedDistance).toBeGreaterThan(1);
+    expect(errors).toEqual([]);
+});
+
 test('automatic supply varies workpiece position and yaw by default', async ({ page }) => {
     await page.addInitScript(() => {
         let seed = 12345;
@@ -87,7 +151,8 @@ test('automatic supply varies workpiece position and yaw by default', async ({ p
     });
     const { poses, detections } = result;
     expect(poses.length).toBeGreaterThan(3);
-    expect(Math.max(...poses.map(p => p.yaw)) - Math.min(...poses.map(p => p.yaw))).toBeGreaterThan(1);
+    expect(Math.min(...poses.map(p => p.yaw))).toBeLessThan(-1);
+    expect(Math.max(...poses.map(p => p.yaw))).toBeGreaterThan(1);
     expect(Math.max(...poses.map(p => p.y)) - Math.min(...poses.map(p => p.y))).toBeGreaterThan(1);
     for (const pose of poses) {
         expect(Math.abs(pose.yaw)).toBeLessThanOrEqual(15);
@@ -97,7 +162,8 @@ test('automatic supply varies workpiece position and yaw by default', async ({ p
         const detected = detections.find(item => item.id === pose.id);
         expect(detected).toBeTruthy();
         expect(detected.pose[1]).toBeCloseTo(pose.y, 5);
-        expect(detected.pose[5]).toBeCloseTo(pose.yaw, 5);
+        expect(detected.pose[3]).toBeCloseTo(pose.yaw, 5);
+        expect(detected.pose.slice(4)).toEqual([0, 0]);
     }
     for (let i = 1; i < poses.length; i++) expect(poses[i].min[0] - poses[i-1].max[0]).toBeGreaterThanOrEqual(100 - 1e-6);
     expect(result.sourceRotation).toBe(0);

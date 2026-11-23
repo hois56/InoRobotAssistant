@@ -18,27 +18,28 @@ test('렌더 프레임 사이의 진공 펄스는 같은 컨트롤러 위치에�
         a.getRobotToolMountFrame(robot).add(tool); tool.position.z = 100;
         tool.userData.placement = 'tcp'; tool.userData.attachmentHost = robot; a.state.models.push(tool);
         const product = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '펄스 대상' });
-        product.position.copy(tool.localToWorld(new T.Vector3(0, 0, 21.5)));
+        product.position.copy(tool.localToWorld(new T.Vector3(0, 0, 20.25)));
         product.quaternion.copy(tool.getWorldQuaternion(new T.Quaternion()));
         a.state.scene.add(product); a.state.models.push(product);
         app.save({ id: 'lag-object', type: 'OBJECT', movingRef: ref(product) });
-        const def = app.save({ id: 'lag-vacuum', type: 'VACUUM', movingRef: ref(tool), vacuumMode: 'WHOLE' }, { forward: 512, reverse: 513 });
-        let searches = 0; const find = app.runtime.contact.find.bind(app.runtime.contact);
-        app.runtime.contact.find = (...args) => { searches++; return find(...args); };
+        const def = app.save({ id: 'lag-vacuum', type: 'VACUUM', movingRef: ref(tool), vacuumMode: 'WHOLE' }, { forward: 10, reverse: 11 });
         const controller = a.state.virtualController;
         await a.ensureVirtualControllerCore(controller); a.registerVirtualControllerSession(controller);
         controller.targetRobotId = robot.userData.motionInstanceId; controller.source = 'bridge'; controller.wanted = true;
         controller.status = 'streaming'; controller.lastRateUpdateAt = performance.now();
         const joints = robot.userData.joints.map(joint => joint.angle);
-        const send = (angle, forward = 0, reverse = 0) => {
+        let sequence = 0;
+        const send = (angle, forward = 0, reverse = 0, timestamp = sequence * 4, type = 'robotState') => {
             const pose = [...joints]; pose[0] += angle;
-            a.handleVirtualControllerMessage({ type: 'robotState', data: { joints: pose, outputs: { 512: forward, 513: reverse } } }, controller);
+            a.handleVirtualControllerMessage({ type, data: { sequence: ++sequence, timestamp, joints: pose, outputs: { 10: forward, 11: reverse } } }, controller);
         };
         const position = () => product.getWorldPosition(new T.Vector3());
         const start = position();
         send(30); a.applyVirtualControllerFrameForController(performance.now(), controller);
         // These packets are handled without yielding to requestAnimationFrame.
-        send(0, 1); send(30, 0);
+        send(0, 1);
+        const heldAtSignal = product.userData.equipmentOwner === def.id;
+        send(30, 0);
         a.applyVirtualControllerFrameForController(performance.now(), controller);
         app.runtime.update(a.state.equipmentDefinitions, a.state.ioFunctionMappings, performance.now());
         const held = product.userData.equipmentOwner === def.id, moved = position().distanceTo(start);
@@ -48,12 +49,25 @@ test('렌더 프레임 사이의 진공 펄스는 같은 컨트롤러 위치에�
         const expectedRelease = local && new T.Vector3().setFromMatrixPosition(mesh.matrixWorld.clone().multiply(new T.Matrix4().fromArray(local)));
         send(90, 0, 0); a.applyVirtualControllerFrameForController(performance.now(), controller);
         app.runtime.update(a.state.equipmentDefinitions, a.state.ioFunctionMappings, performance.now() + 500);
-        const output = { held, moved, searches, released: !product.userData.equipmentOwner,
+        const output = { heldAtSignal, held, moved, released: !product.userData.equipmentOwner,
             releaseError: expectedRelease ? release.distanceTo(expectedRelease) : 1e9, stayed: position().distanceTo(release), active: def.runtime.vacuumActive };
+        app.resetObjects(ref(product));
+        // Replay a 200 ms pulse. Only the middle position packet reaches the workpiece.
+        send(30, 1, 0, 1000, 'robotOutputEdge');
+        output.waitingAtPulseStart = def.runtime.vacuumActive && !def.runtime.heldRef;
+        send(0, 1, 0, 1100);
+        output.heldAtContactSample = product.userData.equipmentOwner === def.id;
+        send(30, 1, 0, 1180);
+        send(30, 0, 0, 1200, 'robotOutputEdge');
+        output.heldAfterPulse = product.userData.equipmentOwner === def.id;
+        send(30, 0, 1, 1204, 'robotOutputEdge');
+        output.releasedAfterPulse = !product.userData.equipmentOwner && !def.runtime.vacuumActive;
         a.disconnectVirtualController(controller);
         return output;
     });
-    expect(result.held).toBe(true); expect(result.moved).toBeGreaterThan(10); expect(result.searches).toBe(1);
+    expect(result.heldAtSignal).toBe(true); expect(result.held).toBe(true); expect(result.moved).toBeGreaterThan(10);
     expect(result.released).toBe(true); expect(result.releaseError).toBeLessThan(1e-6); expect(result.stayed).toBeLessThan(1e-6); expect(result.active).toBe(false);
+    expect(result.waitingAtPulseStart).toBe(true); expect(result.heldAtContactSample).toBe(true);
+    expect(result.heldAfterPulse).toBe(true); expect(result.releasedAfterPulse).toBe(true);
     expect(errors).toEqual([]);
 });

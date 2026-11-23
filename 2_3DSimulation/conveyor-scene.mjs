@@ -40,9 +40,11 @@ export function moveConveyorObjects(mappings, models, resolveBelt, seconds, befo
             delta[mapping.conveyorAxis.endsWith('Y') ? 'y' : 'x'] = distance;
             const origin = belt.localToWorld(new THREE.Vector3());
             delta.copy(belt.localToWorld(delta).sub(origin));
-            const world = object.getWorldPosition(new THREE.Vector3()).add(delta);
-            beforeMove(object);
-            object.position.copy(object.parent ? object.parent.worldToLocal(world) : world);
+            const position = object.getWorldPosition(new THREE.Vector3()).add(delta);
+            object.parent?.worldToLocal(position);
+            const travelSeconds = Math.min(seconds, Math.abs(distance) / mapping.conveyorSpeed);
+            beforeMove(object, mapping, position, travelSeconds);
+            object.position.copy(position);
             object.updateMatrix();
             object.matrixWorldNeedsUpdate = true;
             object.updateMatrixWorld(true);

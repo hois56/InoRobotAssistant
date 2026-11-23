@@ -29,10 +29,11 @@ function beltShape(mesh) {
     return { radius, halfLength, x: (box.max.x + box.min.x) / 2, z: (box.max.z + box.min.z) / 2 };
 }
 
-export function createConveyorVisuals() {
+export function createConveyorVisuals(display) {
     const records = new Map();
     const beltAnimations = new WeakMap();
     function remove(mesh, record) {
+        display?.forgetBelt(record.uniforms.conveyorTravel);
         if (mesh.material === record.material) mesh.material = record.original;
         for (const material of record.clones) material.dispose();
         records.delete(mesh);
@@ -79,7 +80,7 @@ export function createConveyorVisuals() {
     }
     return {
         getBeltAnimation(material) { return beltAnimations.get(material); },
-        update(allMappings, activeMappings, resolveBelt, seconds, catalogModels = []) {
+        update(allMappings, activeMappings, resolveBelt, seconds, catalogModels = [], timestamp) {
             const retained = new Set(), advanced = new Set();
             const retain = model => model?.traverse(mesh => {
                 if (!mesh.isMesh) return;
@@ -94,7 +95,7 @@ export function createConveyorVisuals() {
                 retain(resolveBelt(mapping));
             }
             for (const [mesh, record] of records) if (!retained.has(mesh)) remove(mesh, record);
-            if (!(seconds > 0 && seconds <= 0.25)) return;
+            if (!(seconds > 0)) return;
             for (const mapping of activeMappings) {
                 const frame = resolveBelt(mapping);
                 if (!frame) continue;
@@ -110,11 +111,19 @@ export function createConveyorVisuals() {
                     const origin = new THREE.Vector3().applyMatrix4(frame.matrixWorld).applyMatrix4(inverse);
                     local.applyMatrix4(frame.matrixWorld).applyMatrix4(inverse).sub(origin);
                     const travel = record.uniforms.conveyorTravel;
-                    travel.value = (travel.value + local.x * (axis.startsWith('-') ? -1 : 1) * speed * seconds) % record.length;
+                    const distance = local.x * (axis.startsWith('-') ? -1 : 1) * speed * seconds;
+                    display?.recordBelt(travel, travel.value, distance, record.length, timestamp - seconds * 1000, timestamp);
+                    travel.value = (travel.value + distance) % record.length;
                 });
             }
         },
-        reset() { for (const record of records.values()) record.uniforms.conveyorTravel.value = 0; },
-        dispose() { for (const [mesh, record] of records) remove(mesh, record); }
+        reset() {
+            display?.clear();
+            for (const record of records.values()) record.uniforms.conveyorTravel.value = 0;
+        },
+        dispose() {
+            display?.clear();
+            for (const [mesh, record] of records) remove(mesh, record);
+        }
     };
 }

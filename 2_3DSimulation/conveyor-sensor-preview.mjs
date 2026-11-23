@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261119-sensor-capture-1';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
 
+const SENSOR_WAITING_COLOR = 0xef4444;
+const SENSOR_DETECTED_COLOR = 0x22c55e;
+
 export function normalizeSensorSettings(value) {
     const { capture: _legacyCapture, ...settings } = value;
     const result = { ...settings, channel: Number(value.channel ?? 0), scale: Number(value.scale ?? 1000),
@@ -46,15 +49,22 @@ export function createConveyorSensorVisual(layout, settings) {
     const group = new THREE.Group(); group.name = 'Tracking sensor IN' + settings.address;
     group.matrixAutoUpdate = false; group.matrix.copy(layout.mount ? layout.mount.matrixWorld.clone().invert().multiply(layout.frame.matrixWorld) : layout.frame.matrixWorld);
     const { box, sensor, z } = layout, x = layout.x, span = box.max.y-box.min.y;
-    const glow = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: .85, depthWrite: false });
+    const glow = new THREE.MeshBasicMaterial({ color: SENSOR_WAITING_COLOR, transparent: true, opacity: .85, depthWrite: false, toneMapped: false });
     const body = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: .45, metalness: .4 });
     for (const y of [box.min.y-9, box.max.y+9]) {
         const housing = new THREE.Mesh(new THREE.BoxGeometry(16,16,24), body);housing.position.set(x,y,z);if (!layout.mount || y !== box.min.y-9) group.add(housing); else housing.geometry.dispose();
         const postHeight = Math.max(5,z-box.min.z-12);
         const post = new THREE.Mesh(new THREE.BoxGeometry(6,6,postHeight),body);post.position.set(x,y,box.min.z+postHeight/2);group.add(post);
     }
+    const lightMaterial = new THREE.MeshBasicMaterial({ color: SENSOR_WAITING_COLOR, toneMapped: false });
+    const statusLight = new THREE.Mesh(new THREE.SphereGeometry(4, 12, 8), lightMaterial);
+    statusLight.name = 'Sensor status light';
+    if (layout.mount) statusLight.position.set(0, 0, 24).applyMatrix4(group.matrix.clone().invert());
+    else statusLight.position.set(x, box.min.y - 9, z + 12);
+    group.add(statusLight);
+
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,span,12),glow);beam.name='Sensor laser';beam.position.set(x,(box.min.y+box.max.y)/2,z);group.add(beam);
-    const areaMaterial = new THREE.MeshBasicMaterial({color:0xef4444,transparent:true,opacity:.12,depthWrite:false});
+    const areaMaterial = new THREE.MeshBasicMaterial({ color: SENSOR_WAITING_COLOR, transparent: true, opacity: .12, depthWrite: false, toneMapped: false });
     const area = new THREE.Mesh(new THREE.BoxGeometry(settings.width,span,sensor.max.z-sensor.min.z),areaMaterial);
     area.position.set(x,(box.min.y+box.max.y)/2,(sensor.min.z+sensor.max.z)/2);group.add(area);
     const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
@@ -63,8 +73,21 @@ export function createConveyorSensorVisual(layout, settings) {
     const texture=new THREE.CanvasTexture(canvas),labelMaterial=new THREE.SpriteMaterial({map:texture,depthWrite:false});
     const label=new THREE.Sprite(labelMaterial);label.name='Sensor input label';label.position.set(x,box.min.y-24,z+30);label.scale.set(64,16,1);group.add(label);
     group.traverse(object=>{object.userData.virtualVisionHelper=true;object.raycast=()=>{};});
-    return { group, setDetected(value) { const color=value?0x22c55e:0xef4444;glow.color.setHex(color);areaMaterial.color.setHex(color); },
-        dispose() { group.removeFromParent();group.traverse(o=>o.geometry?.dispose());body.dispose();glow.dispose();areaMaterial.dispose();texture.dispose();labelMaterial.dispose(); } };
+    return {
+        group,
+        setDetected(value) {
+            const color = value ? SENSOR_DETECTED_COLOR : SENSOR_WAITING_COLOR;
+            glow.color.setHex(color);
+            lightMaterial.color.setHex(color);
+            areaMaterial.color.setHex(color);
+        },
+        dispose() {
+            group.removeFromParent();
+            group.traverse(object => object.geometry?.dispose());
+            for (const material of [body, glow, lightMaterial, areaMaterial, labelMaterial]) material.dispose();
+            texture.dispose();
+        }
+    };
 }
 
 export function createConveyorSensorPreview(adapter) {

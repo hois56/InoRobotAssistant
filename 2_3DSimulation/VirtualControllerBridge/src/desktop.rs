@@ -243,7 +243,7 @@ mod tests {
         let mut text = [0u16; 128];
         unsafe {
             let len = GetWindowTextW(hwnd, text.as_mut_ptr(), text.len() as i32) as usize;
-            assert_eq!(String::from_utf16_lossy(&text[..len]), "InoRobot Virtual Controller Bridge V2.0");
+            assert_eq!(String::from_utf16_lossy(&text[..len]), "InoRobot Virtual Controller Bridge V2.1");
             SetWindowPos(hwnd, ptr::null_mut(), -32000, -32000, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
             ShowWindow(hwnd, SW_SHOW);
             assert_ne!(IsWindowVisible(hwnd), 0);

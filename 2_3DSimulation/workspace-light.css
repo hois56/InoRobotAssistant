@@ -84,10 +84,11 @@ body :is(input, select, textarea) { accent-color: var(--accent); }
     min-height: 40px;
     flex-shrink: 0;
     align-items: center;
-    padding-block: 2px;
+    padding: 2px 1.05rem;
     background: var(--bar-bg);
     border-bottom: 1px solid var(--border);
 }
+.equipment-header { padding-inline: 0; }
 :is(.model-browser-header, .jog-panel-header, .program-panel-header, .io-simulator-header,
     .tcp-profile-panel-header, .arm-load-panel-header, .tool-load-info-panel-header,
     .virtual-controller-header, .collaboration-header, .view-presets-header,
@@ -99,7 +100,6 @@ body :is(input, select, textarea) { accent-color: var(--accent); }
     letter-spacing: normal;
 }
 
-.jog-panel { padding-block-start: 0; }
 .jog-panel-header { margin-bottom: .5rem; }
 .panel-header-actions button, .viewer-control-dock button {
     color: var(--button-text);

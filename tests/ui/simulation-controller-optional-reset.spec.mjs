@@ -120,7 +120,7 @@ test('IO 원위치는 흡착을 해제하고 선택하지 않은 오브젝트와
     const pad = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: 'pad' });
     a.getRobotToolMountFrame(robot).add(pad); pad.userData.placement = 'tcp'; pad.userData.attachmentHost = robot; a.state.models.push(pad); pad.updateWorldMatrix(true, true);
     const product = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: 'product' });
-    product.position.copy(pad.localToWorld(new T.Vector3(0, 0, 21))); product.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
+    product.position.copy(pad.localToWorld(new T.Vector3(0, 0, 20.25))); product.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
     a.state.scene.add(product); a.state.models.push(product);
     const other = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: 'other' });
     other.position.z = 100; a.state.scene.add(other); a.state.models.push(other);

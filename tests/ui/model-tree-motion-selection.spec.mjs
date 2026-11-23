@@ -561,6 +561,40 @@ async function setup(page, fixture=true) {
     return errors;
 }
 
+for (const action of ['Delete', '우클릭 삭제']) {
+    test(`모델 트리의 ${action}는 선택한 모델을 한 번에 삭제하고 되돌린다`, async ({ page }) => {
+        const errors = await setup(page, false);
+        await page.evaluate(() => {
+            const { state, createPrimitiveShapeRoot, updateUIStatus } = window.__treeMotion;
+            for (const name of ['선택 A', '유지 B', '선택 C']) {
+                const model = createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 });
+                model.userData.modelTreeName = name;
+                state.scene.add(model);
+                state.models.push(model);
+            }
+            updateUIStatus();
+        });
+
+        const rows = page.locator('#model-tree .model-tree-button');
+        const names = rows.locator('.model-tree-name');
+        await rows.filter({ hasText: '선택 A' }).click();
+        await rows.filter({ hasText: '선택 C' }).click({ modifiers: ['Control'] });
+        if (action === 'Delete') {
+            await page.keyboard.press('Delete');
+        } else {
+            await rows.filter({ hasText: '선택 A' }).click({ button: 'right' });
+            await page.locator('#model-delete').click();
+        }
+        await expect(names).toHaveText(['유지 B']);
+
+        await page.keyboard.press('Control+z');
+        await expect(names).toHaveText(['선택 A', '유지 B', '선택 C']);
+        await page.keyboard.press('Control+y');
+        await expect(names).toHaveText(['유지 B']);
+        expect(errors).toEqual([]);
+    });
+}
+
 test('ESC는 모델·부품의 단일·다중 선택과 이동 핸들을 함께 해제한다',async({page})=>{
     const errors=await setup(page);
     const selection=()=>page.evaluate(()=>{

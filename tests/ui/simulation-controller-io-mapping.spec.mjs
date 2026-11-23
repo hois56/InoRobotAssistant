@@ -34,7 +34,7 @@ test('두 컨트롤러는 각 로봇 Tool의 진공을 따로 켜고 파기하�
       const pad = a.createPrimitiveShapeRoot('box', { x:20, y:20, z:20 }, { name: 'pad-' + i });
       a.getRobotToolMountFrame(robot).add(pad); pad.userData.placement = 'tcp'; pad.userData.attachmentHost = robot; a.state.models.push(pad); pad.updateWorldMatrix(true, true);
       const object = a.createPrimitiveShapeRoot('box', { x:20, y:20, z:20 }, { name: 'object-' + i });
-      object.position.copy(pad.localToWorld(new T.Vector3(0, 0, 21))); object.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
+      object.position.copy(pad.localToWorld(new T.Vector3(0, 0, 20.25))); object.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
       a.state.scene.add(object); a.state.models.push(object);
       a.equipmentApp.save({ id: 'object-' + i, type: 'OBJECT', movingRef: ref(object) });
       defs.push(a.equipmentApp.save({ id: 'vacuum-' + i, type: 'VACUUM', movingRef: ref(pad), vacuumMode: 'WHOLE' }, { forward: 0, reverse: 1 }));

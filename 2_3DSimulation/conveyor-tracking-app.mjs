@@ -3,7 +3,7 @@ import { uiText, uiFormat } from './ui-language.mjs';
 import * as THREE from 'three';
 import { ConveyorTracking, isConveyorSensorAddress } from './conveyor-tracking-core.mjs?v=20261119-tracking-step-1';
 import { conveyorLocalBounds } from './conveyor-scene.mjs?v=20261116-feed-1';
-import { normalizeSensorSettings, conveyorSensorLayout, createConveyorSensorVisual, createConveyorSensorPreview } from './conveyor-sensor-preview.mjs?v=20261119-sensor-capture-1';
+import { normalizeSensorSettings, conveyorSensorLayout, createConveyorSensorVisual, createConveyorSensorPreview } from './conveyor-sensor-preview.mjs?v=20261123-sensor-light';
 
 // For rejected frames only. Successful replies use flags for camera request IDs.
 const invalidFrameReasons = new Map([
@@ -270,6 +270,7 @@ export function createConveyorTrackingApp(adapter) {
             address, position: x, width, objectType });
         adapter.save?.();
         link.latest = tracker.reconnectFrame();
+        helper.setDetected(link.latest.sensors[0].value);
         // Check what the controller retained before replaying browser events.
         if (previous?.tracker === tracker) link.probe = { ...link.latest, events: [] };
         report('K14 컨트롤러의 응답을 기다립니다.'); flush(); render();
@@ -323,6 +324,10 @@ export function createConveyorTrackingApp(adapter) {
     function objectBounds(object, frame) { const box = conveyorLocalBounds(object, frame); return box.isEmpty() ? null : plainBox(box); }
     return {
         get active() { return links.size > 0; },
+        isTrackingController(controller) {
+            for (const link of links.values()) if (link.controller === controller) return true;
+            return false;
+        },
         get monitoring() { return saved.size > 0; },
         configure,
         sensorPreview: key => preview.summary(key),

@@ -1,9 +1,14 @@
+import { conveyorDisplayTime } from './conveyor-display.mjs';
+
 export const VIRTUAL_CONTROLLER_HOST = '127.0.0.1';
 export const VIRTUAL_CONTROLLER_TARGET_PORT = 2222;
 export const VIRTUAL_CONTROLLER_BRIDGE_URL = 'ws://127.0.0.1:5055/ws';
 export const VIRTUAL_CONTROLLER_BRIDGE_HEALTH_URL = 'http://127.0.0.1:5055/api/health';
 export const VIRTUAL_CONTROLLER_TRACE_URL = 'ws://127.0.0.1:5000/ws';
 export const VIRTUAL_CONTROLLER_SAMPLE_INTERVAL_MS = 4;
+// K14 tracking feedback can arrive about every 20 ms with browser-side jitter.
+const TRACKING_SMOOTH_RADIUS_MS = 24;
+const TRACKING_SAMPLE_GAP_MS = 64;
 
 export const VIRTUAL_CONTROLLER_SOURCES = Object.freeze({
     bridge: Object.freeze({
@@ -59,13 +64,13 @@ function readTraceJoints(data) {
     return joints.every((value) => value !== null) ? joints : null;
 }
 
-function readControllerIo(data, direction, prefix, packedKey) {
+function readControllerIo(data, direction, prefix, packedKey, lastStandardBit = 16) {
     const values = {};
     const source = { ...data?.[direction] };
     for (let index = 0; index <= 16; index++) source[index] ??= data?.[`${prefix}${index}`];
     for (const [address, value] of Object.entries(source)) {
         const index = Number(address);
-        if (!Number.isInteger(index) || !(index >= 0 && index <= 16 || index >= 512 && index <= 2559)) continue;
+        if (!Number.isInteger(index) || !(index >= 0 && index <= lastStandardBit || index >= 512 && index <= 2559)) continue;
         if (value === null || value === undefined || value === '' || !Number.isFinite(Number(value))) continue;
         values[index] = Number(value) === 0 ? 0 : 1;
     }
@@ -77,8 +82,8 @@ function readControllerIo(data, direction, prefix, packedKey) {
     return values;
 }
 
-function readControllerOutputs(data) {
-    return readControllerIo(data, 'outputs', 'do_', 'fieldbusOutputs');
+function readControllerOutputs(data, lastStandardBit = 16) {
+    return readControllerIo(data, 'outputs', 'do_', 'fieldbusOutputs', lastStandardBit);
 }
 
 export function parseVirtualControllerMessage(raw, receivedAt = 0) {
@@ -90,7 +95,7 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
     }
     if (!message || typeof message !== 'object') return { kind: 'invalid', reason: 'message' };
 
-    if (message.type === 'robotState') {
+    if (message.type === 'robotState' || message.type === 'robotOutputEdge') {
         const data = message.data;
         const joints = Array.isArray(data?.joints) ? data.joints.map(Number) : [];
         if (joints.length < 4 || joints.some((value) => !Number.isFinite(value))) {
@@ -100,6 +105,7 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
         const hasTcp = tcp.length >= 6 && tcp.slice(0, 6).every(Number.isFinite);
         return {
             kind: 'state',
+            ...(message.type === 'robotOutputEdge' || data.outputEdge === true ? { outputEdge: true } : {}),
             receivedAt: Number.isFinite(receivedAt) ? receivedAt : 0,
             controllerTime: readFiniteNumber(data, ['timestamp', 'Timestamp']),
             sequence: readFiniteNumber(data, ['sequence', 'Sequence']),
@@ -107,7 +113,7 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
             position: hasTcp ? tcp.slice(0, 3) : null,
             rotation: hasTcp ? tcp.slice(3, 6) : null,
             telemetry: null,
-            outputs: readControllerOutputs(data),
+            outputs: readControllerOutputs(data, Number.isInteger(data.controllerCycle) ? 63 : 16),
             inputs: readControllerIo(data, 'inputs', 'di_', 'fieldbusInputs')
         };
     }
@@ -142,13 +148,17 @@ export function parseVirtualControllerMessage(raw, receivedAt = 0) {
 export class VirtualControllerSampleBuffer {
     constructor() {
         this.latestSample = null;
+        this.renderSamples = [];
         this.recentReceiveTimes = [];
+        this.firstPositionAt = null;
         this.nextSampleId = 1;
     }
 
     clear() {
         this.latestSample = null;
+        this.renderSamples.length = 0;
         this.recentReceiveTimes.length = 0;
+        this.firstPositionAt = null;
         this.nextSampleId = 1;
     }
 
@@ -159,10 +169,35 @@ export class VirtualControllerSampleBuffer {
             ? last.receivedAt + 0.001
             : sample.receivedAt;
         this.latestSample = { ...sample, receivedAt: timestamp, sampleId: this.nextSampleId };
+        const history = this.renderSamples;
+        let time = timestamp;
+        if (last && (timestamp - last.receivedAt > TRACKING_SAMPLE_GAP_MS || sample.joints.length !== last.joints.length)) {
+            history.length = 0;
+        }
+        if (history.length && Number.isFinite(sample.sequence) && Number.isFinite(last.sequence)
+            && Number.isFinite(sample.controllerTime) && Number.isFinite(last.controllerTime)) {
+            // The bridge timestamps the joint read in milliseconds. Transfer its intervals
+            // to the browser clock, correcting the offset slowly as transport latency varies.
+            const interval = sample.controllerTime - last.controllerTime;
+            const expected = history.at(-1).time + interval;
+            const error = timestamp - expected;
+            if (sample.sequence > last.sequence && interval > 0 && interval <= TRACKING_SAMPLE_GAP_MS && Math.abs(error) <= TRACKING_SAMPLE_GAP_MS) {
+                time = expected + Math.max(-.25, Math.min(.25, error / 32));
+            } else history.length = 0;
+        }
+        if (history.length && time <= history.at(-1).time) history.length = 0;
+        history.push({ time, joints: sample.joints });
+        const cutoffTime = conveyorDisplayTime(timestamp) - TRACKING_SMOOTH_RADIUS_MS;
+        while (history.length > 1 && history[1].time <= cutoffTime) history.shift();
         this.nextSampleId += 1;
-        this.recentReceiveTimes.push(timestamp);
-        const cutoff = timestamp - 1000;
-        while (this.recentReceiveTimes.length && this.recentReceiveTimes[0] < cutoff) {
+        // An output transition carries its own pickup/release pose between
+        // regular position frames. Only regular arrivals measure their rate.
+        if (!sample.outputEdge) {
+            this.firstPositionAt ??= sample.receivedAt;
+            this.recentReceiveTimes.push(sample.receivedAt);
+        }
+        const cutoff = sample.receivedAt - 1000;
+        while (this.recentReceiveTimes.length && this.recentReceiveTimes[0] <= cutoff) {
             this.recentReceiveTimes.shift();
         }
         return true;
@@ -172,13 +207,41 @@ export class VirtualControllerSampleBuffer {
         return this.latestSample;
     }
 
-    getRateHz(now = this.recentReceiveTimes.at(-1) ?? 0) {
+    getTrackingRenderPose(now) {
+        const latest = this.latestSample;
+        if (!latest || now - latest.receivedAt > TRACKING_SAMPLE_GAP_MS) return null;
+        const renderTime = conveyorDisplayTime(now);
+        const history = this.renderSamples;
+        if (renderTime <= history[0].time) return history[0];
+        if (renderTime >= history.at(-1).time) return history.at(-1);
+        // Integrate the linear segments over a symmetric time window. This preserves
+        // constant velocity and gives a burst of packets only its actual time weight.
+        const radius = Math.min(TRACKING_SMOOTH_RADIUS_MS, renderTime - history[0].time, history.at(-1).time - renderTime);
+        const start = renderTime - radius, end = renderTime + radius;
+        const anchor = history[0].joints;
+        const joints = anchor.slice();
+        for (let i = 1; i < history.length; i++) {
+            const from = history[i - 1], to = history[i];
+            const left = Math.max(start, from.time), right = Math.min(end, to.time);
+            if (right <= left) continue;
+            const fraction = ((left - from.time) + (right - left) / 2) / (to.time - from.time);
+            const weight = (right - left) / (2 * radius);
+            for (let axis = 0; axis < joints.length; axis++) {
+                const middle = from.joints[axis] + (to.joints[axis] - from.joints[axis]) * fraction;
+                joints[axis] += (middle - anchor[axis]) * weight;
+            }
+        }
+        return { time: renderTime, joints };
+    }
+
+    getRateHz(now = this.latestSample?.receivedAt ?? 0) {
         const cutoff = now - 1000;
-        while (this.recentReceiveTimes.length && this.recentReceiveTimes[0] < cutoff) {
+        while (this.recentReceiveTimes.length && this.recentReceiveTimes[0] <= cutoff) {
             this.recentReceiveTimes.shift();
         }
+        if (this.firstPositionAt !== null && this.firstPositionAt <= cutoff) return this.recentReceiveTimes.length;
         if (this.recentReceiveTimes.length < 2) return 0;
-        const duration = this.recentReceiveTimes.at(-1) - this.recentReceiveTimes[0];
+        const duration = now - this.recentReceiveTimes[0];
         return duration > 0 ? ((this.recentReceiveTimes.length - 1) * 1000) / duration : 0;
     }
 }

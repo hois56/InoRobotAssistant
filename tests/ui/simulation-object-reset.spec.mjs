@@ -128,7 +128,7 @@ test('흡착 중 모두 원위치는 물체를 놓고 복원하며 재개 전에
     const pad = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '초기화 패드' });
     a.getRobotToolMountFrame(robot).add(pad); pad.userData.placement = 'tcp'; pad.userData.attachmentHost = robot; a.state.models.push(pad); pad.updateWorldMatrix(true, true);
     const object = a.createPrimitiveShapeRoot('box', { x: 20, y: 20, z: 20 }, { name: '초기화 제품' });
-    object.position.copy(pad.localToWorld(new T.Vector3(0, 0, 21))); object.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
+    object.position.copy(pad.localToWorld(new T.Vector3(0, 0, 20.25))); object.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));
     a.state.scene.add(object); a.state.models.push(object);
     const home = object.position.toArray();
     app.save({ id: 'held-object', type: 'OBJECT', movingRef: ref(object) });

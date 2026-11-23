@@ -192,9 +192,9 @@ export function createEquipmentUi(adapter) {
   dialog.querySelector('.equipment-header h2').textContent=object?(editing?'오브젝트 편집':'오브젝트 등록'):(editing?'동작 편집':'동작 설정');
   form.querySelector('button[type="submit"]').textContent=object?(editing?'등록 변경 저장':'오브젝트 등록'):(editing?'변경 저장':'동작 저장');
   ioSection.querySelector('legend').textContent=object?'2. 원위치 IO (선택)':'2. IO 연결 (선택)';
-  ioSection.querySelector('.equipment-help').textContent=object?'Output이 동작 조건으로 바뀔 때 이 오브젝트를 원위치합니다. 모든 등록 오브젝트 원위치를 체크하면 등록된 오브젝트 전체를 원위치합니다.':vacuum?'진공 신호가 한 번 들어오면 파기 신호까지 유지됩니다. 진공을 켤 때만 2mm 이내의 등록 오브젝트를 검색합니다.':'프로그램 실행 없이 IO 테스트 버튼으로도 동작합니다.';
+  ioSection.querySelector('.equipment-help').textContent=object?'Output이 동작 조건으로 바뀔 때 이 오브젝트를 원위치합니다. 모든 등록 오브젝트 원위치를 체크하면 등록된 오브젝트 전체를 원위치합니다.':vacuum?'진공을 켜 두면 흡착 면에서 0.5 mm 이내로 들어온 등록 오브젝트 한 개를 잡고, 파기 신호가 들어올 때까지 유지합니다.':'프로그램 실행 없이 IO 테스트 버튼으로도 동작합니다.';
   faceSection.hidden=!vacuum;facePick.hidden=form.elements.vacuumMode.value!=='FACE';
-  faceStatus.textContent=form.elements.vacuumMode.value==='WHOLE'?'선택한 모델 또는 부품 전체에서 2mm 이내의 오브젝트를 찾습니다.':vacuumFace?'흡착 면이 선택되었습니다.':'흡착 면 선택을 누른 뒤 3D 화면의 면을 클릭하세요.';
+  faceStatus.textContent=form.elements.vacuumMode.value==='WHOLE'?'선택한 모델 또는 부품의 표면에서 0.5 mm 이내에 있는 오브젝트를 찾습니다.':vacuumFace?'흡착 면이 선택되었습니다.':'흡착 면 선택을 누른 뒤 3D 화면의 면을 클릭하세요.';
   if(simple){for(const key of ['axis','travel','speed'])detachField(form.elements[key].parentElement);detachField(dialog.querySelector('#equipment-advanced'));}
   if(object)detachField(faceSection);else{detachField(randomSection);if(!vacuum)detachField(faceSection);}
  }

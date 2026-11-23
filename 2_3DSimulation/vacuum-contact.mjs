@@ -1,13 +1,14 @@
 import * as THREE from 'three';
-import { MeshCollisionSystem } from './collision-system.mjs';
+import { MeshCollisionSystem } from './collision-system.mjs?v=20261123-vacuum-contact';
 import { equipmentReferences } from './equipment-core.mjs?v=20261107-object-home-1';
 
+const VACUUM_GAP_MM = 0.5;
 const within = (object, root) => { for (let node = object; node; node = node.parent) if (node === root) return true; return false; };
 const visible = object => { for (let node = object; node; node = node.parent) if (node.visible === false) return false; return true; };
 
 export class VacuumContact {
     constructor(adapter = {}) { this.adapter = adapter; this.clear(); }
-    clear() { this.system = new MeshCollisionSystem(); this.proxies = new WeakMap(); this.objects = new WeakMap(); }
+    clear() { this.system?.clear(); this.system = new MeshCollisionSystem(); this.proxies = new WeakMap(); this.objects = new WeakMap(); }
     meshes(root) {
         const result = [];
         root?.traverse(mesh => {
@@ -77,8 +78,9 @@ export class VacuumContact {
             try { roots.push(...this.sources(def, resolve).map(source => source.proxy)); } catch { /* Invalid saved face is reported when used or edited. */ }
         }
         if (!roots.length) return;
-        roots.push(...candidates.map(candidate => this.objectProxy(candidate.object)));
-        this.system.prepare(roots);
+        const workpieces = candidates.map(candidate => this.objectProxy(candidate.object));
+        this.system.prepare([...roots, ...workpieces]);
+        for (const root of workpieces) this.system.meshCache.delete(root);
     }
     find(def, candidates, resolve) {
         const sources = this.sources(def, resolve), contacts = [];
@@ -86,10 +88,11 @@ export class VacuumContact {
             const proxy = this.objectProxy(candidate.object);
             for (const source of sources) {
                 if (within(source.mesh, candidate.object) || within(candidate.object, source.mesh)) continue;
-                if (this.system.isWithinDistance(source.proxy, proxy, 2)) {
+                if (this.system.isWithinDistance(source.proxy, proxy, VACUUM_GAP_MM)) {
                     contacts.push({ candidate, source }); break;
                 }
             }
+            this.system.meshCache.delete(proxy);
         }
         return contacts;
     }

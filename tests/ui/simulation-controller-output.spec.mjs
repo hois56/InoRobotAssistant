@@ -11,7 +11,7 @@ test('컨트롤러 신호로 진공 흡착하고 OFF 후 유지·파기하며 Ou
  const a=window.__hardware,app=a.equipmentApp,T=a.THREE,controller=a.state.virtualController;await a.ensureVirtualControllerCore(controller);a.registerVirtualControllerSession(controller);controller.wanted=true;controller.status='streaming';controller.streamWatchdogTimer=1;
  const ref=m=>'equipment-model:'+a.ensureWorkspaceModelId(m)+'/-1';const robot=a.state.models.find(m=>m.userData.tcpFrame);
  const pad=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'패드'});a.getRobotToolMountFrame(robot).add(pad);pad.userData.placement='tcp';pad.userData.attachmentHost=robot;a.state.models.push(pad);pad.updateWorldMatrix(true,true);
- const obj=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'물체'});obj.position.copy(pad.localToWorld(new T.Vector3(0,0,21)));obj.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));a.state.scene.add(obj);a.state.models.push(obj);
+ const obj=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name:'물체'});obj.position.copy(pad.localToWorld(new T.Vector3(0,0,20.25)));obj.quaternion.copy(pad.getWorldQuaternion(new T.Quaternion()));a.state.scene.add(obj);a.state.models.push(obj);
  app.save({id:'hardware-object',type:'OBJECT',movingRef:ref(obj)});
  const def=app.save({id:'hardware-vacuum',type:'VACUUM',movingRef:ref(pad),vacuumMode:'WHOLE'},{forward:0,reverse:1});
  a.handleVirtualControllerMessage(JSON.stringify({type:'robotState',data:{joints:[0,0,0,0,0,0],outputs:{0:1,16:1}}}),controller);a.writeOlpAddress('Out[0]',0);a.writeOlpAddress('OutB[0]',0);app.runtime.start();app.runtime.update(a.state.equipmentDefinitions,a.state.ioFunctionMappings,0);app.runtime.update(a.state.equipmentDefinitions,a.state.ioFunctionMappings,20);

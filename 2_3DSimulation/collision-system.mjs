@@ -229,7 +229,7 @@ function nativeMeshPairIntersects(meshA, bvhA, rootA, meshB, bvhB, rootB, epsilo
     input.set(mount ? [mount.x, mount.y, mount.z, mount.constant] : [0, 0, 0, 0], 44);
     const kind = engine.collision_pair(bvhA.handle, bvhB.handle, epsilon, mount ? (mount.robotIsLeft ? 1 : 2) : 0);
     const [, triangleA, triangleB, x, y, z, tests] = numbers(7);
-    stats.triangleTests += tests;
+    if (stats) stats.triangleTests += tests;
     if (kind === 0) return null;
     return {
         meshA,
@@ -1074,16 +1074,21 @@ export class MeshCollisionSystem {
         if (!leftRoot || !rightRoot || !Number.isFinite(distance) || distance < 0) return false;
         leftRoot.updateWorldMatrix(true, true);
         rightRoot.updateWorldMatrix(true, true);
-        const limitSquared = (distance + 1e-9) ** 2;
+        const tolerance = 1e-9;
+        const limitSquared = (distance + tolerance) ** 2;
         const triangleA = new Float64Array(9), triangleB = new Float64Array(9);
         const localA = new Float64Array(9), localB = new Float64Array(9);
-        for (const left of this.collectMeshes(leftRoot)) for (const right of this.collectMeshes(rightRoot)) {
+        const rightMeshes = this.collectMeshes(rightRoot);
+        for (const left of this.collectMeshes(leftRoot)) for (const right of rightMeshes) {
             if (!left.worldBounds || !right.worldBounds
                 || boundsDistanceSquared(left.worldBounds, right.worldBounds) > limitSquared) continue;
             let a = this.getGeometryBVH(left.geometry), b = this.getGeometryBVH(right.geometry);
             if (!a?.root || !b?.root) continue;
             if (a.native && b.native) {
                 if (nativeWithinDistance(left, a, right, b, limitSquared)) return true;
+                // A triangle edge can pierce a face even if every vertex and edge pair is farther away.
+                if (left.worldBounds.intersectsBox(right.worldBounds)
+                    && nativeMeshPairIntersects(left.mesh, a, left.worldBounds, right.mesh, b, right.worldBounds, tolerance, null, null)?.kind === 'surface') return true;
                 continue;
             }
             if (a.native) a = a.reference;
@@ -1098,7 +1103,8 @@ export class MeshCollisionSystem {
                         a.readTriangleWorld(left.mesh, indexA, triangleA, localA);
                         for (const indexB of nodeB.triangles) {
                             b.readTriangleWorld(right.mesh, indexB, triangleB, localB);
-                            if (trianglesWithinDistance(triangleA, triangleB, limitSquared)) return true;
+                            if (trianglesWithinDistance(triangleA, triangleB, limitSquared)
+                                || trianglesIntersect(triangleA, triangleB, tolerance)) return true;
                         }
                     }
                 } else if (nodeA.triangles) {

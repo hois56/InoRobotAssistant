@@ -13,7 +13,9 @@
 # Local JavaScript test tooling.
 /node_modules/
 /test-results/
+/test-results-*/
 /playwright-report/
+/blob-report/
 
 # Local .NET build intermediates.
 **/bin/

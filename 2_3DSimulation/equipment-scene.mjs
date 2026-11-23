@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VacuumContact } from './vacuum-contact.mjs?v=20261107-object-home-1';
+import { VacuumContact } from './vacuum-contact.mjs?v=20261123-vacuum-single';
 import { equipmentFeedback, resolveEquipmentCommand, stepEquipmentPosition, equipmentMotionGroups, equipmentReferences, randomObjectHomeOffset } from './equipment-core.mjs?v=20261107-object-home-1';
 import { createFilmState, stepFilm, getFilmGripLayout, getFilmPeelFromGrip } from './film-peeling-core.mjs';
 import { conveyorLocalBounds } from './conveyor-scene.mjs';
@@ -433,25 +433,28 @@ export class EquipmentScene {
         if (!powered || def.type !== 'VACUUM' || def.enabled === false) { this.release(def); return; }
         const attachment = this.objectAttachment(def);
         if (!attachment) { this.release(def); throw new Error('로봇에 설치한 Tool에서 진공을 설정하세요.'); }
-        if (!def.runtime.acquisitionDone) {
-            def.runtime.acquisitionDone = true;
-            const candidates = this.adapter.candidates().filter(candidate => {
-                for (let node = candidate.object; node; node = node.parent) if (node.visible === false || node.userData.equipmentOwner || node.userData.attachmentHost) return false;
-                return !candidate.model.userData.tcpFrame;
-            });
-            def.runtime.heldObjects = [];
-            for (const { candidate, source } of this.contact.find(def, candidates, this.adapter.resolve)) {
-                source.mesh.updateWorldMatrix(true, false); candidate.object.updateWorldMatrix(true, false);
-                const local = source.mesh.matrixWorld.clone().invert().multiply(candidate.object.matrixWorld).toArray();
-                if (candidate.object === candidate.model && !this.adapter.grab(candidate, attachment.robot)) continue;
-                candidate.object.userData.equipmentOwner = def.id;
-                def.runtime.heldObjects.push({ ref: candidate.ref, anchorRef: source.ref, meshPath: source.meshPath, local });
-                this.adapter.dirty(candidate.model);
-            }
-        }
         def.runtime.vacuumActive = true;
-        def.runtime.heldRef = def.runtime.heldObjects[0]?.ref || '';
-        this.followVacuum(def);
+        const held = def.runtime.heldObjects ||= [];
+        def.runtime.heldRef ||= held[0]?.ref || '';
+        if (def.runtime.heldRef) {
+            this.followVacuum(def);
+            return;
+        }
+        const candidates = this.adapter.candidates().filter(candidate => {
+            for (let node = candidate.object; node; node = node.parent) if (node.visible === false || node.userData.equipmentOwner || node.userData.attachmentHost) return false;
+            return !candidate.model.userData.tcpFrame;
+        });
+        if (!candidates.length) return;
+        for (const { candidate, source } of this.contact.find(def, candidates, this.adapter.resolve)) {
+            source.mesh.updateWorldMatrix(true, false); candidate.object.updateWorldMatrix(true, false);
+            const local = source.mesh.matrixWorld.clone().invert().multiply(candidate.object.matrixWorld).toArray();
+            if (candidate.object === candidate.model && !this.adapter.grab(candidate, attachment.robot)) continue;
+            candidate.object.userData.equipmentOwner = def.id;
+            held.push({ ref: candidate.ref, anchorRef: source.ref, meshPath: source.meshPath, local });
+            def.runtime.heldRef = candidate.ref;
+            this.followVacuum(def);
+            break;
+        }
     }
 
     release(def) {
@@ -471,7 +474,7 @@ export class EquipmentScene {
         }
         def.runtime.heldRef = ''; def.runtime.heldLocal = null; def.runtime.heldObjects = [];
         delete def.runtime.filmGripOwner; delete def.runtime.filmGripContactPosition;
-        if (def.type === 'OBJECT' || def.type === 'VACUUM') { def.runtime.vacuumActive = false; def.runtime.acquisitionDone = false; this.writeFeedback(def, false); }
+        if (def.type === 'OBJECT' || def.type === 'VACUUM') { def.runtime.vacuumActive = false; this.writeFeedback(def, false); }
     }
 
     applyFilm(def, object, frame, seconds) {

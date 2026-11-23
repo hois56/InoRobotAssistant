@@ -10,7 +10,7 @@ const THREE = await import(`data:text/javascript;base64,${Buffer.from(threeSourc
 const source = readFileSync(new URL('../../2_3DSimulation/main.js', import.meta.url), 'utf8');
 const names = ['getRobotControllerBaseFrame', 'getCurrentTcpPoseBase', 'getJogReadoutPose',
   'getBasePoseFromJogReadout', 'getTcpRotationDegrees', 'quaternionFromTcpRotationDegrees',
-  'normalizeDegrees', 'applyVirtualControllerFrameForController', 'calculatePointArmParameters',
+  'normalizeDegrees', 'getControllerJointModelValue', 'applyVirtualControllerFrameForController', 'calculatePointArmParameters',
   'quaternionErrorVector', 'restoreControllerToolFrame', 'applyControllerTcpPose', 'syncActiveTcpFrame', 'clearVirtualControllerIo', 'disconnectVirtualController'];
 const functions = names.map(name => source.match(new RegExp(`function ${name}\\([^]*?\\n\\}`))?.[0] || '').join('\n');
 

@@ -1,6 +1,7 @@
 #![cfg_attr(not(test), windows_subsystem = "windows")]
 
 mod desktop;
+mod feedback;
 mod fieldbus;
 mod outbox;
 mod pipes;
@@ -35,7 +36,7 @@ use worker::{Command, Connection, Worker, DEFAULT_INTERVAL};
 
 const SERVICE: &str = "InoRobotVirtualControllerBridge";
 const PRODUCT: &str = "InoRobot Virtual Controller Bridge";
-const VERSION: &str = "2.0";
+const VERSION: &str = "2.1";
 const BRIDGE_PORT: u16 = 5055;
 const MAX_MESSAGE: usize = 64 * 1024;
 

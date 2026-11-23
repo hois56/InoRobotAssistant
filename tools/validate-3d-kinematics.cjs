@@ -132,72 +132,43 @@ function axisDistanceToBounds(pivot, axis, bounds) {
     return Math.sqrt(squaredDistance);
 }
 
-function mapScaraTubeLongitudinal(
-    longitudinal,
-    sourcePlanLength,
-    targetPlanLength,
-    j1RigidEndLength
-) {
-    const flexibleStart = j1RigidEndLength;
-    if (longitudinal <= flexibleStart) return { distance: longitudinal, scale: 1 };
-    const sourceFlexibleLength = Math.max(sourcePlanLength - flexibleStart, 1e-6);
-    const targetFlexibleLength = Math.max(
-        targetPlanLength - flexibleStart,
-        1e-6
-    );
-    const normalized = (longitudinal - flexibleStart) / sourceFlexibleLength;
-    const targetFlexibleScale = targetFlexibleLength / sourceFlexibleLength;
-    const transitionFraction = Math.min(0.12, targetFlexibleScale * 0.25);
-    const flowingScale = (targetFlexibleScale - transitionFraction * 0.5)
-        / (1 - transitionFraction * 0.5);
-    const transitionIntegral = (value) => value ** 6
-        - 3 * value ** 5
-        + 2.5 * value ** 4;
-    const transitionScale = (value) => value ** 3
-        * (value * (value * 6 - 15) + 10);
-    const transitionArea = transitionFraction * (1 + flowingScale) * 0.5;
-    let normalizedDistance;
-    let localScale;
-    if (normalized < transitionFraction) {
-        const transition = normalized / transitionFraction;
-        normalizedDistance = normalized
-            + (flowingScale - 1) * transitionFraction * transitionIntegral(transition);
-        localScale = 1 + (flowingScale - 1) * transitionScale(transition);
-    } else {
-        normalizedDistance = transitionArea
-            + flowingScale * (normalized - transitionFraction);
-        localScale = flowingScale;
+async function validateScaraConduitMapping(catalog) {
+    const { SCARA_CONDUIT_FITTINGS, createScaraSpanMapping } = await import('../2_3DSimulation/scara-conduit.mjs');
+    const floorModels = catalog.filter(model => model.robotType === 'scara' && model.kinematicVariant !== 'ceiling-scara');
+    assert(Object.keys(SCARA_CONDUIT_FITTINGS).length === floorModels.length,
+        'Each floor-mounted SCARA must have one CAD fitting definition');
+    for (const { folder, structure: [j2], limits: [[minJ1, maxJ1]] } of floorModels) {
+        const fitting = SCARA_CONDUIT_FITTINGS[folder];
+        assert(fitting, folder + ": missing CAD fitting definition");
+        const bounds = readBounds(path.join(modelsRoot, folder, 'TUBE.stl'));
+        const sourceSpan = j2 + fitting.cableEnd[0] - bounds.min[0];
+        const heightOffset = fitting.inlet[1] - fitting.cableEnd[1] - SCARA_TUBE_CAD_Z_OFFSETS[folder];
+        for (const angle of [minJ1, minJ1 / 2, 0, maxJ1 / 2, maxJ1]) {
+            const radians = angle * Math.PI / 180;
+            const targetSpan = Math.hypot(j2 * Math.cos(radians) - bounds.min[0], j2 * Math.sin(radians)) + fitting.inlet[0];
+            const map = createScaraSpanMapping(sourceSpan, targetSpan, heightOffset);
+            const label = folder + " at J1=" + angle;
+            const origin = map(0);
+            assert(origin.distance === 0 && origin.height === 0 && origin.scale === 1 && origin.slope === 0,
+                label + ": the fixed cable end must stay seated and rigid");
+            const end = map(sourceSpan);
+            assert(Math.abs(end.distance - targetSpan) < 1e-8 && end.height === heightOffset
+                && end.scale === 1 && end.slope === 0, label + ": the moving cable end must stay seated and rigid");
+            let previousDistance = 0;
+            const step = sourceSpan / 10_000;
+            for (let sample = 1; sample <= 100; sample++) {
+                const u = sourceSpan * sample / 100;
+                const { distance, scale, slope } = map(u);
+                assert(distance > previousDistance && scale > 0, label + ": the cable span folds over itself");
+                const before = { ...map(u - step) };
+                const after = map(u + step);
+                assert(Math.abs((after.distance - before.distance) / (2 * step) - scale) < 1e-4
+                    && Math.abs((after.height - before.height) / (2 * step) - slope) < 1e-4,
+                label + ": the cable surface must keep a continuous tangent");
+                previousDistance = distance;
+            }
+        }
     }
-    return {
-        distance: flexibleStart + sourceFlexibleLength * normalizedDistance,
-        scale: Math.max(localScale, 1e-6)
-    };
-}
-
-function mapScaraTubePoint(point, fixedEnd, sourceMovingX, movingEnd, j1RigidEndLength) {
-    const sourceDeltaX = sourceMovingX - fixedEnd[0];
-    const sourceDeltaY = -fixedEnd[1];
-    const sourcePlanLength = Math.max(Math.hypot(sourceDeltaX, sourceDeltaY), 1);
-    const sourceDirection = [sourceDeltaX / sourcePlanLength, sourceDeltaY / sourcePlanLength];
-    const sourceNormal = [-sourceDirection[1], sourceDirection[0]];
-    const targetDelta = [movingEnd[0] - fixedEnd[0], movingEnd[1] - fixedEnd[1]];
-    const targetPlanLength = Math.hypot(...targetDelta);
-    const targetDirection = [targetDelta[0] / targetPlanLength, targetDelta[1] / targetPlanLength];
-    const targetNormal = [-targetDirection[1], targetDirection[0]];
-    const sourceOffset = [point[0] - fixedEnd[0], point[1] - fixedEnd[1]];
-    const longitudinal = sourceOffset[0] * sourceDirection[0] + sourceOffset[1] * sourceDirection[1];
-    const lateral = sourceOffset[0] * sourceNormal[0] + sourceOffset[1] * sourceNormal[1];
-    const mappedLongitudinal = mapScaraTubeLongitudinal(
-        longitudinal,
-        sourcePlanLength,
-        targetPlanLength,
-        j1RigidEndLength
-    ).distance;
-    return [
-        fixedEnd[0] + targetDirection[0] * mappedLongitudinal + targetNormal[0] * lateral,
-        fixedEnd[1] + targetDirection[1] * mappedLongitudinal + targetNormal[1] * lateral,
-        point[2]
-    ];
 }
 
 function createManifest(model) {
@@ -326,128 +297,22 @@ const tubeVisualSource = viewerSource.slice(
 );
 assert(tubeVisualSource.includes('function createScaraTubeMesh(')
     && tubeVisualSource.includes('function updateScaraTube('), 'Viewer must create and update the SCARA CD conduit between its two sockets');
-assert(tubeVisualSource.includes('const geometry = sourceGeometry.clone()')
-    && tubeVisualSource.includes('scaraTubeOriginalStl')
-    && tubeVisualSource.includes('scaraTubeOriginalPositions')
-    && tubeVisualSource.includes('scaraTubeOriginalNormals'), 'SCARA conduit must retain the complete authored TUBE.stl mesh');
-assert(!tubeVisualSource.includes('new THREE.TubeGeometry(')
-    && !tubeVisualSource.includes('createScaraTubeConnector(')
-    && !tubeVisualSource.includes('createScaraTubeGeometry('), 'SCARA conduit must not be replaced by generated tube or connector geometry');
+assert(tubeVisualSource.includes('sourceGeometry.clone()') && tubeVisualSource.includes('splitScaraGlandGeometry(')
+    && !tubeVisualSource.includes('new THREE.TubeGeometry('), 'SCARA conduit and fitting must use authored STL geometry');
 assert(viewerSource.includes('controllerBaseFrame.add(tubeMesh)')
-    && tubeVisualSource.includes('if (tube.parent !== controllerBaseFrame) controllerBaseFrame.add(tube)')
-    && !viewerSource.includes('j1.group.add(robot.userData.scaraTube)')
     && !viewerSource.includes('j2.group.add(robot.userData.scaraTube)'), 'SCARA conduit must remain in the fixed P0 frame');
-assert(tubeVisualSource.includes('getScaraTubeJ1SocketOffset')
-    && tubeVisualSource.includes('scaraTubeFixedEnd')
-    && tubeVisualSource.includes('j2.group.getWorldPosition'), 'SCARA conduit must keep its J1 end fixed and follow the moving J2 socket');
 assert(viewerSource.includes('SCARA_TUBE_CAD_Z_OFFSETS')
     && viewerSource.includes("'IR-S25-120Z42': -52.5")
     && viewerSource.includes("'IR-S60-120Z40': -45.372")
     && tubeVisualSource.includes('definition.cadZOffset')
     && tubeVisualSource.includes('offset.z = Number.isFinite(Number(cadZOffset))'), 'SCARA conduit must use the per-model placement measured from the matching assembly CAD');
 assert(!tubeVisualSource.includes('Math.abs(offset.z) > 5'), 'SCARA conduit must not discard deep model-specific CAD socket offsets');
-assert(tubeVisualSource.includes('targetDirectionX * mappedLongitudinal')
-    && tubeVisualSource.includes('targetNormalX * lateral')
-    && tubeVisualSource.includes('positions[offset + 2] = originalPositions[offset + 2] + zOffset'), 'SCARA conduit must preserve its authored vertical curve in one moving plane without sideways bending');
-assert(!tubeVisualSource.includes('SCARA_TUBE_CONNECTOR_ANGLE_DEGREES')
-    && !tubeVisualSource.includes('scaraTubeConnectorAngleDegrees')
-    && !tubeVisualSource.includes('j2RigidEndLength')
-    && !tubeVisualSource.includes('scaraTubeCrossSectionWidth'), 'SCARA conduit must not impose a fixed J2 connector angle or rigid lead');
-assert(tubeVisualSource.includes('function mapScaraTubeLongitudinal(')
-    && tubeVisualSource.includes('transitionIntegral')
-    && tubeVisualSource.includes('transitionScale')
-    && tubeVisualSource.includes('flowingScale'), 'SCARA conduit must transition smoothly from the J1 socket and flow continuously through J2');
-assert(/joint\.definition\.name\s*===\s*['"]J1['"]\)\s*updateScaraTube\(joint\.robot\)/.test(viewerSource), 'SCARA conduit plane must refresh after J1 motion');
 assert(/mesh\.userData\.excludeFromOutline\s*=\s*true/.test(tubeVisualSource), 'SCARA CD conduit must be excluded from model outlines');
 const outlineSource = viewerSource.slice(
     viewerSource.indexOf('function isOutlineMesh('),
     viewerSource.indexOf('function removeModelOutlines(')
 );
 assert(outlineSource.includes('!mesh.userData?.excludeFromOutline'), 'Outline selection must honor the SCARA conduit exclusion flag');
-assert(tubeVisualSource.includes('if (tube.parent !== controllerBaseFrame) controllerBaseFrame.add(tube)')
-    && !tubeVisualSource.includes('weightBuckets')
-    && !tubeVisualSource.includes('scaraCosines'), 'SCARA CD conduit must use a fixed-end planar mapping instead of progressive per-vertex rotation');
-for (const angle of [-132, -120, -45, 0, 45, 120, 132]) {
-    const radians = angle * Math.PI / 180;
-    const fixed = [-100, 0, 50];
-    const sourceMovingX = 225;
-    const moving = [sourceMovingX * Math.cos(radians), sourceMovingX * Math.sin(radians), 50];
-    const sourceLength = sourceMovingX - fixed[0];
-    const targetLength = Math.hypot(moving[0] - fixed[0], moving[1] - fixed[1]);
-    const j1RigidEnd = Math.min(sourceLength * 0.12, 45, targetLength * 0.24);
-    const mappedFixed = mapScaraTubePoint(fixed, fixed, sourceMovingX, moving, j1RigidEnd);
-    const mappedMoving = mapScaraTubePoint([sourceMovingX, 0, 50], fixed, sourceMovingX, moving, j1RigidEnd);
-    assert(Math.hypot(mappedFixed[0] - fixed[0], mappedFixed[1] - fixed[1]) < 1e-9, `SCARA conduit fixed endpoint moved at J1=${angle}`);
-    assert(Math.hypot(mappedMoving[0] - moving[0], mappedMoving[1] - moving[1]) < 1e-9, `SCARA conduit moving endpoint missed J2 at J1=${angle}`);
-    const flexibleStart = j1RigidEnd;
-    const sampleStep = Math.max(sourceLength * 1e-5, 1e-5);
-    for (const boundary of [flexibleStart]) {
-        const before = mapScaraTubeLongitudinal(
-            boundary - sampleStep,
-            sourceLength,
-            targetLength,
-            j1RigidEnd
-        ).distance;
-        const at = mapScaraTubeLongitudinal(
-            boundary,
-            sourceLength,
-            targetLength,
-            j1RigidEnd
-        ).distance;
-        const after = mapScaraTubeLongitudinal(
-            boundary + sampleStep,
-            sourceLength,
-            targetLength,
-            j1RigidEnd
-        ).distance;
-        const incomingScale = (at - before) / sampleStep;
-        const outgoingScale = (after - at) / sampleStep;
-        assert(Math.abs(incomingScale - outgoingScale) < 1e-4, `SCARA conduit tangent kink remains at J1=${angle}`);
-        assert(Math.abs(incomingScale - 1) < 1e-4, `SCARA conduit rigid-end tangent changed at J1=${angle}`);
-    }
-    let previousMappedDistance = -Infinity;
-    for (let sample = 0; sample <= 100; sample += 1) {
-        const mappedDistance = mapScaraTubeLongitudinal(
-            sourceLength * sample / 100,
-            sourceLength,
-            targetLength,
-            j1RigidEnd
-        ).distance;
-        assert(mappedDistance > previousMappedDistance, `SCARA conduit folded over itself at J1=${angle}`);
-        previousMappedDistance = mappedDistance;
-    }
-    for (const ratio of [0.2, 0.5, 0.8]) {
-        const mapped = mapScaraTubePoint([
-            fixed[0] + sourceLength * ratio,
-            0,
-            50 + 200 * 4 * ratio * (1 - ratio)
-        ], fixed, sourceMovingX, moving, j1RigidEnd);
-        const planeError = Math.abs(
-            (mapped[0] - fixed[0]) * (-(moving[1] - fixed[1]) / targetLength)
-            + (mapped[1] - fixed[1]) * ((moving[0] - fixed[0]) / targetLength)
-        );
-        assert(planeError < 1e-9, `SCARA conduit centerline bent outside its plane at J1=${angle}`);
-    }
-    const endDistance = sourceLength * 0.05;
-    const mappedNearJ2 = mapScaraTubePoint(
-        [sourceMovingX - endDistance, 0, 50],
-        fixed,
-        sourceMovingX,
-        moving,
-        j1RigidEnd
-    );
-    const mappedEndDistance = Math.hypot(
-        mappedNearJ2[0] - moving[0],
-        mappedNearJ2[1] - moving[1]
-    );
-    const endScale = mapScaraTubeLongitudinal(
-        sourceLength,
-        sourceLength,
-        targetLength,
-        j1RigidEnd
-    ).scale;
-    assert(Math.abs(mappedEndDistance - endDistance * endScale) < 1e-8, `SCARA conduit did not flow continuously into J2 at J1=${angle}`);
-}
 assert(/if \(robot\.userData\.manifest\?\.robotType === 'scara'\) return solveScaraIK\(robot, target(?:, precision)?\);/.test(viewerSource), 'SCARA must use analytic IK');
 assert(viewerSource.includes('const targetFlangeQuaternion = target.quaternion.clone()')
     && viewerSource.includes('const targetFlangePosition = target.position.clone().sub('),
@@ -590,4 +455,9 @@ assert(jointCount === 152, `Expected 152 joints, found ${jointCount}`);
 assert(tubeCount === 15, `Expected 15 SCARA CD conduit assets, found ${tubeCount}`);
 assert(robots.filter((model) => model.kinematicVariant === 'ceiling-scara').map((model) => model.folder).sort().join(',') === 'IR-TS4-35Z15,IR-TS5-55Z15', 'Ceiling SCARA variants must be TS4 and TS5');
 
-console.log(`3D kinematics OK: ${robots.length} robots (${typeCounts.scara} SCARA, ${typeCounts['six-axis']} six-axis), ${jointCount} joints, ${meshCount} link assets, ${tubeCount} CD conduit assets, ${scaraPoseChecks} SCARA pose checks, max axis error ${maximumAxisError.toFixed(3)} mm`);
+validateScaraConduitMapping(catalog).then(() => {
+    console.log(`3D kinematics OK: ${robots.length} robots (${typeCounts.scara} SCARA, ${typeCounts['six-axis']} six-axis), ${jointCount} joints, ${meshCount} link assets, ${tubeCount} CD conduit assets, ${scaraPoseChecks} SCARA pose checks, max axis error ${maximumAxisError.toFixed(3)} mm`);
+}).catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});

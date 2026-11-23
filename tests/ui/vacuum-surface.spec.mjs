@@ -12,7 +12,7 @@ async function setup(page) {
     return errors;
 }
 
-test('선택 면의 2mm 경계·단발 검색·양솔 유지·실린더 추종·전체 부품·저장 복원을 확인한다', async ({ page }) => {
+test('흡착은 0.5 mm 경계에서 한 개만 잡고 실린더 추종과 저장 복원 후에도 파기까지 유지한다', async ({ page }) => {
     const errors = await setup(page);
     const result = await page.evaluate(async () => {
         const a=window.__surface, app=a.equipmentApp, T=a.THREE, robot=a.getArticulatedRobots()[0];
@@ -22,32 +22,35 @@ test('선택 면의 2mm 경계·단발 검색·양솔 유지·실린더 추종·
         const product=(name,xyz,registered=true)=>{const m=a.createPrimitiveShapeRoot('box',{x:20,y:20,z:20},{name});
             m.position.copy(tool.localToWorld(new T.Vector3(...xyz)));m.quaternion.copy(tool.getWorldQuaternion(new T.Quaternion()));a.state.scene.add(m);a.state.models.push(m);
             if(registered)app.save({id:name,type:'OBJECT',movingRef:ref(m)});return m;};
-        const near=product('near',[0,0,21.5]),boundary=product('boundary',[0,0,22]),far=product('far',[0,0,22.01]),side=product('side',[20.5,0,-5]),unregistered=product('unregistered',[0,0,20.5],false);
+        const near=product('near',[0,0,20.501]),boundary=product('boundary',[0,0,22]),far=product('far',[0,0,23]),side=product('side',[20.5,0,-5]),unregistered=product('unregistered',[0,0,20],false);
         const def=app.save({id:'surface-vacuum',type:'VACUUM',movingRef:ref(tool),vacuumMode:'FACE',vacuumFace:{meshPath:a.getWorkspaceObjectPath(tool,tool.children[0]),triangleRanges:[{first:8,last:9}]},feedbackGrip:620},{forward:512,reverse:513});
         const cylinder=app.save({id:'tool-cylinder',type:'CYLINDER',movingRef:ref(tool),axis:'Z',travel:100,speed:1000},{forward:514,reverse:515});
-        let searches=0;const find=app.runtime.contact.find.bind(app.runtime.contact);app.runtime.contact.find=(...args)=>{searches++;return find(...args);};
         let time=0;const advance=()=>{for(let i=0;i<15;i++)app.runtime.update(a.state.equipmentDefinitions,a.state.ioFunctionMappings,time+=20);};
-        const position=m=>m.getWorldPosition(new T.Vector3()), before=position(near).clone();
+        const position=m=>m.getWorldPosition(new T.Vector3());
+        const place=(model,x,y,z)=>model.position.copy(tool.localToWorld(new T.Vector3(x,y,z)));
         a.writeOlpAddress('Out[512]',1);app.runtime.start();advance();
+        const waitingOutside=def.runtime.vacuumActive&&!def.runtime.heldRef&&a.readOlpSimulatorBit('IN',620)===0;
+        place(near,-8,0,20.5);place(boundary,14,0,20.5);
+        const before=position(near);advance();
         const acquired=[near,boundary,far,side,unregistered].map(m=>m.userData.equipmentOwner===def.id),jump=position(near).distanceTo(before);
         a.writeOlpAddress('Out[512]',0);a.writeOlpAddress('Out[514]',1);advance();a.writeOlpAddress('Out[514]',0);advance();
         const travel=position(near).distanceTo(before),cylinderPosition=cylinder.runtime.position;
-        far.position.copy(tool.localToWorld(new T.Vector3(0,0,20.5)));a.writeOlpAddress('Out[512]',1);advance();a.writeOlpAddress('Out[512]',0);advance();
-        const noRescan=searches===1&&!far.userData.equipmentOwner, sensor=a.readOlpSimulatorBit('IN',620);
+        place(far,0,0,20);advance();
+        const heldRefs=def.runtime.heldObjects.map(item=>item.ref), lateStayedFree=!far.userData.equipmentOwner, sensor=a.readOlpSimulatorBit('IN',620);
         a.writeOlpAddress('Out[513]',1);advance();a.writeOlpAddress('Out[513]',0);const releasePosition=position(near).clone();
         a.writeOlpAddress('Out[515]',1);advance();a.writeOlpAddress('Out[515]',0);advance();
-        const released=!near.userData.equipmentOwner&&position(near).distanceTo(releasePosition)<1e-7;
-        side.position.copy(tool.localToWorld(new T.Vector3(20.5,0,-5)));
+        const released=[near,boundary,far].every(model=>!model.userData.equipmentOwner)&&position(near).distanceTo(releasePosition)<1e-7&&a.readOlpSimulatorBit('IN',620)===0;
+        place(boundary,80,0,20);place(side,20.5,0,-5);
         const whole=app.save({...def,vacuumMode:'WHOLE',vacuumFace:null,name:'전체 진공',customName:true},{forward:512,reverse:513});
         a.writeOlpAddress('Out[512]',1);advance();a.writeOlpAddress('Out[512]',0);advance();const wholeHeld=side.userData.equipmentOwner===whole.id;
         await a.restoreWorkspaceSnapshot(JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot())));
         const restored=a.state.equipmentDefinitions.find(d=>d.id===whole.id);app.runtime.start();advance();
         const restoredInfo={mode:restored.vacuumMode,name:restored.name,customName:restored.customName,held:!!restored.runtime.heldRef};
         app.resetObjects(ref(side));advance();const resetReleased=!restored.runtime.vacuumActive&&!restored.runtime.heldRef;
-        return {acquired,jump,travel,cylinderPosition,noRescan,searches,sensor,released,wholeHeld,resetReleased,restored:restoredInfo,objectMappings:a.state.ioFunctionMappings.some(m=>m.action==='OBJECT')};
+        return {waitingOutside,acquired,jump,travel,cylinderPosition,heldOnlyNear:heldRefs.length===1&&heldRefs[0]===ref(near),lateStayedFree,sensor,released,wholeHeld,resetReleased,restored:restoredInfo,objectMappings:a.state.ioFunctionMappings.some(m=>m.action==='OBJECT')};
     });
-    expect(result.acquired).toEqual([true,true,false,false,false]);expect(result.jump).toBeCloseTo(0,6);expect(result.travel).toBeCloseTo(100,5);
-    expect(result.cylinderPosition).toBe(100);expect(result.noRescan).toBe(true);expect(result.searches).toBe(2);expect(result.sensor).toBe(1);expect(result.released).toBe(true);expect(result.wholeHeld).toBe(true);
+    expect(result.waitingOutside).toBe(true);expect(result.acquired).toEqual([true,false,false,false,false]);expect(result.jump).toBeCloseTo(0,6);expect(result.travel).toBeCloseTo(100,5);
+    expect(result.cylinderPosition).toBe(100);expect(result.heldOnlyNear).toBe(true);expect(result.lateStayedFree).toBe(true);expect(result.sensor).toBe(1);expect(result.released).toBe(true);expect(result.wholeHeld).toBe(true);
     expect(result.restored).toEqual({mode:'WHOLE',name:'전체 진공',customName:true,held:true});expect(result.resetReleased).toBe(true);expect(result.objectMappings).toBe(false);expect(errors).toEqual([]);
 });
 

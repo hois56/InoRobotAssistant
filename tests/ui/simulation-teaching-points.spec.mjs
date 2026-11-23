@@ -100,7 +100,7 @@ test('티칭 마커 선택·편집·삭제·복구는 원본과 로봇 자세를
         return { joints: r.userData.joints.map(j => j.angle), steps: JSON.stringify(a.ensureMotionProgram(r).steps) };
     });
     expect(after.joints).toEqual(initial.joints); expect(after.steps).toEqual(initial.steps);
-    await page.screenshot({ path: '.codex/teaching-points-ui.png' });
+    await page.screenshot({ path: test.info().outputPath('teaching-points-ui.png') });
     const restored = await page.evaluate(async () => {
         const a = window.__teach, snapshot = JSON.parse(JSON.stringify(a.serializeWorkspaceSnapshot()));
         await a.restoreWorkspaceSnapshot(snapshot); a.requestRender();
@@ -215,7 +215,7 @@ test('OLP ID·라벨 표시 선택은 기본 이름 중복을 없애고 작은 �
     await page.locator('#teaching-point-label-mode').selectOption('both');
     await expect.poll(() => page.evaluate(() => window.__teach.state.teachingPoints.scene.detailLabel?.userData.text)).toBe('P[1] · 픽업 위치');
     await page.locator('#teaching-point-fit').click();
-    await page.screenshot({ path: '.codex/teaching-labels-ui.png' });
+    await page.screenshot({ path: test.info().outputPath('teaching-labels-ui.png') });
     await page.locator('#teaching-point-labels').uncheck();
     await expect.poll(() => page.evaluate(() => window.__teach.state.teachingPoints.scene.detailLabel.visible)).toBe(false);
     expect(errors).toEqual([]);

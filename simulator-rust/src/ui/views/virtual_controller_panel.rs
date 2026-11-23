@@ -51,13 +51,13 @@ pub(super) const VIEW: Node = tag("aside", &[("id", "virtual-controller-panel"),
         text("\n                    "),
         tag("div", &[("class", "virtual-controller-bridge-actions"), ("data-virtual-controller-source", "bridge")], &[
             text("\n                        "),
-            tag("a", &[("class", "virtual-controller-bridge-download"), ("href", "./bridge/InoRobotVirtualControllerBridge.zip?v=2.0-20261119"), ("download", "InoRobotVirtualControllerBridge.zip")], &[
+            tag("a", &[("class", "virtual-controller-bridge-download"), ("href", "./bridge/InoRobotVirtualControllerBridge.zip?v=2.1-20261123"), ("download", "InoRobotVirtualControllerBridge.zip")], &[
                 text("\n                            "),
                 tag("i", &[("class", "fa-solid fa-download")], &[]),
                 text("\n                            "),
                 tag("span", &[], &[text("브리지 다운로드")]),
                 text("\n                            "),
-                tag("span", &[("translate", "no")], &[text("V2.0")]),
+                tag("span", &[("translate", "no")], &[text("V2.1")]),
                 text("\n                        "),
             ]),
             text("\n                        "),

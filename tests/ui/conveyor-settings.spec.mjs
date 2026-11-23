@@ -107,7 +107,7 @@ test('조립 모델에서 벨트 부품을 선택하면 가이드를 제외한 �
     expect(await page.evaluate(() => window.__beltUi.state.models[0].position.x)).toBe(0);
 });
 
-test('컨베이어 센서 IN0을 적용하고 저장·복원하며 감지한다', async ({ page }) => {
+test('컨베이어 센서 IN0을 저장·복원하고 물체 감지에 따라 불빛을 바꾼다', async ({ page }) => {
     await setup(page);
     await page.locator('#equipment-form [name="type"]').selectOption('CONVEYOR');
     await page.locator('#equipment-form button[type="submit"]').click();
@@ -129,9 +129,69 @@ test('컨베이어 센서 IN0을 적용하고 저장·복원하며 감지한다'
     await expect(panel.getByRole('button', { name: '현재 화면 촬영' })).toBeVisible();
     expect(await page.evaluate(() => Object.hasOwn(window.__beltUi.conveyorTrackingApp.serialize()[0], 'capture'))).toBe(false);
     await expect(panel.locator('[name="address"]')).toHaveValue('0');
+    const sensorColors = () => page.evaluate(() => {
+        const sensor = window.__beltUi.state.scene.getObjectByName('Tracking sensor IN0');
+        return ['Sensor laser', 'Sensor status light'].map(name =>
+            sensor?.getObjectByName(name)?.material.color.getHexString());
+    });
+    for (const [x, status, color] of [[-200, 'OFF (대기)', 'ef4444'], [0, 'ON (감지)', '22c55e'], [200, 'OFF (대기)', 'ef4444']]) {
+        await page.evaluate(position => { window.__beltUi.state.models[1].position.x = position; }, x);
+        await expect(panel.locator('[data-sensor-preview]')).toContainText(status);
+        await expect.poll(sensorColors).toEqual([color, color]);
+    }
     await panel.locator('[data-action="run"]').click();
     await expect(panel.locator('[data-sensor-preview]')).toContainText('IN0');
     await panel.locator('[data-action="stop"]').click();
+});
+
+test('모델을 선택한 후에도 컨베이어 센서는 물체가 머무는 동안 초록색을 유지한다', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: `${await response.text()}
+window.__trackingTestSensor = { state, conveyorTrackingApp, equipmentApp, selectSceneModel,
+    advanceConveyorSimulation, activeConveyorMappings };` });
+    });
+    await page.goto('/2_3DSimulation/');
+    await page.waitForFunction(() => window.__trackingTestSensor?.state.workspaceRecovery.ready);
+    await page.locator('#btn-test-model').click();
+    await page.locator('#btn-tracking-test-model').click();
+    const panel = page.locator('#conveyor-tracking-dialog');
+    await expect(panel).toBeVisible({ timeout: 60_000 });
+    const before = await page.evaluate(() => {
+        const { state, conveyorTrackingApp, equipmentApp, selectSceneModel,
+            advanceConveyorSimulation, activeConveyorMappings } = window.__trackingTestSensor;
+        const settings = conveyorTrackingApp.serialize()[0];
+        advanceConveyorSimulation([], 0);
+        const sensor = state.scene.getObjectByName('Tracking sensor IN' + settings.address);
+        window.__trackingTestSensor.colors = () => ['Sensor laser', 'Sensor status light'].map(name =>
+            sensor.getObjectByName(name).material.color.getHexString());
+        const run = (limit, level) => {
+            const panel = document.querySelector('#conveyor-tracking-dialog');
+            panel.querySelector('[data-action="run"]').click();
+            const mappings = activeConveyorMappings();
+            for (let i = 0; i < limit && conveyorTrackingApp.sensorPreview(settings.belt).level !== level; i++) {
+                advanceConveyorSimulation(mappings, .05);
+            }
+            panel.querySelector('[data-action="stop"]').click();
+        };
+        window.__trackingTestSensor.leave = () => run(12, 0);
+        const before = window.__trackingTestSensor.colors();
+        selectSceneModel(equipmentApp.objects()[0].model);
+        run(20, 1);
+        return before;
+    });
+    const status = panel.locator('[data-sensor-preview]');
+    const colors = () => page.evaluate(() => window.__trackingTestSensor.colors());
+    expect(before).toEqual(['ef4444', 'ef4444']);
+    await expect(status).toContainText('ON (감지)');
+    expect(await colors()).toEqual(['22c55e', '22c55e']);
+    await page.waitForTimeout(500);
+    await expect(status).toContainText('ON (감지)');
+    expect(await colors()).toEqual(['22c55e', '22c55e']);
+    await page.evaluate(() => window.__trackingTestSensor.leave());
+    await expect(status).toContainText('OFF (대기)');
+    await expect.poll(colors).toEqual(['ef4444', 'ef4444']);
 });
 
 

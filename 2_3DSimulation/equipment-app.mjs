@@ -1,7 +1,7 @@
 import { uiText } from './ui-language.mjs';
 import * as THREE from 'three';
-import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261107-object-home-1';
-import { createEquipmentUi } from './equipment-ui.mjs?v=20261118-language-1';
+import { EquipmentScene, equipmentObjectRef } from './equipment-scene.mjs?v=20261123-vacuum-single';
+import { createEquipmentUi } from './equipment-ui.mjs?v=20261123-vacuum-single';
 import { EQUIPMENT_LABELS, normalizeEquipmentDefinition, validateEquipmentDefinitions, equipmentMotionGroups, equipmentReferences, normalizeEquipmentBindings } from './equipment-core.mjs?v=20261107-object-home-1';
 
 export function createEquipmentApp(adapter) {
@@ -78,7 +78,7 @@ export function createEquipmentApp(adapter) {
         for (const def of adapter.definitions()) if (def.runtime.heldRef && (!refs.has(def.runtime.heldRef) || def.runtime.heldObjects?.some(item => !refs.has(item.ref)))) {
             const active = def.type === 'VACUUM' && def.runtime.vacuumActive;
             runtime.release(def);
-            if (active) { def.runtime.vacuumActive = true; def.runtime.acquisitionDone = true; }
+            if (active) def.runtime.vacuumActive = true;
         }
     }
     const runtime = new EquipmentScene({ ...adapter, resolve, candidates: objects,
@@ -305,6 +305,11 @@ export function createEquipmentApp(adapter) {
     }
     return {
         runtime, ui, resolve, references, save, remove, objects, ioRobot, command,
+        waitingVacuums(robot) {
+            if (runtime.suspended || runtime.paused || document.hidden) return [];
+            return adapter.definitions().filter(def => def.type === 'VACUUM' && def.enabled && def.runtime.vacuumActive
+                && !def.runtime.heldRef && runtime.objectAttachment(def)?.robot === robot);
+        },
         needsVacuumIoPose(robot, direction, values) {
             return (adapter.mappings?.() || []).some(mapping => {
                 if (!mapping.enabled || mapping.direction !== direction || values?.[mapping.address] !== mapping.triggerValue) return false;
@@ -363,6 +368,12 @@ export function createEquipmentApp(adapter) {
             const id = mapping.gripObjectRef.replace('equipment:', '');
             runtime.manual.delete(id); runtime.start();
             runtime.signalVacuum(adapter.definitions().find(def => def.id === id), adapter.mappings?.() || []);
+        },
+        updateActiveVacuum(mappings, definitions = adapter.definitions()) {
+            if (runtime.suspended || runtime.paused || document.hidden) return;
+            for (const def of definitions) {
+                if (def.type === 'VACUUM' && def.runtime.vacuumActive && !def.runtime.heldRef) runtime.signalVacuum(def, mappings);
+            }
         },
         active(mappings) { return runtime.hasWork(adapter.definitions(), mappings); },
         expectedContact,

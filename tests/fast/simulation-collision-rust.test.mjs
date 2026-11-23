@@ -150,3 +150,18 @@ test('geometry the engine declines keeps the JavaScript BVH and mixed pairs stil
     const kinds = [...system.geometryCache.values()].map(bvh => Boolean(bvh.native)).sort();
     assert.deepEqual(kinds, [false, true]);
 });
+
+test('surface distance detects intersecting triangle interiors even when vertices and edges are farther away', () => {
+    function triangle(name, vertices) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        return fixed(name, geometry);
+    }
+    const pad = triangle('pad', [-40, -40, 0, 40, -40, 0, 0, 40, 0]);
+    const workpiece = triangle('workpiece', [0, -10, -12, 0, -10, 12, 0, 10, 12]);
+    const { native, reference } = both(system => [
+        system.isWithinDistance(pad, workpiece, 0),
+        system.isWithinDistance(pad, workpiece, 2)
+    ]);
+    assert.deepEqual({ native, reference }, { native: [true, true], reference: [true, true] });
+});

@@ -1852,7 +1852,6 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 1.05rem 0.8rem;
     border-bottom: 1px solid var(--border);
     cursor: move;
     user-select: none;
@@ -3013,6 +3012,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 
 /* Articulated STL JOG test */
 .jog-panel {
+    --jog-content-padding: 0.9rem;
     position: absolute;
     top: 0;
     right: 0;
@@ -3021,7 +3021,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     width: 280px;
     max-height: 100%;
     overflow-y: auto;
-    padding: 0.9rem;
+    padding: 0 var(--jog-content-padding) var(--jog-content-padding);
     border: 1px solid var(--border);
     border-radius: 18px;
     background: var(--surface);
@@ -3071,6 +3071,7 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
+    margin-inline: calc(-1 * var(--jog-content-padding));
     margin-bottom: 1rem;
     cursor: move;
     user-select: none;
@@ -4024,26 +4025,6 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 }
 
 .io-simulator-header h2 i { color: var(--accent); }
-
-.io-simulator-panel .panel-header-actions {
-    display: flex;
-    gap: 0.35rem;
-}
-
-.io-simulator-panel .panel-header-actions button {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    background: var(--inset);
-    color: var(--text-2);
-}
-
-.io-simulator-panel .panel-header-actions button:hover {
-    border-color: var(--accent);
-    color: var(--text-1);
-}
 
 .io-simulator-content {
     min-height: 0;
@@ -8042,7 +8023,6 @@ body.view-window-popout-body {
         left: 12px;
         width: auto;
         max-height: 48%;
-        padding: 0.9rem;
     }
 
     .program-panel {
@@ -9327,8 +9307,7 @@ body.sketch-workbench-active #canvas-container > :is(
     letter-spacing: 0.12em;
 }
 
-.interference-zone-dialog-header button,
-.interference-zone-panel .panel-header-actions button {
+.interference-zone-dialog-header button {
     width: 34px;
     height: 34px;
     padding: 0;
@@ -9338,8 +9317,7 @@ body.sketch-workbench-active #canvas-container > :is(
     color: var(--text-2);
 }
 
-.interference-zone-dialog-header button:hover,
-.interference-zone-panel .panel-header-actions button:hover {
+.interference-zone-dialog-header button:hover {
     border-color: var(--accent);
     color: var(--text-1);
 }
@@ -10901,17 +10879,6 @@ html[data-locale="ru"] .virtual-controller-bridge-actions button {
     letter-spacing: 0.02em;
 }
 .vision-header h2 i, #conveyor-tracking-title > svg { color: var(--accent); }
-.vision-panel .panel-header-actions { display: flex; gap: 0.35rem; }
-.vision-panel .panel-header-actions button {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    background: var(--inset);
-    color: var(--text-2);
-}
-.vision-panel .panel-header-actions button:hover { border-color: var(--accent); color: var(--text-1); }
 .vision-content {
     min-height: 0;
     flex: 1 1 auto;

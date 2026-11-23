@@ -1,4 +1,5 @@
-use crate::{fieldbus, outbox::Outbox, sdk::Sdk};
+use crate::{feedback, fieldbus, outbox::Outbox, sdk::Sdk};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
@@ -47,6 +48,10 @@ struct Session {
     recovery: Option<String>,
     retry: u32,
     sequence: u64,
+    feedback: Option<feedback::Stream>,
+    next_feedback_probe: Instant,
+    last_feedback_outputs: Option<u64>,
+    next_regular_frame: Instant,
     next_output: Instant,
     output_index: i32,
     outputs: BTreeMap<i32, i32>,
@@ -69,6 +74,10 @@ impl Worker {
             recovery: None,
             retry: 0,
             sequence: 0,
+            feedback: None,
+            next_feedback_probe: now,
+            last_feedback_outputs: None,
+            next_regular_frame: now,
             next_output: now,
             output_index: 0,
             outputs: BTreeMap::new(),
@@ -123,10 +132,14 @@ impl Session {
                 self.streaming = self.connected;
                 self.interval = Duration::from_millis(interval);
                 self.next_tick = Instant::now();
+                self.next_regular_frame = self.next_tick;
                 self.reply(json!({"type":"streamStartResult","success":self.connected,"interval":interval}));
             }
             Command::Stop => {
                 self.streaming = false;
+                self.feedback = None;
+                self.last_feedback_outputs = None;
+                self.next_feedback_probe = Instant::now();
                 self.reply(json!({"type":"streamStopResult","success":true}));
             }
             Command::Disconnect => {
@@ -153,6 +166,8 @@ impl Session {
         self.worker.sdk.connect(self.worker.id, ip, timeout)?;
         self.connected = true;
         self.next_output = Instant::now();
+        self.next_feedback_probe = self.next_output;
+        self.next_regular_frame = self.next_output;
         *self.worker.connection.lock().unwrap() = Connection {
             connected: true,
             local_virtual: (!real && ip.is_loopback()).then_some(ip),
@@ -175,6 +190,8 @@ impl Session {
         self.fieldbus = Arc::new(Mutex::new(fieldbus::Snapshot::default()));
         self.previous_fieldbus = fieldbus::Snapshot::default();
         self.outputs.clear();
+        self.feedback = None;
+        self.last_feedback_outputs = None;
         self.output_index = 0;
         self.failures = None;
         if std::mem::take(&mut self.connected) {
@@ -187,6 +204,20 @@ impl Session {
         self.next_tick = started + self.interval;
         if !self.connected {
             self.reconnect();
+            return;
+        }
+        if self.feedback.is_none() && started >= self.next_feedback_probe {
+            self.next_feedback_probe = started + Duration::from_secs(2);
+            if let Some((ip, false)) = self.target.filter(|(ip, _)| ip.is_loopback()) {
+                let _runtime = self.worker.runtime.enter();
+                self.feedback = feedback::Stream::open(ip).ok();
+            }
+        }
+        if let Some(stream) = self.feedback.as_mut() {
+            match self.worker.runtime.block_on(stream.next()) {
+                Ok(sample) => self.send_feedback(sample),
+                Err(error) => self.interrupted(format!("K14 feedback stream interrupted: {error}")),
+            }
             return;
         }
         self.sequence += 1;
@@ -221,6 +252,38 @@ impl Session {
         self.previous_fieldbus = fieldbus;
     }
 
+    fn send_feedback(&mut self, sample: feedback::Sample) {
+        let now = Instant::now();
+        self.next_tick = now; // The next controller record wakes the reader.
+        let mut fieldbus = self.fieldbus.lock().unwrap().clone();
+        if let Some(bits) = sample.fieldbus_outputs {
+            fieldbus.outputs = Some(STANDARD.encode(bits));
+        }
+        let changed = self.last_feedback_outputs != Some(sample.outputs) || fieldbus != self.previous_fieldbus;
+        let throttled = self.interval > Duration::from_millis(17);
+        let regular = !sample.edge && (!throttled || now >= self.next_regular_frame);
+        if !regular && !changed && !sample.edge {
+            return;
+        }
+        if regular {
+            self.next_regular_frame = now + self.interval;
+        }
+        self.sequence += 1;
+        let outputs: BTreeMap<_, _> = (0..64).map(|i| (i, (sample.outputs >> i) & 1)).collect();
+        // K14 already paces regular samples. Keep them in order with conveyor
+        // acknowledgements and output edges, even when they arrive together.
+        // The bounded reliable queue disconnects a stalled client.
+        self.worker.out.send(json!({
+            "type":"robotState",
+            "data": {"sequence":self.sequence, "sourceSequence":sample.sequence, "controllerCycle":sample.cycle, "outputEdge":!regular,
+                "timestamp":sample.timestamp_us as f64 / 1000.0,
+                "joints":sample.joints, "tcp":sample.tcp, "outputs":outputs,
+                "fieldbusInputs":fieldbus.inputs, "fieldbusOutputs":fieldbus.outputs}
+        }), true);
+        self.last_feedback_outputs = Some(sample.outputs);
+        self.previous_fieldbus = fieldbus;
+    }
+
     fn failed_feedback(&mut self, now: Instant, code: i32) {
         let (start, count) = self.failures.get_or_insert((now, 0));
         *count += 1;
@@ -229,6 +292,10 @@ impl Session {
             return;
         }
         let message = format!("Joint feedback failed {count} consecutive times over {} ms; last failure: return code {code}.", span.as_millis());
+        self.interrupted(message);
+    }
+
+    fn interrupted(&mut self, message: String) {
         self.disconnect();
         self.reply(json!({"type":"controllerConnectionLost","message":format!("Controller feedback was interrupted. {message} Reconnecting...")}));
         self.recovery = Some(message);
