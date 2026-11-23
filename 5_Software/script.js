@@ -12,9 +12,9 @@ const softwareGroups = [
             {
                 tagName: "시뮬레이션 버전 (K14)",
                 description: "가상 컨트롤러 시뮬레이션용 InoRobotLab·펜던트 통합 포터블 버전",
-                date: "2026-11-21",
+                date: "2026-11-23",
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "642MB", path: "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261121_R4.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261121/InoRobotLab_TP_SPC25K14_20261121_R4.zip" }
+                    { label: "Download Portable", type: "portable", size: "659MB", path: "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261123_R5.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261123/InoRobotLab_TP_SPC25K14_20261123_R5.zip" }
                 ]
             },
             {
