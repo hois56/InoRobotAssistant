@@ -104,11 +104,6 @@ pub(super) const VIEW: Node = tag("header", &[("id", "topbar")], &[
         text("\n            "),
         tag("input", &[("id", "input-import-sketch-cad"), ("class", "hidden"), ("type", "file"), ("accept", ".dxf")], &[]),
         text("\n            "),
-        tag("label", &[("class", "viewer-fps-limit"), ("title", "Limit rendering to 60 FPS")], &[
-            tag("input", &[("id", "render-fps-limit"), ("type", "checkbox"), ("aria-label", "Limit rendering to 60 FPS")], &[]),
-            tag("span", &[], &[text("60 FPS")]),
-        ]),
-        text("\n            "),
         tag("div", &[("class", "viewer-language-row"), ("data-i18n-language-slot", "")], &[]),
         text("\n        "),
     ]),

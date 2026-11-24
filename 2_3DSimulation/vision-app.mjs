@@ -1,3 +1,4 @@
+import { syncSettingsOptions } from './settings-controls.mjs';
 import { cameraPixelSize, fillVisionForm, updateVisionForm, visionFormConditions } from './wasm/forms.mjs';
 import * as THREE from 'three';
 import {
@@ -1004,10 +1005,6 @@ export function createVisionApp(adapter) {
         return element;
     }
 
-    function setOptions(select, html) {
-        if (select && select.dataset.options !== html) { select.innerHTML = html; select.dataset.options = html; }
-    }
-
     function renderPanel() {
         const element = panel();
         if (!element) return;
@@ -1017,11 +1014,13 @@ export function createVisionApp(adapter) {
         const cfg = config();
         updateVisionForm(root, cfg, state.tab, controller.busy, state.autoCalibrating);
         if (!cfg.enabled) return;
-        setOptions(root.querySelector('[data-vision-robots]'), adapter.robots().map(robot => `<option value="${escapeHtml(adapter.robotId(robot))}">${escapeHtml(adapter.robotLabel(robot))}</option>`).join('') || `<option value="">${escapeHtml(text('로봇 없음'))}</option>`);
+        const robots = adapter.robots().map(robot => ({ value: adapter.robotId(robot), label: adapter.robotLabel(robot) }));
+        syncSettingsOptions(root.querySelector('[data-vision-robots]'), robots.length ? robots : [{ value: '', label: text('로봇 없음') }]);
         const camera = mountModel();
-        setOptions(root.querySelector('[data-vision-targets]'), `<option value="">${escapeHtml(text('기본 형상 생성'))}</option>` + adapter.models()
-            .filter(model => model !== camera && (adapter.isWorkpiece(model) || adapter.modelId(model) === cfg.detection.targetId))
-            .map(model => `<option value="${escapeHtml(adapter.modelId(model))}">${escapeHtml(adapter.modelLabel(model))}</option>`).join(''));
+        const targets = adapter.models().filter(model => model !== camera
+            && (adapter.isWorkpiece(model) || adapter.modelId(model) === cfg.detection.targetId));
+        syncSettingsOptions(root.querySelector('[data-vision-targets]'), [{ value: '', label: text('기본 형상 생성') },
+            ...targets.map(model => ({value: adapter.modelId(model), label: adapter.modelLabel(model)}))]);
         root.querySelectorAll('[data-vision-field]').forEach(input => {
             const path = input.dataset.visionField;
             let value = getPath(cfg, path);
@@ -1217,7 +1216,7 @@ export function createVisionApp(adapter) {
         },
         sceneChanged() { syncScene(); schedulePanelRender(); },
         trigger: runTrigger,
-        captureConveyorObjects(objects, toConveyor, shiftAtExposure = () => [0, 0, 0], defaultType = 0) {
+        captureConveyorObjects(objects, toConveyor, shiftAtExposure = () => [0, 0, 0], defaultType = 0, onDetection) {
             if (!config().enabled) throw new Error('가상 비전 패널에서 카메라를 활성화하세요.');
             syncCameraFromModel();
             const camera = createVisionCameraModel(config().camera);
@@ -1240,6 +1239,7 @@ export function createVisionApp(adapter) {
                 // K14's detected object pose is XYZABC, with A rotating about Z.
                 const theta = Math.atan2(direction[1] - position[1], direction[0] - position[0]) / DEG;
                 found.push({ id: adapter.modelId(object), type, pose: [...position, theta, 0, 0] });
+                onDetection?.(object);
             }
             return found;
         },

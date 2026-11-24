@@ -1,6 +1,51 @@
 import { createConveyorFixture } from './helpers/equipment-fixtures.mjs';
 import { test, expect } from '@playwright/test';
 
+test('컨베이어 이송에서 제품 수가 늘어도 등록 목록 조회 횟수는 일정하고 충돌은 원래 모델에서 갱신된다', async ({ page }) => {
+    await page.route('**/2_3DSimulation/main.js*', async route => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: await response.text() +
+            '\nwindow.__transport = { THREE, state, ensureWorkspaceModelId, equipmentApp, advanceConveyorSimulation };' });
+    });
+    await page.goto('/2_3DSimulation/');
+    await page.waitForFunction(() => window.__transport?.state.workspaceRecovery.ready);
+    const result = await page.evaluate(() => {
+        const { THREE, state, ensureWorkspaceModelId, equipmentApp, advanceConveyorSimulation } = window.__transport;
+        const belt = new THREE.Mesh(new THREE.BoxGeometry(1000, 100, 20));
+        const assembly = new THREE.Group();
+        state.scene.add(belt, assembly);
+        state.models.push(belt, assembly);
+        const parts = assembly.userData.importedParts = [];
+        const id = ensureWorkspaceModelId(assembly);
+        const mapping = { gripObjectRef: 'conveyor:' + ensureWorkspaceModelId(belt), conveyorAxis: 'X', conveyorSpeed: 100 };
+        const geometry = new THREE.BoxGeometry(10, 10, 10);
+        const definition = { id: 'parts', type: 'OBJECT', enabled: true, movingRefs: [] };
+        state.equipmentDefinitions.push(definition);
+        const originalObjects = equipmentApp.objects;
+        let lookups = 0;
+        equipmentApp.objects = () => { lookups++; return originalObjects(); };
+        function run(count) {
+            while (parts.length < count) {
+                const part = new THREE.Mesh(geometry);
+                part.position.set(parts.length * 15, 0, 15);
+                definition.movingRefs.push('equipment-model:' + id + '/' + parts.length);
+                parts.push(part);
+                assembly.add(part);
+            }
+            const starts = parts.map(part => part.position.x);
+            state.collision.dirtyRoots.clear();
+            lookups = 0;
+            advanceConveyorSimulation([mapping], 0.1, performance.now(), true);
+            return { lookups, allMoved: parts.every((part, i) => part.position.x === starts[i] + 10),
+                onlyOwnerDirty: state.collision.dirtyRoots.size === 1 && state.collision.dirtyRoots.has(assembly) };
+        }
+        try { return [run(1), run(20)]; }
+        finally { equipmentApp.objects = originalObjects; }
+    });
+    expect(result.map(({ allMoved, onlyOwnerDirty }) => [allMoved, onlyOwnerDirty])).toEqual([[true, true], [true, true]]);
+    expect(result[1].lookups).toBe(result[0].lookups);
+});
+
 test('IO 테스트 매핑으로 컨베이어를 운전·정지하고 끝단과 저장 설정을 확인한다', async ({ page }) => {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

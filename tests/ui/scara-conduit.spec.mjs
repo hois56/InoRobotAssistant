@@ -58,6 +58,7 @@ test('SCARA의 케이블과 J2 체결부가 조그 중 함께 회전한다', asy
                 result.j1ConnectorTurn = j2Pose.angle.angleTo(bothPose.angle);
                 result.capErrors = [initial.capError, j2Pose.capError, bothPose.capError];
                 result.fittingFaces = group.children[0].geometry.getAttribute('position').count / 3;
+                result.fittingColor = group.children[0].material.color.getHexString();
             }
             results.push(result);
             robot.traverse(object => {
@@ -77,6 +78,7 @@ test('SCARA의 케이블과 J2 체결부가 조그 중 함께 회전한다', asy
         expect(result.j2ConnectorTurn, result.folder).toBeLessThan(0.001);
         expect(result.j1ConnectorTurn, result.folder).toBeGreaterThan(0.15);
         expect(result.fittingFaces, result.folder).toBeGreaterThan(100);
+        expect(result.fittingColor, result.folder).toBe('292c2f');
         for (const error of result.capErrors) expect(error, result.folder).toBeLessThan(1.5);
     }
 });

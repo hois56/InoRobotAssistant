@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('전체 화면과 프로그램 버튼은 선택 언어의 화면 글꼴을 따른다', async ({ page }) => {
+test('상하단 버튼·로봇 모델 선택·상태 문구는 선택 언어의 화면 글꼴을 따른다', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/2_3DSimulation/');
     await page.waitForFunction(() => window.InoRobotI18n);
@@ -10,11 +10,29 @@ test('전체 화면과 프로그램 버튼은 선택 언어의 화면 글꼴을 
     await expect(fullscreen).toHaveText('전체 화면');
     await expect(program).toHaveText('프로그램');
 
-    for (const locale of ['ko', 'zh-CN']) {
+    const model = page.locator('#model-select');
+    await expect(model.locator('option:checked')).toContainText('로봇 모델을 선택하세요');
+    const status = page.locator('#stat-status');
+    await expect(status).toHaveText(/.+/);
+
+    const textElements = [
+        '#btn-fullscreen-mode span', '[data-panel-toggle="program-panel"]',
+        '#model-select', '#model-select option:checked', '#model-select optgroup',
+        '#stats-bar .stat-item label', '#stat-status'
+    ];
+    for (const locale of ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru']) {
         await page.evaluate(value => window.InoRobotI18n.setLocale(value, { persist: false }), locale);
-        const family = await page.locator('body').evaluate(element => getComputedStyle(element).fontFamily);
-        await expect.soft(fullscreen, `${locale} fullscreen`).toHaveCSS('font-family', family);
-        await expect.soft(program, `${locale} program`).toHaveCSS('font-family', family);
+        await expect(page.locator('html')).toHaveAttribute('lang', locale);
+        const styles = await page.evaluate(selectors => ({
+            pageFont: getComputedStyle(document.body).fontFamily,
+            fonts: selectors.map(selector => getComputedStyle(document.querySelector(selector)).fontFamily),
+            statusSpacing: getComputedStyle(document.getElementById('stat-status')).letterSpacing,
+            labelSpacing: getComputedStyle(document.querySelector('#stats-bar .stat-item label')).letterSpacing
+        }), textElements);
+        for (const [index, selector] of textElements.entries()) {
+            expect.soft(styles.fonts[index], locale + ' ' + selector).toBe(styles.pageFont);
+        }
+        expect.soft(styles.statusSpacing, locale + ' status spacing').toBe(styles.labelSpacing);
     }
 });
 

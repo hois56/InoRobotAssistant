@@ -38,7 +38,7 @@ export function createConveyorFeedApp(adapter) {
             matrix: unchanged ? old.matrix : matrix, size: unchanged ? old.size : size.toArray(),
             progress: unchanged ? old.progress : Math.min(envelope[axis === 'x' ? 0 : 1], beltBounds.max[axis] - beltBounds.min[axis]) + gap,
             groupId: old?.groupId || 'conveyor-feed-' + crypto.randomUUID(), sequence: old?.sequence || 0 };
-        records.set(record.belt, record); adapter.save?.(); adapter.requestRender?.();
+        records.set(record.belt, record); adapter.settingsChanged?.(); adapter.save?.(); adapter.requestRender?.();
         return record;
     }
     function inLane(bounds, beltBounds, axis) {
@@ -87,7 +87,7 @@ export function createConveyorFeedApp(adapter) {
                 if (!record?.enabled || processed.has(record.belt)) continue;
                 processed.add(record.belt);
                 const belt = adapter.resolveBelt(mapping), source = sources().find(item => item.ref === record.sourceRef);
-                if (!belt || !source) { record.enabled = false; adapter.report?.('자동 공급 원본 또는 컨베이어가 없어 공급을 중지했습니다.'); continue; }
+                if (!belt || !source) { record.enabled = false; adapter.settingsChanged?.(); adapter.report?.('자동 공급 원본 또는 컨베이어가 없어 공급을 중지했습니다.'); continue; }
                 if (!available(belt)) continue;
                 const axis = coordinate(mapping), negative = mapping.conveyorAxis.startsWith('-');
                 const area = conveyorLocalBounds(belt, belt), envelope = conveyorFeedEnvelope(record.size, record.rotationRange);
@@ -154,7 +154,8 @@ export function createConveyorFeedApp(adapter) {
                     progress: Number.isFinite(value.progress) && value.progress >= 0 ? value.progress : 0,
                     sequence: Number.isSafeInteger(value.sequence) && value.sequence >= 0 ? value.sequence : 0 });
             }
+            adapter.settingsChanged?.();
         },
-        reset() { records.clear(); dirty = false; }
+        reset() { records.clear(); dirty = false; adapter.settingsChanged?.(); }
     };
 }

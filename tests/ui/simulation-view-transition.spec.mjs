@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-test('The 60 FPS cap is in the header, opt-in, and persists across reloads', async ({ page }) => {
-    await page.goto('/2_3DSimulation/index.html');
-    const limit = page.locator('#topbar').getByRole('checkbox', { name: 'Limit rendering to 60 FPS' });
-    await expect(limit).toBeVisible();
-    await expect(limit).not.toBeChecked();
-    await limit.check();
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('simulation.limitFps'))).toBe('1');
+test('상단에서 60 FPS 항목을 제거해도 기존 렌더링 설정은 적용된다', async ({ page }) => {
+    await setup(page);
+    const header = page.locator('#topbar');
+    await expect(header.getByText('60 FPS', { exact: true })).toHaveCount(0);
+    await expect(header.locator('#render-fps-limit')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__viewTransition.state.renderFpsLimited)).toBe(false);
+
+    await page.evaluate(() => localStorage.setItem('simulation.limitFps', '1'));
     await page.reload();
-    await expect(limit).toBeChecked();
-    await limit.uncheck();
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('simulation.limitFps'))).toBe('0');
+    await expect.poll(() => page.evaluate(() => window.__viewTransition?.state.renderFpsLimited)).toBe(true);
+    await expect(header.getByText('60 FPS', { exact: true })).toHaveCount(0);
 });
 
 async function setup(page) {

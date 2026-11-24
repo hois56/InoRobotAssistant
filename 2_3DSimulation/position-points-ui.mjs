@@ -1,3 +1,4 @@
+import { syncSettingsOptions } from './settings-controls.mjs';
 import { nextPositionPointMetadata, applyPositionPointCellEdit, pastePoints, navigatePositionTable, positionSelection } from './wasm/positions.mjs';
 
 const STANDARDIZATION_STORAGE_KEY = 'inorobot-simulation-position-standardization';
@@ -165,6 +166,15 @@ export function createPositionPointsUi(panel, api) {
         input.addEventListener('blur', () => { if (editing?.input === input) finishEdit(); });
         input.focus(); input.setSelectionRange(input.value.length, input.value.length);
     }
+    function refreshRobots(robots = api.robots(), robotId = api.robotId()) {
+        syncSettingsOptions(robotSelect, robots.map(robot => ({ value: robot.id, label: robot.name })), robotId);
+        if (!robotId) robotSelect.value = '';
+        robotSelect.title = robots.find(robot => robot.id === robotId)?.name || '';
+    }
+    function refreshScene() {
+        if (contextKey !== `${api.robotId()}:${api.contextKey()}`) refresh();
+        else refreshRobots();
+    }
     function refresh() {
         const doc = panel.ownerDocument, restoreFocus = !editing && body.contains(doc.activeElement);
         const robots = api.robots(), robotId = api.robotId(), key = `${robotId}:${api.contextKey()}`;
@@ -172,10 +182,7 @@ export function createPositionPointsUi(panel, api) {
             cancelEdit(); contextKey = key; selectedKey = null; activeCell = null; selectionAnchor = null;
             selectedRows = null; rowAnchorKey = null; showError();
         }
-        robotSelect.replaceChildren(...robots.map(robot => {
-            const option = doc.createElement('option'); option.value = robot.id; option.textContent = robot.name; return option;
-        }));
-        robotSelect.value = robotId; robotSelect.title = robots.find(robot => robot.id === robotId)?.name || '';
+        refreshRobots(robots, robotId);
         const records = api.records();
         if (editing && (api.locked() || !records.some(record => record.key === editing.key))) cancelEdit();
         if (!editing) {
@@ -364,5 +371,5 @@ export function createPositionPointsUi(panel, api) {
             showError(); refresh();
         } catch (exception) { showError(api.text(exception.message)); }
     });
-    return { refresh, handleKeyDown };
+    return { refresh, refreshScene, handleKeyDown };
 }

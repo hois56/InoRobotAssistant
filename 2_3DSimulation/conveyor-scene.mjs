@@ -1,20 +1,23 @@
 import * as THREE from 'three';
 import { advanceConveyorObject } from './conveyor-core.mjs?v=20261116-feed-1';
 
-export function conveyorLocalBounds(model, frame) {
+const meshToFrame = new THREE.Matrix4();
+const meshBounds = new THREE.Box3();
+
+export function conveyorLocalBounds(model, frame, inverseFrame) {
     const bounds = new THREE.Box3();
-    frame.updateWorldMatrix(true, false);
+    if (!inverseFrame) {
+        frame.updateWorldMatrix(true, false);
+        inverseFrame = frame.matrixWorld.clone().invert();
+    }
     model.updateWorldMatrix(true, true);
-    const inverse = frame.matrixWorld.clone().invert();
     model.traverseVisible(mesh => {
         if (!mesh.isMesh || !mesh.geometry) return;
         if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
         const box = mesh.geometry.boundingBox;
         if (!box || box.isEmpty()) return;
-        const matrix = inverse.clone().multiply(mesh.matrixWorld);
-        for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) {
-            bounds.expandByPoint(new THREE.Vector3(x, y, z).applyMatrix4(matrix));
-        }
+        meshToFrame.multiplyMatrices(inverseFrame, mesh.matrixWorld);
+        bounds.union(meshBounds.copy(box).applyMatrix4(meshToFrame));
     });
     return bounds;
 }

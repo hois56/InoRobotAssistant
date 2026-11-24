@@ -6,6 +6,10 @@
     }
   },
   "legacy": {
+    "벨트에 연결할 컨트롤러를 선택하세요. 마스터·슬레이브 구성에서는 마스터를 선택하세요.": "Bu bant için kontrolörü seçin. Master–slave grubunda master kontrolörünü seçin.",
+    "컨베이어 가상 버스의 마스터를 선택하세요.": "Konveyör sanal veri yolunun master kontrolörünü seçin.",
+    "가상 컨트롤러 연결이 끊어져 해당 연동을 해제했습니다.": "Sanal kontrolörün bağlantısı kesildi. Konveyör bağlantısı kapatıldı.",
+    "전송이 지연되어 해당 컨트롤러의 컨베이어 연동을 해제했습니다.": "İletim gecikti. Bu kontrolörün konveyör bağlantısı kapatıldı.",
     "센서 감지 시 자동 촬영": "Sensör algılayınca otomatik çekim",
     "촬영 지연거리 (mm)": "Çekim gecikme mesafesi (mm)",
     "센서 감지 후 벨트가 이동한 거리로 촬영 시점을 정합니다. 자동 촬영을 사용할 때는 프로그램에서 CnvTrigVis를 호출하지 마세요.": "Algılamadan sonraki bant hareketi çekim noktasını belirler. Otomatik çekimde robot programından CnvTrigVis çağırmayın.",

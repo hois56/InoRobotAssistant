@@ -1,3 +1,4 @@
+import { syncSetting } from './settings-controls.mjs';
 import { fillEquipmentForm } from './wasm/forms.mjs';
 import { uiText, uiFormat } from './ui-language.mjs';
 import { EQUIPMENT_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentReferences, equipmentMotionGroups, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
@@ -36,6 +37,7 @@ export function createEquipmentUi(adapter) {
  objectHome.addEventListener('click',()=>{try{adapter.command(form.elements.id.value,'SET_HOME');error(homeSaved);}catch(exception){error(exception.message);}});
  const selected=Object.fromEntries(Object.keys(groups).map(key=>[key,new Set()]));
  let targetRef='', signature='', currentConveyor=null, vacuumFace=null, nameEdited=false;
+ let renderedDefinitions = '';
  [...EQUIPMENT_TYPES,'CONVEYOR'].forEach(type=>form.elements.type.add(new Option(EQUIPMENT_LABELS[type]||'컨베이어 이송',type)));
  for(const [key,[label,value]] of Object.entries(numeric)) {
   const field=document.createElement('label'); const caption=document.createElement('span'); caption.textContent=label; field.append(caption);
@@ -198,6 +200,38 @@ export function createEquipmentUi(adapter) {
   if(simple){for(const key of ['axis','travel','speed'])detachField(form.elements[key].parentElement);detachField(dialog.querySelector('#equipment-advanced'));}
   if(object)detachField(faceSection);else{detachField(randomSection);if(!vacuum)detachField(faceSection);}
  }
+ function syncDefinitionFields(def, force) {
+  const put = (key, value) => syncSetting(form.elements[key], value, force);
+  put('axis', def?.axis || 'X');
+  for (const key of ['bodyRef', 'robotRef', 'pullerRef']) put(key, def?.[key] || '');
+  put('filmGripSide', def?.filmGripSide || 'X-');
+  put('vacuumMode', def?.vacuumMode || 'FACE');
+  for (const [key, [, fallback]] of Object.entries(numeric)) put(key, def?.[key] ?? fallback);
+  ['X','Y','Z'].forEach((axis,i) => { put('pivot'+axis, def?.pivot?.[i] || 0); put('gripCenter'+axis, def?.gripCenter?.[i] ?? (i===2?40:0)); });
+  const bindings = adapter.bindings(def, targetRef) || {};
+  put('ioTrigger', bindings.triggerValue ?? 1); put('forwardAddress', bindings.forward ?? '');
+  put('reverseAddress', bindings.reverse ?? ''); put('resetAll', bindings.resetAll === true);
+  put('randomHome', def?.randomHome === true);
+  for (const key of randomKeys) put(key, def?.[key] ?? randomDefaults[key]);
+ }
+ function definitionListKey() {
+  return JSON.stringify([form.elements.id.value, currentConveyor?.id, ...adapter.definitions().map(def => [def.id, def.type, adapter.label?.(def) || def.name])]);
+ }
+ function refreshSettings() {
+  if (!dialog.open) return;
+  const id = form.elements.id.value;
+  const def = currentConveyor ? adapter.conveyorDefinition?.(currentConveyor.movingRef || targetRef)
+      : adapter.definitions().find(item => item.id === id);
+  if (id && !def) { edit(null, targetRef); return; }
+  if (currentConveyor) currentConveyor = def;
+  references();
+  if (def) {
+   syncDefinitionFields(def, false);
+   syncSetting(form.elements.name, def.customName ? def.name : defaultName(true));
+  }
+  updateTargetLabel();
+  if (definitionListKey() !== renderedDefinitions) render();
+ }
  function edit(def=null, ref=targetRef) {
   restoreFields();
   targetRef=ref||''; currentConveyor=def?.type==='CONVEYOR'?def:null; form.reset(); pendingRole=null; for(const button of dialog.querySelectorAll('[data-equipment-role] button'))button.textContent='모델 트리에서 추가';
@@ -207,14 +241,9 @@ export function createEquipmentUi(adapter) {
   form.elements.id.value=def?.id||'';form.elements.type.value=def?.type||'CYLINDER';form.elements.axis.value=def?.axis||'X';form.elements.name.value=def?.name||adapter.references().find(item=>item.value===targetRef)?.label||'';
   vacuumFace=def?.vacuumFace?JSON.parse(JSON.stringify(def.vacuumFace)):null;nameEdited=def?.customName===true;form.elements.vacuumMode.value=def?.vacuumMode||'FACE';
   references(true);
-  for(const key of ['bodyRef','robotRef','pullerRef'])form.elements[key].value=def?.[key]||'';
-  form.elements.filmGripSide.value=def?.filmGripSide||'X-';
-  for(const [key,[,value]]of Object.entries(numeric))form.elements[key].value=def?.[key]??value;
-  ['X','Y','Z'].forEach((axis,i)=>{form.elements['pivot'+axis].value=def?.pivot?.[i]||0;form.elements['gripCenter'+axis].value=def?.gripCenter?.[i]??(i===2?40:0);});
-  const bindings=adapter.bindings(def,targetRef)||{};form.elements.ioTrigger.value=bindings.triggerValue??1;form.elements.forwardAddress.value=bindings.forward??'';form.elements.reverseAddress.value=bindings.reverse??'';form.elements.resetAll.checked=bindings.resetAll===true;
-  form.elements.randomHome.checked=def?.randomHome===true;for(const key of randomKeys)form.elements[key].value=def?.[key]??randomDefaults[key];
+  syncDefinitionFields(def, true);
   updateTargetLabel();
-  fields();updateName();render();error('');dialog.scrollTop=0;
+  fields();updateName();syncSetting(form.elements.name, form.elements.name.value, true);render();error('');dialog.scrollTop=0;
  }
  form.elements.type.addEventListener('change',()=>{
   // A different kind is another action on the same tool, not a replacement.
@@ -245,15 +274,15 @@ export function createEquipmentUi(adapter) {
   const actions=document.createElement('div');actions.className='equipment-test-actions';const management=document.createElement('div');management.className='equipment-management-actions';row.append(actions,management);
   for(const [command,label]of [...equipmentCommandOptions(def.type),...(def.type==='OBJECT'?[['SET_HOME','원위치로 등록']]:[]),['EDIT','편집'],['DELETE',def.type==='OBJECT'?'등록 해제':'동작 삭제']]) {
    const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.equipmentCommand=command;if(command==='SET_HOME')button.title=objectHome.title;
-   button.addEventListener('click',()=>{try{if(command==='EDIT')edit(def,def.movingRef);else if(command==='DELETE'){adapter.remove(def.id);edit(null,targetRef);}else{adapter.command(def.id,command);if(command==='SET_HOME')error(homeSaved);}updateStatus();}catch(exception){error(exception.message);}});(['EDIT','DELETE','SET_HOME'].includes(command)||def.type==='OBJECT'&&command==='RESET'?management:actions).append(button);
+   button.addEventListener('click',()=>{try{if(command==='EDIT'){const latest=adapter.definitions().find(item=>item.id===def.id);if(latest)edit(latest,latest.movingRef);}else if(command==='DELETE'){adapter.remove(def.id);edit(null,targetRef);}else{adapter.command(def.id,command);if(command==='SET_HOME')error(homeSaved);}updateStatus();}catch(exception){error(exception.message);}});(['EDIT','DELETE','SET_HOME'].includes(command)||def.type==='OBJECT'&&command==='RESET'?management:actions).append(button);
   }container.append(row);
  }
  function conveyorControls(def,container){
   const row=document.createElement('div');row.className='equipment-list-row';row.dataset.equipmentId=def.id;const title=document.createElement('strong');title.textContent=adapter.label?.(def)||def.name;row.append(title);
   const actions=document.createElement('div');actions.className='equipment-test-actions';const management=document.createElement('div');management.className='equipment-management-actions';row.append(actions,management);
-  for(const [command,label]of [['FORWARD','이송'],['STOP','정지'],['EDIT','편집'],['DELETE','동작 삭제']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.conveyorCommand=command;button.addEventListener('click',()=>{if(command==='EDIT')edit(def,def.movingRef);else adapter.conveyorCommand(def.movingRef,command);if(command==='DELETE')edit(null,def.movingRef);});(['EDIT','DELETE'].includes(command)?management:actions).append(button);}container.append(row);
+  for(const [command,label]of [['FORWARD','이송'],['STOP','정지'],['EDIT','편집'],['DELETE','동작 삭제']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.conveyorCommand=command;button.addEventListener('click',()=>{if(command==='EDIT')edit(adapter.conveyorDefinition?.(def.movingRef)||def,def.movingRef);else adapter.conveyorCommand(def.movingRef,command);if(command==='DELETE')edit(null,def.movingRef);});(['EDIT','DELETE'].includes(command)?management:actions).append(button);}container.append(row);
  }
- function render(){const list=dialog.querySelector('#equipment-list'),current=dialog.querySelector('#equipment-current-controls');list.replaceChildren();current.replaceChildren();if(currentConveyor)conveyorControls(currentConveyor,current);adapter.definitions().filter(def=>EQUIPMENT_TYPES.includes(def.type)).forEach(def=>controls(def,def.id===form.elements.id.value?current:list));if(findDefinitions(targetRef).length>1)dialog.querySelector('#equipment-registered').open=true;updateStatus();}
+ function render(){renderedDefinitions=definitionListKey();const list=dialog.querySelector('#equipment-list'),current=dialog.querySelector('#equipment-current-controls');list.replaceChildren();current.replaceChildren();if(currentConveyor)conveyorControls(currentConveyor,current);adapter.definitions().filter(def=>EQUIPMENT_TYPES.includes(def.type)).forEach(def=>controls(def,def.id===form.elements.id.value?current:list));if(findDefinitions(targetRef).length>1)dialog.querySelector('#equipment-registered').open=true;updateStatus();}
  function updateStatus(){
   if(!dialog.open)return;
   if(references()){
@@ -310,5 +339,5 @@ export function createEquipmentUi(adapter) {
   refs.forEach((ref,index)=>adapter.select?.(ref,index>0));
   show();
  }
- return {findDefinitions,openGroup,refreshLanguage() { updateName(); updateTargetLabel(); error(lastMessage); if (dialog.open) render(); },open(ref='',definition=null){edit(definition,ref);show();},edit,render,updateStatus,dialog,get pendingRole(){return pendingRole;},addPart(ref){const role=pendingRole||'movingRef';if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value))selected[role].clear();selected[role].add(ref);if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value)){pendingRole=null;for(const button of dialog.querySelectorAll('[data-equipment-role] button'))button.textContent='모델 트리에서 추가';}references(true);updateName();error('부품을 추가했습니다. 동작 저장을 눌러 적용하세요.');}};
+ return {findDefinitions,openGroup,refreshLanguage() { updateName(); updateTargetLabel(); error(lastMessage); if (dialog.open) render(); },open(ref='',definition=null){edit(definition,ref);show();},edit,render,updateStatus,refreshSettings,dialog,get pendingRole(){return pendingRole;},addPart(ref){const role=pendingRole||'movingRef';if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value))selected[role].clear();selected[role].add(ref);if(role==='movingRef'&&['FILM_PEEL','CONVEYOR'].includes(form.elements.type.value)){pendingRole=null;for(const button of dialog.querySelectorAll('[data-equipment-role] button'))button.textContent='모델 트리에서 추가';}references(true);updateName();error('부품을 추가했습니다. 동작 저장을 눌러 적용하세요.');}};
 }

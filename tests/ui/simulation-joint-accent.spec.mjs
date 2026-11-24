@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 import { ROBOT_JOINT_ACCENTS } from '../../2_3DSimulation/robot-joint-accent-faces.mjs';
 import { ROBOT_LOGO_FACES } from '../../2_3DSimulation/robot-logo-material-core.mjs';
 
+// Width of the black band on P5, excluding the separate rotating P6.
+const wristBandWidths = { 'IR-R4-56': 22, 'IR-R4H-54': 15.5, 'IR-R7H-70': 22, 'IR-R7H-90': 22, 'IR-R10H-120': 14 };
+
 for (const [folder, mask] of Object.entries(ROBOT_JOINT_ACCENTS)) {
 const stl = readFileSync(new URL(`../../2_3DSimulation/models/${folder}/${mask.mesh || 'P4.stl'}`, import.meta.url));
 let originalArea = 0;
@@ -22,16 +25,28 @@ test(`${folder} 몸체·연결부 색상과 로고가 선택·충돌 후에도 �
     await page.goto('/2_3DSimulation/index.html', { waitUntil: 'domcontentloaded' });
     await page.locator('#model-select').selectOption(`robot:${folder}`);
     await page.waitForFunction(() => window.__accentTest?.state.models.some(model => model.userData.tcpFrame));
-    const result = await page.evaluate(({ endX }) => {
+    const result = await page.evaluate(({ endX, wristBandWidth }) => {
         const api = window.__accentTest;
         const { state, THREE } = api;
         const robot = state.models.find(model => model.userData.tcpFrame);
         let joint;
         const accented = [];
-        const bodyColors = [];
+        const bodyColors = {};
+        let wristRingColors;
         robot.traverse(mesh => {
             if (mesh.isMesh && /^(P0|J[1-6])$/.test(mesh.name)) {
-                bodyColors.push((Array.isArray(mesh.material) ? mesh.material[0] : mesh.material).color.getHex());
+                bodyColors[mesh.name] = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material).color.getHex();
+            }
+            if (mesh.isMesh && mesh.name === 'J5' && wristBandWidth) {
+                const wrist = new THREE.Mesh(mesh.geometry, mesh.material);
+                mesh.geometry.computeBoundingBox();
+                const { max: tip } = mesh.geometry.boundingBox;
+                const z = robot.userData.manifest.tcp[2];
+                wristRingColors = [wristBandWidth - 2, wristBandWidth + 2].map(depth => {
+                    const ray = new THREE.Raycaster(new THREE.Vector3(tip.x - depth, tip.y + 10, z), new THREE.Vector3(0, -1, 0));
+                    const [hit] = ray.intersectObject(wrist, false);
+                    return [].concat(mesh.material)[hit.face.materialIndex].color.getHex();
+                });
             }
             if (mesh.isMesh && Array.isArray(mesh.material) && mesh.material[2]) { accented.push(mesh.name); joint = mesh; }
         });
@@ -68,11 +83,15 @@ test(`${folder} 몸체·연결부 색상과 로고가 선택·충돌 후에도 �
         state.controls.target.copy(target);
         state.controls.update();
         state.renderer.render(state.scene, state.camera);
-        return { accented, bodyColors, before, selected, collision, restored, area, maxX, boundaryVertices,
+        return { accented, bodyColors, wristRingColors, before, selected, collision, restored, area, maxX, boundaryVertices,
             accentCount: accentGroup.count };
-    }, mask);
+    }, { ...mask, wristBandWidth: wristBandWidths[folder] });
     expect(result.accented).toEqual([mask.mesh === 'P3.stl' ? 'J3' : 'J4']);
-    expect(result.bodyColors).toEqual(Array(7).fill(0xd8d7df));
+    expect(result.bodyColors).toEqual({
+        P0: 0xd8d7df, J1: 0xd8d7df, J2: 0xd8d7df, J3: 0xd8d7df,
+        J4: 0xd8d7df, J5: 0xd8d7df, J6: 0x303030
+    });
+    if (wristBandWidths[folder]) expect(result.wristRingColors).toEqual([0x303030, 0xd8d7df]);
     // R4H uses a projected logo; its unused material slot keeps the body color.
     expect(result.before.slice(1)).toEqual([ROBOT_LOGO_FACES[`${folder}/${mask.mesh || 'P4.stl'}`] ? 0x108ccf : 0xd8d7df, 0x009cde]);
     expect(result.selected).toEqual(result.before);

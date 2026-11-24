@@ -31,7 +31,7 @@
     padding-left: 24px;
 }
 .topbar-left { gap: clamp(5px, .7vw, 12px); }
-#topbar :is(.ui-btn, .simulation-reset-btn, .inorobot-language-switcher, .viewer-fps-limit) {
+#topbar :is(.ui-btn, .simulation-reset-btn, .inorobot-language-switcher) {
     border-radius: 7px;
     border-color: var(--border);
     color: var(--button-text);

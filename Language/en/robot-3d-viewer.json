@@ -6,6 +6,10 @@
     }
   },
   "legacy": {
+    "벨트에 연결할 컨트롤러를 선택하세요. 마스터·슬레이브 구성에서는 마스터를 선택하세요.": "Select the controller for this belt. In a master–slave group, select the master.",
+    "컨베이어 가상 버스의 마스터를 선택하세요.": "Select the conveyor virtual bus master.",
+    "가상 컨트롤러 연결이 끊어져 해당 연동을 해제했습니다.": "The virtual controller disconnected. Its conveyor link was released.",
+    "전송이 지연되어 해당 컨트롤러의 컨베이어 연동을 해제했습니다.": "Transmission stalled. The conveyor link to this controller was released.",
     "센서 감지 시 자동 촬영": "Auto-capture on sensor detection",
     "촬영 지연거리 (mm)": "Capture delay distance (mm)",
     "센서 감지 후 벨트가 이동한 거리로 촬영 시점을 정합니다. 자동 촬영을 사용할 때는 프로그램에서 CnvTrigVis를 호출하지 마세요.": "The belt travel after detection sets the capture point. Use this mode without CnvTrigVis in your robot program.",

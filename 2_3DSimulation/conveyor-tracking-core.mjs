@@ -25,7 +25,7 @@ function bounds(box) {
         finite(box?.min?.[axis], 'bounds.min'); finite(box?.max?.[axis], 'bounds.max');
         if (box.min[axis] > box.max[axis]) throw new RangeError('inverted bounds');
     }
-    return structuredClone(box);
+    return box;
 }
 function encoder(position, scale) {
     const count = Math.trunc(position * scale);
@@ -49,6 +49,11 @@ export function sweptSensorInterval(before, after, sensor) {
     const result = engine.sensor_interval();
     if (result < 0) throw new RangeError('sensor sweep requires a translated object');
     return result ? [data[0], data[1]] : null;
+}
+
+function quadrature(count) {
+    const phase = Number((BigInt(count) % 4n + 4n) % 4n);
+    return [[0, 0], [0, 1], [1, 1], [1, 0]][phase];
 }
 
 function intervalsUnion(intervals) {
@@ -75,7 +80,7 @@ export class ConveyorTracking {
         this.captureOffset = captureOffset.map(n => finite(n, 'captureOffset'));
         this.sensors = sensors.map(sensor => {
             if (!isConveyorSensorAddress(sensor.address)) throw new RangeError('sensor address');
-            return { id: String(sensor.id), address: sensor.address, bounds: bounds(sensor.bounds) };
+            return { id: String(sensor.id), address: sensor.address, bounds: structuredClone(bounds(sensor.bounds)) };
         });
         if (this.sensors.length > 32 || new Set(this.sensors.map(s => s.id)).size !== this.sensors.length
             || new Set(this.sensors.map(s => s.address)).size !== this.sensors.length
@@ -95,19 +100,25 @@ export class ConveyorTracking {
     }
 
     reconnectFrame() {
-        if (!this.lastFrame) return this.sample({ seconds: 0, distance: 0 });
-        // Transport recovery must not turn an occupied sensor into a fresh exposure.
-        this.lastFrame = { ...this.lastFrame, sequence: ++this.sequence, velocity: 0,
-            events: structuredClone(this.pending) };
-        return structuredClone(this.lastFrame);
+        return structuredClone(this.frame(0, encoder(this.position, this.countsPerMm)));
     }
 
-    sample({ seconds, distance, objects = [], captures = [], captureDelaySeconds = 0, sensorCapture = null }) {
+    sample(input) {
+        const step = this.prepareStep(input);
+        const shots = input.captures ?? [];
+        const automatic = shots.length ? [] : step.exposures.map(fraction => ({
+            fraction, objects: input.sensorCapture.capture(fraction)
+        }));
+        this.recordStep(step, shots.length ? shots : automatic, input.captureDelaySeconds);
+        return structuredClone(this.frame(step.velocity, step.count, step.quadrature));
+    }
+
+    // Crossings and exposures use the same encoder sample as the rendered movement.
+    prepareStep({ seconds, distance, objects = [], sensorCapture = null }) {
         finite(seconds, 'seconds', 0, MAX_SAMPLE_SECONDS); finite(distance, 'distance', -1250, 1250);
-        finite(captureDelaySeconds, 'camera processing time', 0, 60);
         if (seconds === 0 && distance !== 0) throw new RangeError('motion needs elapsed time');
         if (seconds > 0 && Math.abs(distance / seconds) > 5000.000001) throw new RangeError('speed');
-        if (!Array.isArray(objects) || objects.length > MAX_EVENTS || !Array.isArray(captures)) throw new RangeError('objects');
+        if (!Array.isArray(objects) || objects.length > MAX_EVENTS) throw new RangeError('objects');
         // Compensated summation keeps repeated sub-pulse steps from losing a
         // whole encoder edge at boundaries (ten 0.1 mm steps must be 1 mm).
         const correctedDistance = distance - this.positionError;
@@ -115,19 +126,15 @@ export class ConveyorTracking {
         const positionError = (position - this.position) - correctedDistance;
         const count = encoder(position, this.countsPerMm);
         const events = [], levels = new Map(this.levels);
-        const processing = [...this.processingCaptures];
         const scheduled = sensorCapture ? [...this.captureTriggers] : [];
         const triggerDistance = finite(sensorCapture?.distance ?? 0, 'sensor trigger distance', 0, 1e6);
-        const shots = [...captures];
+        const exposures = [];
         const direction = Math.sign(distance);
-        const expose = fraction => {
-            // One explicit exposure in this step also serves a coincident sensor trigger.
-            if (!captures.length) shots.push({ fraction, objects: sensorCapture.capture(fraction) });
-        };
+        const startTime = this.elapsed, startPosition = this.position;
         const stamp = fraction => ({
-            time: this.elapsed + seconds * fraction,
-            position: this.position + distance * fraction,
-            encoder: encoder(this.position + distance * fraction, this.countsPerMm)
+            time: startTime + seconds * fraction,
+            position: startPosition + distance * fraction,
+            encoder: encoder(startPosition + distance * fraction, this.countsPerMm)
         });
         for (const sensor of this.sensors) {
             const intervals = objects.map(object => sweptSensorInterval(object.before, object.after, sensor.bounds)).filter(Boolean);
@@ -140,7 +147,7 @@ export class ConveyorTracking {
                     ...stamp(fraction) });
                 if (value && sensorCapture) {
                     if (triggerDistance) scheduled.push({ position: this.position + distance * fraction, direction });
-                    else expose(fraction);
+                    else exposures.push(fraction);
                 }
             };
             if (!occupied.length || occupied[0][0] > 0) edge(false, 0);
@@ -156,11 +163,36 @@ export class ConveyorTracking {
             const travelled = distance * travel;
             const remainingDistance = triggerDistance - (this.position - shot.position) * travel;
             if (travelled > 0 && remainingDistance <= travelled + 1e-9) {
-                expose(Math.max(0, Math.min(1, remainingDistance / travelled)));
+                exposures.push(Math.max(0, Math.min(1, remainingDistance / travelled)));
             } else {
                 pendingTriggers.push({ ...shot, direction: travel });
             }
         }
+        if (pendingTriggers.length > MAX_EVENTS) throw new RangeError('unacknowledged conveyor events full');
+        return { position, positionError, count, quadrature: quadrature(count), levels, events, exposures, pendingTriggers, stamp,
+            elapsed: startTime + seconds, velocity: seconds ? distance / seconds : 0 };
+    }
+
+    advance(step) {
+        this.position = step.position;
+        this.positionError = step.positionError;
+        this.elapsed = step.elapsed;
+        this.levels = step.levels;
+        this.captureTriggers = step.pendingTriggers;
+    }
+
+    // Each VC owns its camera requests, event numbering and acknowledgement queue.
+    recordStep(step, shots = [], captureDelaySeconds = 0) {
+        finite(captureDelaySeconds, 'camera processing time', 0, 60);
+        if (!Array.isArray(shots)) throw new RangeError('captures');
+        if (!shots.length && !step.events.length && !this.processingCaptures.length) {
+            if (this.pending.length + step.pendingTriggers.length > MAX_EVENTS) throw new RangeError('unacknowledged conveyor events full');
+            this.advance(step);
+            return;
+        }
+        const events = step.events.map(edge => ({ ...edge,
+            address: this.sensors.find(sensor => sensor.id === edge.sensor).address }));
+        const processing = [...this.processingCaptures];
         for (const capture of shots) {
             const fraction = finite(capture.fraction ?? 1, 'capture fraction', 0, 1);
             if (!Array.isArray(capture.objects) || capture.objects.length > MAX_EVENTS) throw new RangeError('vision objects');
@@ -169,33 +201,33 @@ export class ConveyorTracking {
                 return { id: String(object.id), type: integer(object.type, 'object type', 0, 15),
                     pose: object.pose.map(n => finite(n, 'vision coordinate')) };
             });
-            const event = { kind: 'vision', requestId: integer(capture.requestId ?? 0, 'capture request', 0, 2147483647), objects: detected, ...stamp(fraction) };
+            const event = { kind: 'vision', requestId: integer(capture.requestId ?? 0, 'capture request', 0, 2147483647), objects: detected, ...step.stamp(fraction) };
             processing.push({ readyAt: event.time + captureDelaySeconds, event });
         }
         const remaining = [];
         for (const shot of processing) {
-            if (shot.readyAt <= this.elapsed + seconds) events.push(shot.event);
+            if (shot.readyAt <= step.elapsed) events.push(shot.event);
             else remaining.push(shot);
         }
         events.sort((a, b) => a.time - b.time);
-        if (this.pending.length + events.length + remaining.length + pendingTriggers.length > MAX_EVENTS) throw new RangeError('unacknowledged conveyor events full');
+        if (this.pending.length + events.length + remaining.length + step.pendingTriggers.length > MAX_EVENTS) throw new RangeError('unacknowledged conveyor events full');
         // Commit after every validation. Failed frames do not move the encoder.
         for (const event of events) event.id = ++this.eventId;
-        this.pending.push(...events); this.levels = levels;
+        if (events.length) this.pending = this.pending.concat(events);
         this.processingCaptures = remaining;
-        this.captureTriggers = pendingTriggers;
-        this.position = position; this.positionError = positionError; this.elapsed += seconds; ++this.sequence;
-        const phase = Number((BigInt(count) % 4n + 4n) % 4n);
+        this.advance(step);
+    }
+
+    frame(velocity, count, phase = quadrature(count)) {
         this.lastFrame = {
-            version: 1, session: this.session, conveyor: this.conveyor, sequence: this.sequence,
-            time: this.elapsed, position, encoder: count, countsPerMm: this.countsPerMm,
-            captureOffset: [...this.captureOffset],
-            velocity: seconds ? distance / seconds : 0,
-            quadrature: [[0, 0], [0, 1], [1, 1], [1, 0]][phase],
-            sensors: this.sensors.map(s => ({ id: s.id, address: s.address, value: levels.get(s.id) ? 1 : 0 })),
-            events: structuredClone(this.pending)
+            version: 1, session: this.session, conveyor: this.conveyor, sequence: ++this.sequence,
+            time: this.elapsed, position: this.position, encoder: count, countsPerMm: this.countsPerMm,
+            captureOffset: this.captureOffset, velocity,
+            quadrature: phase,
+            sensors: this.sensors.map(s => ({ id: s.id, address: s.address, value: this.levels.get(s.id) ? 1 : 0 })),
+            events: this.pending
         };
-        return structuredClone(this.lastFrame);
+        return this.lastFrame;
     }
 
     resumeEvents(reply) {
@@ -210,7 +242,7 @@ export class ConveyorTracking {
             ? this.processingCaptures.filter(({ event }) => stillRequested(event)) : [];
         if (!retained) this.captureTriggers = [];
         this.eventId = this.acknowledged = eventId;
-        for (const event of this.pending) event.id = ++this.eventId;
+        this.pending = this.pending.map(event => ({ ...event, id: ++this.eventId }));
         return Boolean(requestId && (this.pending.some(event => event.requestId === requestId)
             || this.processingCaptures.some(({ event }) => event.requestId === requestId)));
     }
@@ -220,7 +252,7 @@ export class ConveyorTracking {
         integer(eventId, 'event acknowledgement', 0, this.eventId);
         if (eventId < this.acknowledged) return false;
         this.acknowledged = eventId;
-        this.pending = this.pending.filter(event => event.id > eventId);
+        if (this.pending.length && this.pending[0].id <= eventId) this.pending = this.pending.filter(event => event.id > eventId);
         return true;
     }
 }

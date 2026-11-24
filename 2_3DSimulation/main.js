@@ -1,3 +1,4 @@
+import { syncSetting, syncSettingsOptions } from './settings-controls.mjs';
 import { updateOrbitTransition, followSelectedCenter, resizeOrthographicCamera } from './wasm/camera.mjs';
 import { PANEL_IDS, PANEL_STACK_IDS, panelOpen, panelAvailable, stackPanels, panelResizeEdge, fitPanel, resizePanel, dragPanel } from './wasm/panels.mjs';
 import { uiText, uiFormat } from './ui-language.mjs';
@@ -12,14 +13,14 @@ import {
  */
 
 import * as THREE from 'three';
-import { createCurveTrajectoryApp } from './curve-trajectory-app.mjs?v=20261121-points-1';
+import { createCurveTrajectoryApp } from './curve-trajectory-app.mjs?v=20261123-live-settings';
 import { curveSegmentKeys, orderConnectedCurves, planarFaceTriangleRanges } from './curve-trajectory-selection.mjs?v=20261117-selection-1';
 import {OlpSocketService} from './olp-socket-service.mjs?v=20261107-vision-1';
 import {evaluateOlpHomeStatus} from './olp-home-status.mjs?v=20261102-generator-2';
 import {OlpTorqueFeedback,sampleOlpJointMotion,finishOlpJointMotion,getOlpJointMotionSample} from './olp-torque-feedback.mjs?v=20261102-generator-2';
 import {RAPID_MODEL_DATA} from './rapid-model-data.mjs?v=20261102-models-2';
 import { hasRapidDynamicsModel, resolveRapidDynamicsModel } from './robot-rapid-dynamics.mjs?v=20261102-models-2';
-import { createPositionPointsUi, nextPositionPointMetadata } from './position-points-ui.mjs?v=20261117-delete-1';
+import { createPositionPointsUi, nextPositionPointMetadata } from './position-points-ui.mjs?v=20261123-live-settings';
 import { normalizeToolLoad, buildToolParamFile, buildWobjParamFile, combineToolLoads } from './tool-data-core.mjs?v=20261102-dat-export-1';
 import { VIEW_PRESET_COUNT } from './view-preset-core.mjs';
 import { createViewRecording } from './view-recording.mjs?v=20261120-5';
@@ -31,6 +32,8 @@ import { TeachingPointScene, teachingJointMatrix } from './teaching-point-scene.
 import { buildCleanOutlinePositions, buildRobotLogoOutlineBounds } from './outline-geometry-core.mjs?v=20261121-rust-outline';
 import { computeSmoothTriangleNormals } from './smooth-triangle-normals-core.mjs';
 import { SCARA_CONDUIT_FITTINGS, createScaraSpanMapping, splitScaraGlandGeometry } from './scara-conduit.mjs?v=20261123-1';
+import { applyS7HardwareFinish } from './scara-s7-hardware.mjs?v=20261123-spindle';
+import { polishScaraSpindle } from './scara-spindle-material.mjs?v=20261123-3';
 import { armQuadrant, scaraArmParameters, sixAxisArmParameters } from './arm-parameter-core.mjs';
 import { inverseJointStep, scaraInverse } from './inverse-kinematics.mjs';
 import { ROBOT_LOGO_COLOR, ROBOT_LOGO_FACES, ROBOT_LOGO_PROJECTIONS, createRobotLogoIndex } from './robot-logo-material-core.mjs?v=20261031-r35-r50-1';
@@ -144,18 +147,18 @@ import {
     refreshOlpProjectDerivedData,
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
-import { createEquipmentApp } from './equipment-app.mjs?v=20261123-grip-time';
-import { createVisionApp } from './vision-app.mjs?v=20261123-conveyor-theta';
+import { createEquipmentApp } from './equipment-app.mjs?v=20261123-live-settings';
+import { createVisionApp } from './vision-app.mjs?v=20261124-tracking-bus';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 import { equipmentObjectRef } from './equipment-scene.mjs?v=20261123-grip-time';
 import { normalizeModelGroupTree, walkModelGroups, modelGroupPath, modelGroupAtPath, dissolveModelGroup, moveModelsToGroup } from './model-group-tree-core.mjs';
 import { conveyorSensorLayout } from './conveyor-sensor-preview.mjs?v=20261123-sensor-light';
 import { conveyorElapsedSeconds } from './conveyor-core.mjs?v=20261117-run-1';
-import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261123-tracking-sync';
-import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261117-variation-1';
+import { moveConveyorObjects } from './conveyor-scene.mjs?v=20261123-shared-bounds';
+import { createConveyorFeedApp } from './conveyor-feed-app.mjs?v=20261123-live-settings';
 import { conveyorDisplayTime, createConveyorDisplay } from './conveyor-display.mjs?v=20261123-grip-time';
 import { createConveyorVisuals } from './conveyor-visuals.mjs?v=20261123-display';
-import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261123-display';
+import { createConveyorTrackingApp } from './conveyor-tracking-app.mjs?v=20261124-single-source';
 import { forEachConveyorTrackingStep } from './conveyor-tracking-core.mjs?v=20261119-tracking-step-1';
 import * as WorkspaceRecovery from './workspace-recovery-core.mjs?v=20261121-step-import';
 import {
@@ -427,7 +430,7 @@ function handleNumericInputPointerDown(event) {
     const input = event.target;
     if (!isNumericInputTarget(input) || event.button !== 0 || input.disabled || input.readOnly
         || input.hasAttribute('data-test-quantity')) return;
-    const needsFocus = document.activeElement !== input;
+    const needsFocus = (input.ownerDocument || document).activeElement !== input;
     prepareNumericInputForEditing(input);
     if (needsFocus) {
         event.preventDefault();
@@ -1211,7 +1214,6 @@ const el = {
     statusDot:       document.getElementById('status-dot'),
     canvasContainer: document.getElementById('canvas-container'),
     btnResetView:    document.getElementById('btn-reset-view'),
-    renderFpsLimit:  document.getElementById('render-fps-limit'),
     btnSelectedViewPivot: document.getElementById('btn-selected-view-pivot'),
     btnToggleOutline: document.getElementById('btn-toggle-outline'),
     btnToggleGrid:   document.getElementById('btn-toggle-grid'),
@@ -5517,6 +5519,7 @@ function saveViewPreset(slot) {
 }
 
 function refreshViewPresetsUi() {
+    scheduleSettingsRefresh('views');
     state.viewRecording?.refresh();
     if (!el.viewPresetsList) return;
     const template = el.viewPresetsList.querySelector('[data-view-slot="0"]');
@@ -5537,7 +5540,7 @@ function refreshViewPresetsUi() {
         const saveButton = row.querySelector('[data-view-save]');
         const applyButton = row.querySelector('[data-view-apply]');
         const monitorButton = row.querySelector('[data-view-monitor]');
-        if (nameInput && document.activeElement !== nameInput) {
+        if (nameInput && (nameInput.ownerDocument || document).activeElement !== nameInput) {
             nameInput.value = preset?.name || nameInput.value || getDefaultViewPresetName(slot);
         }
         nameInput?.setAttribute('aria-label', uiFormat('뷰 {number} 이름', { number: slot + 1 }));
@@ -5545,7 +5548,7 @@ function refreshViewPresetsUi() {
             secondsInput.max = String(MAX_VIEW_TRANSITION_SECONDS);
             secondsInput.title = uiText('뷰 전환 시간 (초, 0 = 즉시 전환)');
             secondsInput.setAttribute('aria-label', uiFormat('뷰 {number} 전환 시간 (초)', { number: slot + 1 }));
-            if (secondsInput.ownerDocument.activeElement !== secondsInput) {
+            if ((secondsInput.ownerDocument || document).activeElement !== secondsInput) {
                 secondsInput.value = String(normalizeViewTransitionSeconds(preset?.transitionSeconds ?? state.viewTransitionSeconds));
             }
         }
@@ -6115,7 +6118,7 @@ function renderPrimitiveShapePanel() {
             : uiText('스케치 돌출');
     }
     Object.entries(el.shapeSelectedDimensions || {}).forEach(([axis, input]) => {
-        if (!input || input === document.activeElement) return;
+        if (!input || input === (input.ownerDocument || document).activeElement) return;
         input.value = formatJogValue(dimensions[axis]);
     });
     const type = selected.userData.primitiveShapeType;
@@ -6147,7 +6150,7 @@ function syncPrimitiveShapeDimensionInputs(inputs, type, axis) {
             value
         );
         Object.entries(inputs).forEach(([key, input]) => {
-            if (input !== document.activeElement) input.value = formatJogValue(dimensions[key]);
+            if (input !== (input.ownerDocument || document).activeElement) input.value = formatJogValue(dimensions[key]);
         });
     } catch (_) {
         // Keep incomplete number input editable until blur/change validates it.
@@ -14324,6 +14327,8 @@ function finishSelectedPrimitiveShapeDimension() {
 }
 
 function setupScene() {
+    // Keep the rendering preference saved by earlier versions.
+    try { state.renderFpsLimited = localStorage.getItem('simulation.limitFps') === '1'; } catch {}
     state.scene = new THREE.Scene();
     state.scene.background = new THREE.Color(0xe8eff5);
     state.camera = new THREE.PerspectiveCamera(45, el.canvasContainer.clientWidth / el.canvasContainer.clientHeight, 0.1, 1e7);
@@ -19078,10 +19083,10 @@ function updateZeroPointEditorInputs() {
     ['x', 'y', 'z'].forEach((axis) => {
         const originInput = el.zeroPointOriginInputs[axis];
         const rotationInput = el.zeroPointRotationInputs[axis];
-        if (originInput && originInput !== document.activeElement) {
+        if (originInput && originInput !== (originInput.ownerDocument || document).activeElement) {
             originInput.value = formatTransformNumber(origin[axis]);
         }
-        if (rotationInput && rotationInput !== document.activeElement) {
+        if (rotationInput && rotationInput !== (rotationInput.ownerDocument || document).activeElement) {
             rotationInput.value = formatTransformNumber(normalizeDegrees(rotationDegrees[axis]));
         }
     });
@@ -20380,7 +20385,7 @@ function renderTraceChannelList() {
 }
 
 function traceRobotSignature() {
-    return getArticulatedRobots().map((robot) => `${getTraceRobotId(robot)}:${getTraceSource(robot)}`).join('|');
+    return getArticulatedRobots().map((robot) => `${getTraceRobotId(robot)}:${getTraceSource(robot)}:${getTraceRobotName(robot)}`).join('|');
 }
 
 function refreshTraceSelectors(force = false) {
@@ -22898,16 +22903,6 @@ function setupEventListeners() {
         state.sceneSelectionPointer = null;
         resetMainOrbitControlInteraction();
     });
-    if (el.renderFpsLimit) {
-        try { state.renderFpsLimited = localStorage.getItem('simulation.limitFps') === '1'; } catch {}
-        el.renderFpsLimit.checked = state.renderFpsLimited;
-        el.renderFpsLimit.addEventListener('change', () => {
-            state.renderFpsLimited = el.renderFpsLimit.checked;
-            state.renderFrameLimit.reset();
-            try { localStorage.setItem('simulation.limitFps', state.renderFpsLimited ? '1' : '0'); } catch {}
-            requestRender();
-        });
-    }
     el.btnResetView.addEventListener('click', () => {
         fitCamera();
         updateSelectedViewPivot(true);
@@ -24279,7 +24274,7 @@ function getPanelElement(panelId) {
         'interference-zone-dialog': el.interferenceZoneDialog,
         'tool-load-info-panel': el.toolLoadInfoPanel,
         'work-origin-dialog': el.workOriginDialog,
-        'equipment-dialog': document.getElementById('equipment-dialog'),
+        'equipment-dialog': document.getElementById('equipment-dialog') || state.panelWindows.get(panelId)?.panel,
         'io-function-mapping-dialog': el.ioFunctionMappingDialog,
         'vision-panel': document.getElementById('vision-panel') || state.panelWindows.get('vision-panel')?.panel,
         'conveyor-tracking-dialog': document.getElementById('conveyor-tracking-dialog') || state.panelWindows.get('conveyor-tracking-dialog')?.panel
@@ -24288,6 +24283,37 @@ function getPanelElement(panelId) {
 
 function isPanelOpenInDocument(panel) {
     return panelOpen(panel, document);
+}
+
+// Several model, mapping and controller changes can belong to one UI action.
+// Flush after that action, including when a detached settings window has focus.
+const changedSettings = new Set();
+function scheduleSettingsRefresh(change) {
+    if (changedSettings.size === 0) queueMicrotask(refreshOpenSettings);
+    changedSettings.add(change);
+}
+
+function refreshOpenSettings() {
+    const scene = changedSettings.has('scene'), mappings = changedSettings.has('mappings');
+    const controllers = changedSettings.has('controllers'), conveyor = changedSettings.has('conveyor');
+    const program = changedSettings.has('program'), views = changedSettings.has('views');
+    changedSettings.clear();
+    const visible = id => {
+        const panel = getPanelElement(id);
+        return panel?.isConnected && panelOpen(panel, panel.ownerDocument);
+    };
+    if (scene || mappings || conveyor || controllers) {
+        conveyorTrackingApp.refresh(controllers && !scene && !mappings && !conveyor);
+    }
+    if ((scene || mappings) && visible('equipment-dialog')) equipmentApp.ui.refreshSettings();
+    if (scene && visible('vision-panel')) visionApp.refresh();
+    if (scene && visible('position-points-panel')) positionPointsUi?.refreshScene();
+    if (scene && visible('virtual-controller-panel')) refreshVirtualControllerRobotOptions();
+    if ((scene || program) && visible('program-panel')) curveTrajectoryApp.refresh();
+    if ((scene || mappings || views) && visible('io-function-mapping-dialog')) {
+        renderIoFunctionMappingEditorTargets();
+        if (scene || views) refreshIoMappingRowTargets();
+    }
 }
 
 function updatePanelStack() {
@@ -24607,6 +24633,7 @@ function popOutPanel(panelId) {
 
     const record = { popup, panel, placeholder, savedStyle, restoring: false };
     state.panelWindows.set(panelId, record);
+    scheduleSettingsRefresh('scene');
     popup.addEventListener('beforeunload', () => restorePanelFromWindow(panelId, false, true));
     updatePanelStack();
     updatePanelLauncher(panelId);
@@ -25869,6 +25896,7 @@ function configureModelTreeOrdering(list, parentKey = 'root') {
 }
 
 function renderModelTree({ changedModels = null } = {}) {
+    scheduleSettingsRefresh('scene');
     renderJogRobotSelection();
     if (!el.modelTree) return;
     const scrollTop = el.modelTree.scrollTop;
@@ -27529,7 +27557,7 @@ function updateToolLoadModeUi(model) {
     });
     if (el.toolLoadMaterialMode) el.toolLoadMaterialMode.hidden = properties.mode !== TOOL_LOAD_MODE_MATERIAL;
     if (el.toolLoadMassMode) el.toolLoadMassMode.hidden = properties.mode !== TOOL_LOAD_MODE_MASS;
-    if (el.toolLoadMassInput && document.activeElement !== el.toolLoadMassInput) {
+    if (el.toolLoadMassInput && (el.toolLoadMassInput.ownerDocument || document).activeElement !== el.toolLoadMassInput) {
         el.toolLoadMassInput.value = String(properties.massKg);
     }
 }
@@ -28489,7 +28517,7 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
                 const group = new THREE.Group();
                 group.name = 'CD conduit swivel';
                 group.position.z = fitting.seam;
-                const gland = createSTLMesh(glandParts.moving, { ...jointDefinition, name: 'CD conduit fitting' });
+                const gland = createSTLMesh(glandParts.moving, { name: 'CD conduit fitting', color: manifest.tube.color });
                 gland.position.set(-pivot.x, 0, -fitting.seam);
                 gland.userData.collisionDisabled = true;
                 group.add(gland);
@@ -28527,6 +28555,8 @@ async function loadArticulatedRobot(modelDefinition, onProgress) {
         parent = jointGroup;
         parentPivot = pivot;
     });
+
+    if (modelDefinition.folder === 'IR-S7-50Z20') robot.traverse(applyS7HardwareFinish);
 
     const logoProjection = ROBOT_LOGO_PROJECTIONS[modelDefinition.folder];
     if (logoProjection) {
@@ -28745,6 +28775,10 @@ function createRobotManifest(modelDefinition) {
         // arm points back toward the base, placing J3/J4 at L1 - L2 instead of L1 + L2.
         const secondArmDirection = kinematicVariant === 'ceiling-scara' ? -1 : 1;
         const wrist = [arm1 + secondArmDirection * arm2, 0, 0];
+        // These three P3 carriage meshes also contain the outer surface of the screw.
+        const carriageSpindleRadius = {
+            'IR-S35-80Z42': 12.85, 'IR-S35-100Z42': 12.85, 'IR-S60-120Z40': 14.2
+        }[modelDefinition.folder];
         return {
             name,
             robotType,
@@ -28776,8 +28810,10 @@ function createRobotManifest(modelDefinition) {
                 joint(1, 'P2.stl', [arm1, 0, 0], [0, 0, 1], {
                     armLoadMountOffset: armLoadMountOffsets.j2
                 }),
-                joint(2, j3Mesh ? 'P3.stl' : null, wrist, [0, 0, 1], { type: 'prismatic', direction: CONTROLLER_PRISMATIC_DIRECTION }),
-                joint(3, 'P4.stl', wrist, [0, 0, 1])
+                joint(2, j3Mesh ? 'P3.stl' : null, wrist, [0, 0, 1], {
+                    type: 'prismatic', direction: CONTROLLER_PRISMATIC_DIRECTION, carriageSpindleRadius
+                }),
+                joint(3, 'P4.stl', wrist, [0, 0, 1], { spindle: true })
             ]
         };
     }
@@ -28792,6 +28828,12 @@ function createRobotManifest(modelDefinition) {
         : 0;
     const wristHeight = elbowHeight + elbowOffset + normalizedWristAxisZOffset;
     const tcp = [shoulderOffset + forearm + wristLength, 0, wristHeight];
+    const flangeColor = '#303030';
+    // On these wrists the black outside band starts at a shoulder on P5 (authored STL X, mm).
+    const wristBandStart = {
+        'IR-R4-56': 342.5, 'IR-R4H-54': 332.5, 'IR-R7H-70': 445,
+        'IR-R7H-90': 525, 'IR-R10H-120': 695
+    }[modelDefinition.folder];
     return {
         name,
         robotType,
@@ -28813,8 +28855,10 @@ function createRobotManifest(modelDefinition) {
                 direction: REVOLUTE_DIRECTION_POSITIVE,
                 armLoadMountOffset: armLoadMountOffsets.j4
             }),
-            joint(4, 'P5.stl', [shoulderOffset + forearm, 0, wristHeight], [0, 1, 0]),
-            joint(5, 'P6.stl', tcp, [1, 0, 0], { direction: REVOLUTE_DIRECTION_POSITIVE })
+            joint(4, 'P5.stl', [shoulderOffset + forearm, 0, wristHeight], [0, 1, 0], {
+                flangeRim: wristBandStart === undefined ? null : { startX: wristBandStart, color: flangeColor }
+            }),
+            joint(5, 'P6.stl', tcp, [1, 0, 0], { direction: REVOLUTE_DIRECTION_POSITIVE, color: flangeColor })
         ]
     };
 }
@@ -32106,6 +32150,33 @@ async function handleTestModelImport() {
     }
 }
 
+function addSTLFaceMaterial(mesh, detailMaterial, usesDetail) {
+    const { geometry } = mesh;
+    const count = geometry.getAttribute('position').count;
+    // Keep the original STL face order for picking and saved face references.
+    let start = 0;
+    let materialIndex = 0;
+    for (let i = 0; i < count; i += 3) {
+        const nextMaterial = usesDetail(i) ? 1 : 0;
+        if (nextMaterial === materialIndex) continue;
+        if (i > start) geometry.addGroup(start, i - start, materialIndex);
+        start = i;
+        materialIndex = nextMaterial;
+    }
+    geometry.addGroup(start, count - start, materialIndex);
+    mesh.material = [mesh.material, detailMaterial];
+}
+
+function applyFlangeRim(mesh, { startX, color }) {
+    const position = mesh.geometry.getAttribute('position');
+    const rim = mesh.material.clone();
+    rim.color.set(color);
+    addSTLFaceMaterial(mesh, rim, i => {
+        const a = position.getX(i), b = position.getX(i + 1), c = position.getX(i + 2);
+        return Math.min(a, b, c) >= startX - 0.001 && Math.max(a, b, c) > startX + 0.001;
+    });
+}
+
 function createSTLMesh(geometry, definition, collisionGeometry = null) {
     if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
     const material = new THREE.MeshStandardMaterial({
@@ -32119,6 +32190,16 @@ function createSTLMesh(geometry, definition, collisionGeometry = null) {
     if (accentMaterial) accentMaterial.color.setHex(geometry.userData.robotJointAccentColor ?? ROBOT_JOINT_ACCENT_COLOR);
     const materials = accentMaterial ? [material, logoMaterial || material, accentMaterial] : logoMaterial ? [material, logoMaterial] : material;
     const mesh = new THREE.Mesh(geometry, materials);
+    if (definition.flangeRim) applyFlangeRim(mesh, definition.flangeRim);
+    if (definition.spindle) polishScaraSpindle(material);
+    if (definition.carriageSpindleRadius) {
+        const spindle = material.clone();
+        polishScaraSpindle(spindle);
+        const position = geometry.getAttribute('position');
+        const [cx, cy] = definition.pivot;
+        const onScrew = i => Math.hypot(position.getX(i) - cx, position.getY(i) - cy) <= definition.carriageSpindleRadius;
+        addSTLFaceMaterial(mesh, spindle, i => onScrew(i) && onScrew(i + 1) && onScrew(i + 2));
+    }
     if (logoMaterial) mesh.userData.robotLogoMaterialIndex = 1;
     mesh.name = definition.name;
     mesh.castShadow = true;
@@ -32592,13 +32673,13 @@ function refreshTcpProfileUi(robot = state.activeArticulatedModel) {
     const profile = activeIndex === 0 ? profiles[0] : robot.userData.tcpLiveProfile || profiles[activeIndex];
     Object.entries(getTcpProfileEditorValues(profile)).forEach(([key, value]) => {
         const input = el.tcpOffsetInputs[key];
-        if (input && input !== document.activeElement) input.value = String(Number(value.toFixed(3)));
+        if (input && input !== (input.ownerDocument || document).activeElement) input.value = String(Number(value.toFixed(3)));
     });
     const load = normalizeToolLoad(profile.load);
     const values = { mass: load.mass, cogX: load.cog[0], cogY: load.cog[1], cogZ: load.cog[2], ix: load.inertia[0], iy: load.inertia[1], iz: load.inertia[2] };
     Object.entries(values).forEach(([key, value]) => {
         const input = el.toolLoadInputs?.[key];
-        if (input && input !== document.activeElement) input.value = String(value);
+        if (input && input !== (input.ownerDocument || document).activeElement) input.value = String(value);
     });
 }
 
@@ -32820,7 +32901,7 @@ function renderWorkObjectPanel(robot = getWorkObjectEditorRobot()) {
     };
     Object.entries(values).forEach(([key, value]) => {
         const input = el.workObjectInputs[key];
-        if (input && (ownerChanged || input !== document.activeElement)) input.value = String(Number(value.toFixed(3)));
+        if (input && (ownerChanged || input !== (input.ownerDocument || document).activeElement)) input.value = String(Number(value.toFixed(3)));
     });
     const readOnly = !available || activeIndex === WOBJ_WORLD_INDEX || isMotionActive(false);
     if (el.workObjectName) el.workObjectName.disabled = readOnly;
@@ -33472,7 +33553,7 @@ function syncBaseJogGizmoFromRobot(robot, pose = null) {
 function beginBaseJogGizmoDrag() {
     const robot = state.baseJogGizmoRobot;
     if (!robot || !state.baseJogTransformControls?.enabled) return;
-    if (Object.values(el.tcpReadouts).includes(document.activeElement)) document.activeElement.blur();
+    Object.values(el.tcpReadouts).find(input => input && (input.ownerDocument || document).activeElement === input)?.blur();
     stopBaseJogHold();
 
     state.baseJogGizmoTranslationSnap = Number.isFinite(state.baseJogTransformControls.translationSnap)
@@ -33893,7 +33974,7 @@ function updateTcpPresentation(robot, pose = getCurrentTcpPoseBase(robot)) {
         rz: rotation.rz.toFixed(2)
     };
     Object.entries(values).forEach(([key, value]) => {
-        if (el.tcpReadouts[key] && el.tcpReadouts[key] !== document.activeElement) {
+        if (el.tcpReadouts[key] && el.tcpReadouts[key] !== (el.tcpReadouts[key].ownerDocument || document).activeElement) {
             el.tcpReadouts[key].value = value;
         }
     });
@@ -34035,7 +34116,7 @@ function applyBaseJogNumericTarget(event) {
 function finishBaseJogNumericHistory() {
     commitPendingHistory('Base 좌표 입력', 'pendingBaseJogNumericHistory');
     // Wheel gestures can finish while the field is still being edited.
-    if (state.jogToolNumericFrame && Object.values(el.tcpReadouts).includes(document.activeElement)) return;
+    if (state.jogToolNumericFrame && Object.values(el.tcpReadouts).some(input => input && (input.ownerDocument || document).activeElement === input)) return;
     state.jogToolNumericFrame = null;
     const robot = getJogTargetRobot();
     if (robot) updateTcpPresentation(robot);
@@ -34073,7 +34154,7 @@ function runBaseJogButton(button) {
 }
 
 function startBaseJogHold(button, pointerId) {
-    if (Object.values(el.tcpReadouts).includes(document.activeElement)) document.activeElement.blur();
+    Object.values(el.tcpReadouts).find(input => input && (input.ownerDocument || document).activeElement === input)?.blur();
     stopBaseJogHold();
     if (!state.historySuspended) state.pendingBaseJogHistory = captureSceneSnapshot();
     if (!runBaseJogButton(button)) {
@@ -35595,6 +35676,7 @@ function refreshVirtualControllerRobotOptions(controller = state.virtualControll
 const virtualControllerConnectionSignatures = new WeakMap();
 
 function refreshVirtualControllerUi() {
+    scheduleSettingsRefresh('controllers');
     const controller = state.virtualController;
     const sessions = getVirtualControllerSessions();
     refreshVirtualControllerRobotOptions(controller);
@@ -35658,7 +35740,7 @@ function refreshVirtualControllerUi() {
         el.virtualControllerSource.value = source.id;
         el.virtualControllerSource.disabled = controller.wanted;
     }
-    document.querySelectorAll('[data-virtual-controller-source]').forEach((element) => {
+    el.virtualControllerPanel?.querySelectorAll('[data-virtual-controller-source]').forEach((element) => {
         element.hidden = element.dataset.virtualControllerSource !== source.id;
     });
     const isRealController = controller.controllerKind === 'real';
@@ -37741,7 +37823,7 @@ function renderIoSimulatorEntryValue(node, entry) {
     if (valueNode) valueNode.textContent = value === null ? '—' : formatIoSimulatorValue(value, entry.mode);
     const input = node.querySelector('.io-simulator-entry-input');
     if (input) input.disabled = Boolean(remote);
-    if (input && document.activeElement !== input) input.value = value === null ? '' : String(value);
+    if (input && (input.ownerDocument || document).activeElement !== input) input.value = value === null ? '' : String(value);
     if (node.tagName === 'BUTTON') {
         node.disabled = Boolean(remote && (value === null || feedback.writing));
         node.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -38236,7 +38318,7 @@ function getIoStandardInputTarget() {
 }
 function refreshStandardInputUi() {
     const controller = getIoStandardInputTarget();
-    const label = document.getElementById('io-standard-input-status');
+    const label = el.ioSimulatorPanel?.querySelector('#io-standard-input-status');
     if (label) {
         const feedback = controller ? standardInputClient.view(controller) : null;
         if (controller) {
@@ -38264,6 +38346,7 @@ window.setInterval(() => {
 }, 250);
 
 const conveyorFeedApp = createConveyorFeedApp({
+    settingsChanged: () => scheduleSettingsRefresh('conveyor'),
     mappings: () => state.ioFunctionMappings,
     resolveBelt: resolveConveyorBelt,
     objects: () => equipmentApp.objects(),
@@ -38313,6 +38396,7 @@ const conveyorFeedApp = createConveyorFeedApp({
 });
 
 const conveyorTrackingApp = createConveyorTrackingApp({
+    settingsChanged: () => scheduleSettingsRefresh('conveyor'),
     // Sample the actual scene on the transport clock as well as on paint frames.
     advanceSimulation: updateConveyorSimulation,
     feed: conveyorFeedApp,
@@ -38442,6 +38526,7 @@ function activeConveyorMappings() {
 }
 function updateConveyorSimulation(timestamp, checkVacuum = true) {
     const mappings = activeConveyorMappings();
+    conveyorTrackingApp.observeMotion(mappings);
     const seconds = conveyorElapsedSeconds(conveyorLastTimestamp, timestamp, document.hidden);
     conveyorLastTimestamp = mappings.length || conveyorTrackingApp.active || conveyorTrackingApp.monitoring ? timestamp : null;
     conveyorVisuals.update(state.ioFunctionMappings, mappings, resolveConveyorBelt, seconds,
@@ -38461,13 +38546,16 @@ function updateConveyorSimulation(timestamp, checkVacuum = true) {
 
 function advanceConveyorSimulation(mappings, seconds, stepStart, checkVacuum) {
     conveyorFeedApp.beforeStep(mappings, seconds);
-    const candidates = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost).map(item => item.object);
+    const workpieces = equipmentApp.objects().filter(item => !item.model.userData.attachmentHost);
+    const candidates = workpieces.map(item => item.object);
     conveyorTrackingApp.beforeStep(candidates);
     const moved = moveConveyorObjects(mappings, candidates, resolveConveyorBelt, seconds, (model, mapping, position, duration) => {
         if (!conveyorResetTransforms.has(model)) conveyorResetTransforms.set(model, captureClipboardTransform(model));
         conveyorDisplay.recordProduct(model, position, stepStart, stepStart + duration * 1000);
     });
-    moved.forEach(object => markSceneCollisionDirty(equipmentApp.objects().find(item => item.object === object)?.model || object));
+    for (const { object, model } of workpieces) {
+        if (moved.has(object)) markSceneCollisionDirty(model);
+    }
     conveyorTrackingApp.afterStep(seconds, mappings, candidates);
     if (checkVacuum && moved.size) equipmentApp.updateActiveVacuum(state.ioFunctionMappings);
     conveyorFeedApp.afterStep();
@@ -38518,48 +38606,18 @@ function renderIoFunctionMappingEditorTargets() {
     const isView = action === IO_FUNCTION_MAPPING_ACTIONS.VIEW;
     if (el.ioFunctionMappingGripField?.querySelector('span')) el.ioFunctionMappingGripField.querySelector('span').textContent = uiText(action === IO_FUNCTION_MAPPING_ACTIONS.OBJECT_RESET ? '등록 오브젝트' : action === IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR ? '컨베이어' : '등록된 동작');
     if (el.ioFunctionMappingConveyorField) el.ioFunctionMappingConveyorField.hidden = action !== IO_FUNCTION_MAPPING_ACTIONS.CONVEYOR;
-    const commandField = document.getElementById('io-equipment-command-field');
+    const commandField = el.ioFunctionMappingDialog?.querySelector('#io-equipment-command-field');
     if (commandField) commandField.hidden = release || !EQUIPMENT_IO_TYPES.includes(action);
-    const commandSelect=document.getElementById('io-equipment-command');
-    if (commandSelect) { const current=commandSelect.value; commandSelect.replaceChildren(...equipmentCommandOptions(action).map(([value,label]) => new Option(label,value)));if(equipmentCommandOptions(action).some(([value])=>value===current))commandSelect.value=current;if(release)commandSelect.value='REVERSE'; }
+    const commandSelect = el.ioFunctionMappingDialog?.querySelector('#io-equipment-command');
+    if (commandSelect) syncSettingsOptions(commandSelect, equipmentCommandOptions(action).map(([value, label]) => ({value, label})),
+        release ? 'REVERSE' : commandSelect.value);
     if (el.ioFunctionMappingGripTarget) {
-        const references = getIoFunctionMappingTargetReferences(action);
-        const current = el.ioFunctionMappingGripTarget.value;
-        el.ioFunctionMappingGripTarget.replaceChildren();
-        if (!references.length) {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = uiText('등록된 동작이 없습니다. 모델 트리에서 동작을 설정하세요.');
-            option.disabled = true;
-            option.selected = true;
-            el.ioFunctionMappingGripTarget.appendChild(option);
-        } else {
-            references.forEach((reference) => {
-                const option = document.createElement('option');
-                option.value = reference.value;
-                option.textContent = reference.label;
-                el.ioFunctionMappingGripTarget.appendChild(option);
-            });
-            el.ioFunctionMappingGripTarget.value = references.some((reference) => reference.value === current)
-                ? current
-                : references[0].value;
-        }
+        const choices = getIoFunctionMappingTargetReferences(action);
+        syncSettingsOptions(el.ioFunctionMappingGripTarget, choices.length ? choices : [{
+            value: '', label: uiText('등록된 동작이 없습니다. 모델 트리에서 동작을 설정하세요.'), disabled: true
+        }]);
     }
-    if (el.ioFunctionMappingViewTarget) {
-        const current = Number(el.ioFunctionMappingViewTarget.value);
-        el.ioFunctionMappingViewTarget.replaceChildren();
-        for (let slot = 0; slot < VIEW_PRESET_COUNT; slot += 1) {
-            const option = document.createElement('option');
-            option.value = String(slot);
-            const preset = getViewPreset(slot);
-            option.textContent = preset ? `${preset.name} (V${slot + 1})` : `V${slot + 1} · ${uiText('저장되지 않음')}`;
-            option.disabled = !preset;
-            el.ioFunctionMappingViewTarget.appendChild(option);
-        }
-        if (Number.isInteger(current) && current >= 0 && current < VIEW_PRESET_COUNT) {
-            el.ioFunctionMappingViewTarget.value = String(current);
-        }
-    }
+    if (el.ioFunctionMappingViewTarget) syncSettingsOptions(el.ioFunctionMappingViewTarget, ioViewChoices());
     if (el.ioFunctionMappingGripField) el.ioFunctionMappingGripField.hidden = isView;
     if (el.ioFunctionMappingViewField) el.ioFunctionMappingViewField.hidden = !isView;
 }
@@ -38568,60 +38626,75 @@ function createIoFunctionMappingId() {
     return `io-mapping-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function ioViewChoices() {
+    return Array.from({length: VIEW_PRESET_COUNT}, (_, slot) => {
+        const preset = getViewPreset(slot);
+        return {value: slot, label: preset ? `${preset.name} (V${slot + 1})` : `V${slot + 1} · ${uiText('저장되지 않음')}`, disabled: !preset};
+    });
+}
+
+function syncIoMappingTarget(select, mapping) {
+    const view = mapping.action === IO_FUNCTION_MAPPING_ACTIONS.VIEW;
+    const choices = view ? ioViewChoices() : getIoFunctionMappingTargetReferences(mapping.action);
+    const value = view ? mapping.viewSlot : mapping.gripObjectRef;
+    if (!view && value && !choices.some(choice => choice.value === value)) {
+        syncSettingsOptions(select, [{ value, label: uiText('현재 대상을 찾을 수 없음'), disabled: true }, ...choices], value);
+    } else syncSettingsOptions(select, choices, value);
+}
+
+function refreshIoMappingRowTargets() {
+    const mappings = new Map(state.ioFunctionMappings.map(mapping => [mapping.id, mapping]));
+    for (const row of el.ioFunctionMappingList?.children || []) {
+        const mapping = mappings.get(row.dataset.ioFunctionMappingId);
+        if (mapping) syncIoMappingTarget(row.querySelector('.io-function-mapping-target'), mapping);
+    }
+}
+
 function createIoFunctionMappingTargetSelect(mapping) {
     const select = document.createElement('select');
     select.className = 'io-function-mapping-target';
-    select.dataset.ioFunctionMappingField = mapping.action === IO_FUNCTION_MAPPING_ACTIONS.VIEW
-        ? 'viewSlot'
-        : 'gripObjectRef';
+    select.dataset.ioFunctionMappingField = mapping.action === IO_FUNCTION_MAPPING_ACTIONS.VIEW ? 'viewSlot' : 'gripObjectRef';
     select.setAttribute('aria-label', uiText('매핑 대상'));
-    if (mapping.action === IO_FUNCTION_MAPPING_ACTIONS.VIEW) {
-        for (let slot = 0; slot < VIEW_PRESET_COUNT; slot += 1) {
-            const option = document.createElement('option');
-            option.value = String(slot);
-            const preset = getViewPreset(slot);
-            option.textContent = preset ? `${preset.name} (V${slot + 1})` : `V${slot + 1} · ${uiText('저장되지 않음')}`;
-            option.disabled = !preset;
-            select.appendChild(option);
-        }
-        select.value = String(mapping.viewSlot);
-    } else {
-        const references = getIoFunctionMappingTargetReferences(mapping.action);
-        const selectedReference = references.some((reference) => reference.value === mapping.gripObjectRef);
-        if (!selectedReference && mapping.gripObjectRef) {
-            const missing = document.createElement('option');
-            missing.value = mapping.gripObjectRef;
-            missing.textContent = uiText('현재 대상을 찾을 수 없음');
-            missing.disabled = true;
-            missing.selected = true;
-            select.appendChild(missing);
-        }
-        references.forEach((reference) => {
-            const option = document.createElement('option');
-            option.value = reference.value;
-            option.textContent = reference.label;
-            select.appendChild(option);
-        });
-        if (selectedReference) select.value = mapping.gripObjectRef;
-    }
+    syncIoMappingTarget(select, mapping);
     return select;
 }
 
 function renderIoFunctionMappingList() {
+    scheduleSettingsRefresh('mappings');
     requestRender();
     if (!el.ioFunctionMappingList) return;
     const mappings = normalizeIoFunctionMappings(state.ioFunctionMappings);
     state.ioFunctionMappings = mappings;
     if (el.ioFunctionMappingCount) el.ioFunctionMappingCount.textContent = String(mappings.length);
-    el.ioFunctionMappingList.replaceChildren();
+    const ids = new Set(mappings.map(mapping => mapping.id));
+    const existing = new Map();
+    for (const row of [...el.ioFunctionMappingList.children]) {
+        if (ids.has(row.dataset.ioFunctionMappingId)) existing.set(row.dataset.ioFunctionMappingId, row);
+        else row.remove();
+    }
     if (!mappings.length) {
         const empty = document.createElement('p');
         empty.className = 'io-function-mapping-empty';
         empty.textContent = uiText('등록된 기능 매핑이 없습니다.');
         el.ioFunctionMappingList.appendChild(empty);
     }
-    mappings.forEach((mapping) => {
+    mappings.forEach((mapping, index) => {
+        const current = existing.get(mapping.id);
+        const kind = mapping.action + ':' + document.documentElement.lang;
+        if (current?.dataset.kind === kind) {
+            current.classList.toggle('disabled', !mapping.enabled);
+            for (const input of current.querySelectorAll('[data-io-function-mapping-field]')) {
+                const key = input.dataset.ioFunctionMappingField;
+                if (input.classList.contains('io-function-mapping-target')) syncIoMappingTarget(input, mapping);
+                else syncSetting(input, key === 'action' && mapping.action === 'VACUUM' && mapping.equipmentCommand === 'REVERSE'
+                    ? 'VACUUM_RELEASE' : mapping[key]);
+            }
+            if (el.ioFunctionMappingList.children[index] !== current) el.ioFunctionMappingList.insertBefore(current, el.ioFunctionMappingList.children[index] || null);
+            return;
+        }
+        current?.remove();
         const row = document.createElement('div');
+        row.dataset.kind = kind;
         row.className = `io-function-mapping-row${mapping.enabled ? '' : ' disabled'}`;
         row.dataset.ioFunctionMappingId = mapping.id;
 
@@ -38701,7 +38774,10 @@ function renderIoFunctionMappingList() {
             speed.setAttribute('aria-label', '이송 속도 mm/s');
             settings.append('방향 ', axis, ' 속도(mm/s) ', speed); row.append(settings);
         }
-        el.ioFunctionMappingList.appendChild(row);
+        for (const input of row.querySelectorAll('[data-io-function-mapping-field]')) {
+            syncSetting(input, input.type === 'checkbox' ? input.checked : input.value, true);
+        }
+        el.ioFunctionMappingList.insertBefore(row, el.ioFunctionMappingList.children[index] || null);
     });
     if (el.ioFunctionMappingButton) {
         el.ioFunctionMappingButton.dataset.mappingCount = String(mappings.length);
@@ -38824,7 +38900,7 @@ function addIoFunctionMapping() {
         viewSlot,
         conveyorAxis: el.ioFunctionMappingConveyorAxis?.value,
         conveyorSpeed,
-        equipmentCommand: release ? 'REVERSE' : document.getElementById('io-equipment-command')?.value
+        equipmentCommand: release ? 'REVERSE' : el.ioFunctionMappingDialog?.querySelector('#io-equipment-command')?.value
     }, state.ioFunctionMappings.length);
     state.ioFunctionMappings.push(mapping);
     state.ioFunctionMappingRuntimeValues.set(mapping.id, readOlpSimulatorBit(mapping.direction, mapping.address));
@@ -38908,6 +38984,10 @@ function handleIoFunctionMappingListChange(event) {
         control.dataset.ioFunctionMappingField,
         control.type === 'checkbox' ? control.checked : control.value
     );
+    if (control.isConnected && control.type === 'number') {
+        const mapping = state.ioFunctionMappings.find(item => item.id === row.dataset.ioFunctionMappingId);
+        if (mapping) syncSetting(control, mapping[control.dataset.ioFunctionMappingField], true);
+    }
 }
 
 function handleIoFunctionMappingListClick(event) {
@@ -44229,7 +44309,7 @@ const PROGRAM_STEP_CONTROL_DATASETS = Object.freeze([
 ]);
 
 function captureProgramStepInputFocus() {
-    const active = document.activeElement;
+    const active = (el.programStepList?.ownerDocument || document).activeElement;
     if (!active || !el.programStepList?.contains(active)) return null;
     const row = active.closest('[data-program-step-id]');
     if (!row || !el.programStepList.contains(row)) return null;
@@ -44371,6 +44451,7 @@ function handleProgramStepListInput(event) {
 }
 
 function renderMotionProgramPanel() {
+    scheduleSettingsRefresh('program');
     if (!el.programRobotList || !el.programStepList) return;
     syncMotionRepeatControl();
     const focusState = captureProgramStepInputFocus();
@@ -45717,7 +45798,7 @@ function addWaitMotionStep() {
 
 
 function syncMotionRepeatControl() {
-    if (el.programSpeedOverride && el.programSpeedOverride.ownerDocument.activeElement !== el.programSpeedOverride) el.programSpeedOverride.value = String(state.programSpeedOverride);
+    if (el.programSpeedOverride && (el.programSpeedOverride.ownerDocument || document).activeElement !== el.programSpeedOverride) el.programSpeedOverride.value = String(state.programSpeedOverride);
     el.programRepeatButtons.forEach((button) => {
         const reverse = button.hasAttribute('data-program-reverse-repeat');
         const robotScope = button.dataset.programRepeatScope === 'robot';
@@ -51433,7 +51514,7 @@ function disposeObjectResources(object, disposed = null) {
             if (!material || cache.materials.has(material)) return;
             cache.materials.add(material);
             Object.values(material).forEach((value) => {
-                if (value?.isTexture && !cache.textures.has(value)) {
+                if (value?.isTexture && !value.userData.sharedSpindleReflections && !cache.textures.has(value)) {
                     cache.textures.add(value);
                     value.dispose();
                 }
@@ -51757,10 +51838,6 @@ function updateUIStatus({ changedModels = null } = {}) {
     updateInterferenceZoneVisuals();
     evaluateInterferenceZones(performance.now());
     equipmentApp.ui.updateStatus();
-    if (el.ioFunctionMappingDialog?.open) {
-        renderIoFunctionMappingList();
-        renderIoFunctionMappingEditorTargets();
-    }
     setStatus('Ready', '#22c55e');
     requestRender();
 }

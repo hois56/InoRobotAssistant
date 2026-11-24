@@ -1,3 +1,4 @@
+import { syncSetting } from './settings-controls.mjs';
 import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
@@ -288,13 +289,32 @@ export function createCurveTrajectoryApp(api) {
         panel.querySelectorAll('[data-trajectory-text]').forEach(node => { node.textContent = text(node.dataset.trajectoryText); });
         field('close').setAttribute('aria-label', text('닫기'));
     }
+    function refresh() {
+        if (!panel || panel.classList.contains('hidden') || busy) return;
+        const context = api.context();
+        const changed = field('context').textContent !== context;
+        if (changed) field('context').textContent = context;
+        syncSetting(field('first'), api.nextIndex());
+        const models = api.models();
+        const retained = selected.filter(curve => models.includes(curve.model));
+        if (retained.length !== selected.length) {
+            selected = retained; hovered = []; cache.clear(); renderSelection(); invalidate();
+        } else {
+            selected.forEach((curve,i) => {
+                const caption = field('curves').children[i]?.querySelector('span');
+                const label = `${i + 1}. ${api.modelLabel(curve.model)} · ${curveLength(curve.points).toFixed(1)} mm`;
+                if (caption && caption.textContent !== label) caption.textContent = label;
+            });
+            if (changed && preview) invalidate();
+        }
+    }
     function open() {
         if (busy || api.isBusy()) return;
         panel = api.panel();
         if (!panel.dataset.initialized) init();
         panel.classList.remove('hidden');
         bindEscape(panel.ownerDocument);
-        field('first').value = api.nextIndex();
+        syncSetting(field('first'), api.nextIndex(), true);
         field('context').textContent = api.context();
         refreshLabels();
         selected = []; hovered = []; cache.clear(); renderSelection(); invalidate();
@@ -336,5 +356,5 @@ export function createCurveTrajectoryApp(api) {
         document.addEventListener('inorobot:languagechange', refreshLabels);
         bindCanvas(api.canvas(), api.camera);
     }
-    return { open, close, generate, apply, bindCanvas, isPicking, get busy() { return busy; } };
+    return { open, close, refresh, generate, apply, bindCanvas, isPicking, get busy() { return busy; } };
 }

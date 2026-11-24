@@ -259,7 +259,7 @@ body {
     border: 1px solid var(--border);
     background: var(--inset);
     color: var(--text-1);
-    font-family: var(--ui-font);
+    font-family: inherit;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -303,26 +303,6 @@ body {
     flex-shrink: 0;
     margin-inline-start: auto;
     gap: 0.25rem;
-}
-
-.viewer-fps-limit {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.28rem;
-    height: var(--topbar-control-height);
-    padding-inline: 0.4rem;
-    border: 1px solid var(--border);
-    color: var(--text-2);
-    font-size: calc(0.6rem + 1pt);
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
-.viewer-fps-limit input {
-    margin: 0;
-    accent-color: var(--accent);
-    cursor: pointer;
 }
 
 .viewer-language-row {
@@ -2677,17 +2657,14 @@ body.fullscreen-ui-mode.fullscreen-statsbar-revealed #stats-bar {
 }
 
 .stat-item label {
-    font-family: var(--ui-font);
     font-weight: 600;
     color: var(--text-2);
     text-transform: none;
 }
 
 .stat-item span {
-    font-family: var(--ui-font); /* 모델명과 상태 글꼴도 Outfit으로 통일 */
     color: var(--text-1);
     font-weight: 600;
-    letter-spacing: 0.3px;
 }
 
 .stat-divider {
