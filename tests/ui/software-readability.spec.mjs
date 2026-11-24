@@ -24,6 +24,7 @@ test('제품 필터는 키보드 초점을 유지하고 불필요한 소개·검
 test('한국어 버전명과 설명을 표시하고 언어를 전환해도 선택한 제품을 보존한다', async ({page}) => {
     await page.goto(softwarePage);
     await expect(page.locator('h1')).toHaveText('소프트웨어 다운로드 센터');
+    await expect(page.locator('#release-number-InoRobotLab-0')).toHaveText('SPC25K14 R5');
     await expect(page.locator('.release-version').filter({hasText: '표준 버전'})).toHaveCount(2);
     await expect(page.locator('.release-version').filter({hasText: '디스플레이 버전'})).toHaveCount(2);
     await expect(page.locator('.release-version').last()).toHaveText('베타 버전');
@@ -41,7 +42,7 @@ test('한국어 버전명과 설명을 표시하고 언어를 전환해도 선�
     await expect(page.locator('.language-patch-icon')).toHaveText('A가');
     await expect(page.locator('.filter-btn[data-type="InoRobotLab"]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.software-card:visible')).toHaveCount(3);
-    await expect(page.locator('.software-card:visible .download-btn').first()).toHaveAccessibleName(/InoRobotLab.*Simulation version K14.*Download Portable.*642MB/);
+    await expect(page.locator('.software-card:visible .download-btn').first()).toHaveAccessibleName(/InoRobotLab.*Simulation version SPC25K14 R5.*Download Portable.*659MB/);
     await expect(page.locator('.software-card:visible .release-version').nth(1)).toContainText('Standard');
     await page.locator('.inorobot-language-select').selectOption('ko');
     await expect(page.locator('.software-card:visible .release-version').nth(1)).toContainText('표준 버전');

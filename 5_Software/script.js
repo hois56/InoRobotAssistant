@@ -10,7 +10,7 @@ const softwareGroups = [
         icon: "monitor",
         versions: [
             {
-                tagName: "시뮬레이션 버전 (K14)",
+                tagName: "시뮬레이션 버전 (SPC25K14 R5)",
                 description: "가상 컨트롤러 시뮬레이션용 InoRobotLab·펜던트 통합 포터블 버전",
                 date: "2026-11-23",
                 downloads: [
