@@ -27,8 +27,8 @@ test('한국어 버전명과 설명을 표시하고 언어를 전환해도 선�
     await expect(page.locator('#release-number-InoRobotLab-0')).toHaveText('SPC25K14 R5');
     await expect(page.locator('.release-version').filter({hasText: '표준 버전'})).toHaveCount(2);
     await expect(page.locator('.release-version').filter({hasText: '디스플레이 버전'})).toHaveCount(2);
-    await expect(page.locator('.release-version').last()).toHaveText('베타 버전');
-    await expect(page.locator('.release-number').last()).toHaveText('V1.0');
+    await expect(page.locator('.release-version').last()).toHaveText('정식 버전');
+    await expect(page.locator('.release-number').last()).toHaveText('V1.0.1');
     await expect(page.locator('.language-patch-icon')).toHaveText('A가');
     const standard = page.locator('.software-card').filter({has: page.locator('.release-version', {hasText: '표준 버전'})}).first();
     await expect(standard.locator('.release-version')).toHaveText('표준 버전');

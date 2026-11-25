@@ -29,6 +29,7 @@ function releaseInfo(tagName) {
     if (match) return {label: {'Standard': '표준 버전', 'Display Version': '디스플레이 버전'}[match[1]] || match[1], number: match[2]};
     const beta = tagName.match(/^(V[\d.]+) Beta$/);
     if (beta) return {label: '베타 버전', number: beta[1]};
+    if (/^V[\d.]+$/.test(tagName)) return {label: '정식 버전', number: tagName};
     return {label: tagName, number: ''};
 }
 

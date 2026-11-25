@@ -140,12 +140,12 @@
     },
     {
       "paths": [
-        "5_Software/InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip"
+        "5_Software/InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.1.zip"
       ],
-      "fileName": "InoRobotKoreanInstaller_V1.0.zip",
-      "size": 79075445,
-      "sha256": "bcabc6679d23aa5a342c13b8eb4c212322393b48d40529329a179e21e42e57af",
-      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip"
+      "fileName": "InoRobotKoreanInstaller_V1.0.1.zip",
+      "size": 79083353,
+      "sha256": "f3e8a854a3c8711b492da965ac03f9f6dbe8f1d32493f6668c9ed1b92a025746",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.1/InoRobotKoreanInstaller_V1.0.1.zip"
     },
     {
       "paths": [

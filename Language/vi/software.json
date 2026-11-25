@@ -65,9 +65,10 @@
     "베타": "Beta",
     "디스플레이 공정 전용 소프트웨어": "Phiên bản phần mềm chuyên dụng cho công đoạn Display",
     "디스플레이 공정용 티칭 펜던트 소프트웨어": "Phần mềm TP cho công đoạn Display",
-    "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기(베타 버전)": "Trình cài bản vá tiếng Hàn cho bản Standard và Display thuộc dòng R24C4 của InoRobotLab·InoRobotTP (Beta)",
+    "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기": "Trình cài bản vá tiếng Hàn cho phiên bản Standard và Display của InoRobotLab và InoRobotTP thuộc dòng R24C4",
     "시뮬레이션 버전": "Phiên bản mô phỏng",
-    "베타 버전": "Phiên bản beta"
+    "베타 버전": "Phiên bản beta",
+    "정식 버전": "Bản chính thức"
   },
   "patterns": []
 }

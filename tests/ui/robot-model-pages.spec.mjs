@@ -106,6 +106,10 @@ test('SCARA 카드는 두 형식의 Z축 길이와 사이클 시간을 열로 �
     await expect(cartItem).toHaveCount(1);
     await expect(cartItem).toContainText(standard);
     await expect(cartItem).toContainText('01741084*M00017');
+    const cableCode = cartItem.locator('.cart-item-detail-code').first();
+    await expect(cableCode).toHaveText('01741084*M00017');
+    const summaryFont = await cartItem.locator('.cart-item-meta').evaluate(element => getComputedStyle(element).fontFamily);
+    await expect(cableCode).toHaveCSS('font-family', summaryFont);
 });
 
 test('SCARA 필터는 같은 사양의 조건을 조합하고 해당 형번을 열며 단독 모델을 구분한다', async ({page}) => {

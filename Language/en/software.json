@@ -65,9 +65,10 @@
     "베타": "Beta",
     "디스플레이 공정 전용 소프트웨어": "Special software version for Display processes",
     "디스플레이 공정용 티칭 펜던트 소프트웨어": "TP software for Display processes",
-    "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기(베타 버전)": "Korean patch installer for Standard and Display versions of InoRobotLab and InoRobotTP in the R24C4 family (Beta)",
+    "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기": "Korean patch installer for the Standard and Display editions of InoRobotLab and InoRobotTP in the R24C4 family",
     "시뮬레이션 버전": "Simulation version",
-    "베타 버전": "Beta version"
+    "베타 버전": "Beta version",
+    "정식 버전": "Stable release"
   },
   "patterns": []
 }

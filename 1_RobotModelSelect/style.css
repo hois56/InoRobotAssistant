@@ -357,7 +357,7 @@ small.configuration-hint { display: block; margin-top: 4px; }
     font-size: 12px;
 }
 .cart-item-detail-name { color: var(--text-main); }
-.cart-item-detail-code { color: var(--tool-warning); font-family: monospace; }
+.cart-item-detail-code { color: var(--tool-warning); }
 .cart-item-detail-qty { color: var(--tool-ink); font-weight: 700; text-align: right; white-space: nowrap; }
 .cart-panel-footer {
     padding: 18px 24px 24px;

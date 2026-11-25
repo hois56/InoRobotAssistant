@@ -85,15 +85,15 @@
   },
   {
     "productId": "InoRobotKoreanInstaller",
-    "version": "V1.0 Beta",
+    "version": "V1.0.1",
     "isLocked": false,
     "downloads": [
       {
         "label": "Download Install",
         "type": "install",
-        "path": "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip",
+        "path": "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.1.zip",
         "assetId": null,
-        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip"
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.1/InoRobotKoreanInstaller_V1.0.1.zip"
       }
     ]
   }

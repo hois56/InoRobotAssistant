@@ -101,6 +101,28 @@ test('미리보기와 다운로드는 해당 문서를 연결하고 CAD는 2D·3
     expect(download[1]).toMatch(/_2D\.(dwg|dxf)$/i);
 });
 
+test('셀렉션 가이드 필터의 다운로드 버튼으로 각 PDF 원본을 받는다', async ({page}) => {
+    await openDocuments(page);
+    await page.locator('#filterToggleHardware').click();
+    await page.locator('#typeFilters [data-type="selection"]').click();
+    const buttons = page.locator('#manualList [data-action="download"]');
+    const files = {
+        sel_guide: /Selection Guide/i,
+        sel_leaflet: /Selection Leaflet-EN/i,
+        sel_leaflet_display: /Special Robot of Display/i
+    };
+    for (const [id, name] of Object.entries(files)) {
+        const [download] = await Promise.all([
+            page.waitForEvent('download'),
+            buttons.and(page.locator(`[data-id="${id}"]`)).click()
+        ]);
+        expect(await download.failure(), id).toBeNull();
+        expect(download.suggestedFilename()).toMatch(name);
+        const bytes = await readFile(await download.path());
+        expect(bytes.subarray(0, 5).toString(), id).toBe('%PDF-');
+    }
+});
+
 test('Remote IO Excel 미리보기에서 두 시트와 그림을 읽고 원본은 다운로드 버튼으로 받는다', async ({page}) => {
     await openDocuments(page);
     await page.locator('#manualSearch').fill('remote_io_list.xlsx');

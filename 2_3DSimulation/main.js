@@ -33183,7 +33183,7 @@ function renderJogControls(robot) {
         valueWrap.append(number, document.createTextNode(unit));
 
         const applyFromControl = (rawValue) => {
-            applyJointJogValue(robot, joint, Number(rawValue));
+            if (rawValue !== '') applyJointJogValue(robot, joint, Number(rawValue));
         };
 
         const beginJointHistory = () => {
@@ -33208,7 +33208,10 @@ function renderJogControls(robot) {
             applyFromControl(number.value);
             finishJointHistory();
         });
-        number.addEventListener('blur', finishJointHistory);
+        number.addEventListener('blur', () => {
+            number.value = formatJogValue(display.toDisplay(joint.angle));
+            finishJointHistory();
+        });
         enableHalfStepWheel(number, beginJointHistory, finishJointHistory);
         joint.control = { range, number, display };
 
@@ -33312,12 +33315,7 @@ function setJointAngle(joint, rawValue, syncControl = true, deferUpdates = false
     if (changed && !deferUpdates && (joint.definition.name === 'J1' || joint.definition.name === 'J2')) {
         updateScaraTube(joint.robot);
     }
-    if (syncControl && joint.control) {
-        const display = joint.control.display || getJointJogDisplaySpec(joint);
-        const displayValue = display.toDisplay(value);
-        joint.control.range.value = formatJogValue(displayValue);
-        joint.control.number.value = formatJogValue(displayValue);
-    }
+    if (syncControl) syncJointControl(joint);
     if (changed && !isCollisionPoseProbe && !deferUpdates) {
         markSceneCollisionDirty(joint.robot);
         syncOlpHomeStatus(joint.robot);
@@ -33327,14 +33325,17 @@ function setJointAngle(joint, rawValue, syncControl = true, deferUpdates = false
     return value;
 }
 
+function syncJointControl(joint) {
+    if (!joint.control) return;
+    const { range, number, display } = joint.control;
+    const value = formatJogValue((display || getJointJogDisplaySpec(joint)).toDisplay(joint.angle));
+    range.value = value;
+    // Keep intermediate text such as "-0." intact until the field loses focus.
+    if (number.ownerDocument.activeElement !== number) number.value = value;
+}
+
 function syncJointControls(robot) {
-    (robot.userData.joints || []).forEach((joint) => {
-        if (!joint.control) return;
-        const display = joint.control.display || getJointJogDisplaySpec(joint);
-        const displayValue = display.toDisplay(joint.angle);
-        joint.control.range.value = formatJogValue(displayValue);
-        joint.control.number.value = formatJogValue(displayValue);
-    });
+    (robot.userData.joints || []).forEach(syncJointControl);
 }
 
 function setJogMode(mode, { preserveSnapMove = false } = {}) {

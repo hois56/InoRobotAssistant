@@ -17,6 +17,9 @@
 /playwright-report/
 /blob-report/
 
+# Local video production files.
+/동영상/
+
 # Local .NET build intermediates.
 **/bin/
 **/obj/

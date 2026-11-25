@@ -283,7 +283,7 @@ const manualData = [
         category: "selection",
         date: "2026-06-23",
         lang: "EN",
-        path: "Selection_manual/Inovance Robot Selection Guide.pdf",
+        path: "Selection_manual/19120306-CY_A04_Inovance Robot Selection Guide_EN 20260603_Web.pdf",
         description: "Selection Guide"
     },
     {
@@ -293,7 +293,7 @@ const manualData = [
         category: "selection",
         date: "2026-06-23",
         lang: "EN",
-        path: "Selection_manual/Inovance Robot Selection Leaflet.pdf",
+        path: "Selection_manual/19120415-CY_A03_Inovance Robot Selection Leaflet-EN_20260603.pdf",
         description: "Product Leaflet"
     },
     {

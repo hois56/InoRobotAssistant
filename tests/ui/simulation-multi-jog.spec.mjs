@@ -65,6 +65,34 @@ function expectWorldTranslation(before, after, delta, selected = [0, 1]) {
     });
 }
 
+for (const detached of [false, true]) {
+    test(`JOINT JOG 소수점 키 입력을 ${detached ? '분리 창' : '기본 패널'}에서 유지한다`, async ({ page }) => {
+        await setup(page, ['IR-S7-60Z20']);
+        await page.locator('#btn-jog-joint-mode').click();
+        let panelPage = page;
+        if (detached) {
+            const popup = page.waitForEvent('popup');
+            await page.locator('#jog-panel [data-panel-action="popout"]').click();
+            panelPage = await popup;
+        }
+        const field = panelPage.locator('#jog-controls .jog-value input').first();
+        await field.focus();
+        await field.press('ControlOrMeta+a');
+        await field.pressSequentially('-0.025');
+        await expect(field).toHaveValue('-0.025');
+        expect((await poses(page))[0].joints[0]).toBeCloseTo(-0.025, 6);
+        await field.press('Tab');
+        await expect(field).toHaveValue('-0.025');
+
+        await field.focus();
+        await field.press('ControlOrMeta+a');
+        await field.press('Backspace');
+        await field.press('Tab');
+        await expect(field).toHaveValue('-0.025');
+        expect((await poses(page))[0].joints[0]).toBeCloseTo(-0.025, 6);
+    });
+}
+
 test('체크한 로봇의 관절·BASE 버튼·좌표 입력·3D 핸들을 함께 조작하고 원점 복귀한다', async ({ page }) => {
     test.setTimeout(120000);
     const errors = []; page.on('pageerror', error => errors.push(error.message));

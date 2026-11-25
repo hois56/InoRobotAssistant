@@ -74,11 +74,11 @@ const softwareGroups = [
         icon: "languages",
         versions: [
             {
-                tagName: "V1.0 Beta",
-                description: "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기(베타 버전)",
-                date: "2026-11-04",
+                tagName: "V1.0.1",
+                description: "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기",
+                date: "2026-11-25",
                 downloads: [
-                    { label: "Download Install", type: "install", size: "79MB", path: "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0-beta/InoRobotKoreanInstaller_V1.0.zip" }
+                    { label: "Download Install", type: "install", size: "79MB", path: "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.1.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.1/InoRobotKoreanInstaller_V1.0.1.zip" }
                 ]
             }
         ]

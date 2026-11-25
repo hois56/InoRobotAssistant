@@ -314,6 +314,12 @@
             "title": "3D Simulation",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[수정]` JOG 패널에서 관절값을 입력할 때 소수점이나 음수 부호가 사라지던 문제를 수정했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.24",
                 "items": [
                   "`[추가]` 가상 버스를 지원하는 K14에서는 웹 컨베이어를 마스터 한 대에 연결하고, 여러 로봇이 같은 작업물을 중복 선택하지 않게 추적할 수 있습니다.",
@@ -1039,6 +1045,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[업데이트]` 한글 패치기를 V1.0.1로 업데이트했습니다. 로봇랩에서 목표 포인트 실행 오류의 원인이 한국어로 표시되며 행 번호, 태스크 번호, 프로그램 이름이 유지됩니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[업데이트]` InoRobotLab·InoRobotTP 시뮬레이션용 포터블 패키지를 K14(SPC25K14 R5)로 업데이트했습니다."
@@ -1161,6 +1173,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[수정]` 로봇 셀렉션 가이드와 리플릿 PDF의 미리보기 및 다운로드 링크를 수정했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -1328,6 +1346,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[업데이트]` 로그 분석기 V2.1에서 반복 로그와 연쇄 알람을 건별로 볼 수 있고, 필요할 때 묶어 볼 수 있습니다."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -1796,6 +1820,13 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.1 (2026.11.25)",
+                "items": [
+                  "`[추가]` 프로젝트 변수의 이전 값과 변경 값, 진단 시작 시점의 I/O 상태, 커널 네트워크 링크의 복구 시간, 알람 직전의 스레드 주기를 확인할 수 있습니다.",
+                  "`[개선]` 반복 로그와 연쇄 알람을 기본으로 한 건씩 표시합니다. 체크하면 묶어 볼 수 있으며, 선택한 알람의 안전정보에서 원문으로 이동할 수 있습니다."
+                ]
+              },
+              {
                 "title": "Ver 2.0 (2026.11.21)",
                 "items": [
                   "`[개선]` 알람별 로봇 모드와 축 상태, 연관 로그를 한곳에서 확인할 수 있습니다. 프로그램 탭에 태스크 현황과 라벨·위치 데이터 표를 추가했습니다."
@@ -2148,6 +2179,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Fixed]` The JOG panel now keeps the decimal point and minus sign when typing a joint value."
+                ]
+              },
               {
                 "title": "Ver 26.11.24",
                 "items": [
@@ -2874,6 +2911,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Updated]` Updated the Korean patch installer to V1.0.1. InoRobotLab now shows the cause of target point runtime errors in Korean and preserves the line number, task number, and program name."
+                ]
+              },
+              {
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Updated]` Updated the InoRobotLab and InoRobotTP portable simulation package to K14 (SPC25K14 R5)."
@@ -2996,6 +3039,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Fixed]` Fixed the PDF preview and download links for the robot selection guide and leaflet."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -3163,6 +3212,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Updated]` Log Analyzer V2.1 shows repeated log entries and alarms in a chain individually, with optional grouping."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -3631,6 +3686,13 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.1 (2026.11.25)",
+                "items": [
+                  "`[Added]` View previous and updated project variable values, I/O states at the start of diagnostics, kernel network link recovery times, and thread periods recorded just before an alarm.",
+                  "`[Improved]` Repeated log entries and alarms in a chain appear individually by default. Use the checkboxes to group them, or open the source log from the selected alarm’s safety information."
+                ]
+              },
+              {
                 "title": "Ver 2.0 (2026.11.21)",
                 "items": [
                   "`[Improved]` View robot mode, axis status, and related logs for each alarm in one place. The Program tab now shows task status and tables for label and position data."
@@ -3983,6 +4045,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[修复]` 修复了在 JOG 面板输入关节值时小数点或负号消失的问题。"
+                ]
+              },
               {
                 "title": "Ver 26.11.24",
                 "items": [
@@ -4709,6 +4777,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[更新]` 韩语补丁安装器已更新至 V1.0.1。InoRobotLab 现在以韩语显示目标点运行错误的原因，并保留行号、任务编号和程序名称。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[更新]` InoRobotLab 和 InoRobotTP 仿真便携软件包已更新至 K14（SPC25K14 R5）。"
@@ -4831,6 +4905,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[修复]` 修复了机器人选型指南和产品折页 PDF 的预览和下载链接。"
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -4998,6 +5078,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[更新]` 日志分析器 V2.1 默认逐条显示重复日志和连锁报警，可按需勾选分组。"
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -5466,6 +5552,13 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.1 (2026.11.25)",
+                "items": [
+                  "`[新增]` 可查看项目变量变更前后的值、诊断开始时的 I/O 状态、内核网络链路恢复所用时间以及报警前记录的线程周期。",
+                  "`[改进]` 默认逐条显示重复日志和连锁报警。勾选后可分组查看，也可从所选报警的安全信息跳转至原始日志。"
+                ]
+              },
+              {
                 "title": "Ver 2.0 (2026.11.21)",
                 "items": [
                   "`[改进]` 可集中查看每条报警的机器人模式、轴状态和关联日志。程序选项卡新增任务状态以及标签和位置数据表。"
@@ -5818,6 +5911,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Đã sửa]` Khắc phục lỗi mất dấu thập phân hoặc dấu trừ khi nhập giá trị khớp trong bảng JOG."
+                ]
+              },
               {
                 "title": "Ver 26.11.24",
                 "items": [
@@ -6544,6 +6643,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Cập nhật]` Đã cập nhật trình cài bản vá tiếng Hàn lên V1.0.1. InoRobotLab hiển thị nguyên nhân lỗi thực thi tại điểm đích bằng tiếng Hàn và giữ nguyên số dòng, số tác vụ và tên chương trình."
+                ]
+              },
+              {
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Cập nhật]` Đã cập nhật gói mô phỏng di động InoRobotLab và InoRobotTP lên K14 (SPC25K14 R5)."
@@ -6666,6 +6771,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Sửa lỗi]` Đã sửa liên kết xem trước và tải xuống bản PDF của hướng dẫn lựa chọn robot và tờ giới thiệu sản phẩm."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -6833,6 +6944,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Cập nhật]` Log Analyzer V2.1 hiển thị riêng từng bản ghi lặp và từng cảnh báo trong chuỗi. Có thể bật tùy chọn nhóm khi cần."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -7301,6 +7418,13 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.1 (2026.11.25)",
+                "items": [
+                  "`[Thêm]` Có thể xem giá trị biến dự án trước và sau khi thay đổi, trạng thái I/O khi bắt đầu chẩn đoán, thời gian khôi phục liên kết mạng do nhân hệ điều hành ghi nhận và chu kỳ luồng ngay trước cảnh báo.",
+                  "`[Cải tiến]` Theo mặc định, mỗi bản ghi lặp và mỗi cảnh báo trong chuỗi xuất hiện trên một dòng. Có thể đánh dấu ô để nhóm và mở nhật ký gốc từ thông tin an toàn của cảnh báo đã chọn."
+                ]
+              },
+              {
                 "title": "Ver 2.0 (2026.11.21)",
                 "items": [
                   "`[Cải tiến]` Xem chế độ robot, trạng thái trục và nhật ký liên quan của từng cảnh báo tại cùng một nơi. Tab Chương trình có thêm trạng thái tác vụ và bảng dữ liệu nhãn, vị trí."
@@ -7653,6 +7777,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Düzeltildi]` JOG panelinde eklem değeri girerken ondalık ayıracın veya eksi işaretinin kaybolması düzeltildi."
+                ]
+              },
               {
                 "title": "Ver 26.11.24",
                 "items": [
@@ -8379,6 +8509,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Güncellendi]` Korece yama yükleyicisi V1.0.1 sürümüne güncellendi. InoRobotLab artık hedef noktadaki çalışma zamanı hatasının nedenini Korece gösteriyor ve satır numarasını, görev numarasını ve program adını koruyor."
+                ]
+              },
+              {
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Güncellendi]` InoRobotLab ve InoRobotTP taşınabilir simülasyon paketi K14 (SPC25K14 R5) sürümüne güncellendi."
@@ -8501,6 +8637,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Düzeltildi]` Robot seçim kılavuzunun ve ürün broşürünün PDF önizleme ve indirme bağlantıları düzeltildi."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -8668,6 +8810,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Güncellendi]` Log Analyzer V2.1, yinelenen günlük kayıtlarını ve bir zincirdeki alarmları tek tek gösterir. İstenirse gruplama açılabilir."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -9136,6 +9284,13 @@
             "title": "logAnalyzer",
             "versions": [
               {
+                "title": "Ver 2.1 (2026.11.25)",
+                "items": [
+                  "`[Eklendi]` Proje değişkenlerinin önceki ve yeni değerlerini, tanılama başlangıcındaki G/Ç durumunu, çekirdeğin kaydettiği ağ bağlantısı kurtarma süresini ve alarmdan hemen önceki iş parçacığı periyotlarını görebilirsiniz.",
+                  "`[İyileştirme]` Yinelenen günlük kayıtları ve bir zincirdeki alarmlar varsayılan olarak tek tek gösterilir. Onay kutularıyla kayıtları gruplayabilir, seçilen alarmın güvenlik bilgilerinden kaynak günlüğü açabilirsiniz."
+                ]
+              },
+              {
                 "title": "Ver 2.0 (2026.11.21)",
                 "items": [
                   "`[İyileştirildi]` Her alarm için robot modu, eksen durumu ve ilgili günlükler tek yerden görüntülenebilir. Program sekmesine görev durumu ve etiket ve konum verisi tabloları eklendi."
@@ -9488,6 +9643,12 @@
           {
             "title": "3D Simulation",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Исправлено]` При вводе значения оси в панели JOG больше не пропадают десятичный разделитель и знак минуса."
+                ]
+              },
               {
                 "title": "Ver 26.11.24",
                 "items": [
@@ -10214,6 +10375,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Обновлено]` Установщик корейского языкового пакета обновлён до V1.0.1. InoRobotLab показывает причину ошибки выполнения в целевой точке на корейском языке, сохраняя номер строки, номер задачи и имя программы."
+                ]
+              },
+              {
                 "title": "Ver 26.11.23",
                 "items": [
                   "`[Обновлено]` Портативный пакет InoRobotLab и InoRobotTP для симуляции обновлён до K14 (SPC25K14 R5)."
@@ -10336,6 +10503,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Исправлено]` Исправлены ссылки для просмотра и скачивания руководства по выбору робота и буклета в формате PDF."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -10503,6 +10676,12 @@
           {
             "title": "Debugging Tool",
             "versions": [
+              {
+                "title": "Ver 26.11.25",
+                "items": [
+                  "`[Обновлено]` Log Analyzer V2.1 по умолчанию показывает повторяющиеся записи журнала и аварийные сообщения в цепочке по отдельности. Группировку можно включить."
+                ]
+              },
               {
                 "title": "Ver 26.11.21",
                 "items": [
@@ -10970,6 +11149,13 @@
           {
             "title": "logAnalyzer",
             "versions": [
+              {
+                "title": "Ver 2.1 (2026.11.25)",
+                "items": [
+                  "`[Добавлено]` Можно посмотреть значения переменных проекта до и после изменения, состояние входов и выходов в начале диагностики, время восстановления сетевого соединения по журналу ядра и периоды потоков непосредственно перед аварийным сообщением.",
+                  "`[Улучшено]` Повторяющиеся записи и аварийные сообщения в цепочке по умолчанию показаны по отдельности. Флажки включают группировку. Из сведений о безопасности выбранного сообщения можно перейти к исходному журналу."
+                ]
+              },
               {
                 "title": "Ver 2.0 (2026.11.21)",
                 "items": [
