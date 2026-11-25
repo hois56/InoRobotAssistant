@@ -1,15 +1,15 @@
 [
   {
     "productId": "InoRobotLab",
-    "version": "시뮬레이션 버전 (SPC25K14 R5)",
+    "version": "시뮬레이션 버전 (SPC25K15 R7)",
     "isLocked": false,
     "downloads": [
       {
         "label": "Download Portable",
         "type": "portable",
-        "path": "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261123_R5.zip",
+        "path": "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip",
         "assetId": null,
-        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261123/InoRobotLab_TP_SPC25K14_20261123_R5.zip"
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k15-20261125/InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip"
       }
     ]
   },
@@ -85,15 +85,15 @@
   },
   {
     "productId": "InoRobotKoreanInstaller",
-    "version": "V1.0.1",
+    "version": "V1.0.2",
     "isLocked": false,
     "downloads": [
       {
         "label": "Download Install",
         "type": "install",
-        "path": "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.1.zip",
+        "path": "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.2.zip",
         "assetId": null,
-        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.1/InoRobotKoreanInstaller_V1.0.1.zip"
+        "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.2/InoRobotKoreanInstaller_V1.0.2.zip"
       }
     ]
   }

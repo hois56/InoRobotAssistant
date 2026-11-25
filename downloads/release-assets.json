@@ -5,12 +5,12 @@
   "assets": [
     {
       "paths": [
-        "5_Software/InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261123_R5.zip"
+        "5_Software/InoRobotLab/Simulation/InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip"
       ],
-      "fileName": "InoRobotLab_TP_SPC25K14_20261123_R5.zip",
-      "size": 658627448,
-      "sha256": "2f68fa0413e73656790515d05ff8a3d86b48a3b13c52981a0a4405c7dbdc0586",
-      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261123/InoRobotLab_TP_SPC25K14_20261123_R5.zip"
+      "fileName": "InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip",
+      "size": 656603911,
+      "sha256": "3d21696845afad9e78ea71760f77946499782d6249599a0d9470392f49e47fd8",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k15-20261125/InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip"
     },
     {
       "paths": [
@@ -140,12 +140,12 @@
     },
     {
       "paths": [
-        "5_Software/InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.1.zip"
+        "5_Software/InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.2.zip"
       ],
-      "fileName": "InoRobotKoreanInstaller_V1.0.1.zip",
-      "size": 79083353,
-      "sha256": "f3e8a854a3c8711b492da965ac03f9f6dbe8f1d32493f6668c9ed1b92a025746",
-      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.1/InoRobotKoreanInstaller_V1.0.1.zip"
+      "fileName": "InoRobotKoreanInstaller_V1.0.2.zip",
+      "size": 79087615,
+      "sha256": "275caf26d8516cb2b6a4e51b66a31bd9adcd6b59e255181c6108f173bce0682b",
+      "url": "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.2/InoRobotKoreanInstaller_V1.0.2.zip"
     },
     {
       "paths": [

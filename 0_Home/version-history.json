@@ -1047,6 +1047,8 @@
               {
                 "title": "Ver 26.11.25",
                 "items": [
+                  "`[업데이트]` InoRobotLab·InoRobotTP 시뮬레이션용 포터블 패키지를 K15(SPC25K15 R7)로 업데이트했습니다. 제조사 권한으로 가상 컨트롤러에 연결하면 기존 설정 창에서 기능 안전 항목을 조회할 수 있으며, 저장과 동기화는 비활성화됩니다. 로봇랩 화면과 로그의 한국어 문구도 다듬었습니다.",
+                  "`[업데이트]` 한글 패치기를 V1.0.2로 업데이트했습니다. K15 로봇랩의 화면 문구와 기능 안전 알람 0x90F4·0x90AA·0x9107의 한국어 번역을 수정했습니다.",
                   "`[업데이트]` 한글 패치기를 V1.0.1로 업데이트했습니다. 로봇랩에서 목표 포인트 실행 오류의 원인이 한국어로 표시되며 행 번호, 태스크 번호, 프로그램 이름이 유지됩니다."
                 ]
               },
@@ -2913,6 +2915,8 @@
               {
                 "title": "Ver 26.11.25",
                 "items": [
+                  "`[Updated]` Updated the portable InoRobotLab and InoRobotTP simulation package to K15 (SPC25K15 R7). Manufacturer users connected to a virtual controller can view the existing functional safety pages with saving and synchronization disabled. Korean interface and log text was also revised.",
+                  "`[Updated]` Korean patch installer V1.0.2 revises K15 InoRobotLab interface text and the Korean translations for functional safety alarms 0x90F4, 0x90AA, and 0x9107.",
                   "`[Updated]` Updated the Korean patch installer to V1.0.1. InoRobotLab now shows the cause of target point runtime errors in Korean and preserves the line number, task number, and program name."
                 ]
               },
@@ -4779,6 +4783,8 @@
               {
                 "title": "Ver 26.11.25",
                 "items": [
+                  "`[更新]` InoRobotLab 和 InoRobotTP 便携式仿真软件包已更新至 K15（SPC25K15 R7）。以制造商权限连接虚拟控制器后，可在原有页面查看功能安全设置，保存和同步功能已禁用。韩语界面和日志文案也已修订。",
+                  "`[更新]` 韩语补丁安装器 V1.0.2 修订了 K15 InoRobotLab 的界面文案以及功能安全报警 0x90F4、0x90AA 和 0x9107 的韩语翻译。",
                   "`[更新]` 韩语补丁安装器已更新至 V1.0.1。InoRobotLab 现在以韩语显示目标点运行错误的原因，并保留行号、任务编号和程序名称。"
                 ]
               },
@@ -6645,6 +6651,8 @@
               {
                 "title": "Ver 26.11.25",
                 "items": [
+                  "`[Cập nhật]` Đã cập nhật gói mô phỏng di động InoRobotLab và InoRobotTP lên K15 (SPC25K15 R7). Khi kết nối bộ điều khiển ảo bằng quyền nhà sản xuất, có thể xem các trang an toàn chức năng hiện có, với chức năng lưu và đồng bộ hóa bị tắt. Nội dung tiếng Hàn trên giao diện và nhật ký cũng đã được chỉnh sửa.",
+                  "`[Cập nhật]` Trình cài bản vá tiếng Hàn V1.0.2 chỉnh sửa nội dung giao diện InoRobotLab K15 và bản dịch tiếng Hàn của các cảnh báo an toàn chức năng 0x90F4, 0x90AA và 0x9107.",
                   "`[Cập nhật]` Đã cập nhật trình cài bản vá tiếng Hàn lên V1.0.1. InoRobotLab hiển thị nguyên nhân lỗi thực thi tại điểm đích bằng tiếng Hàn và giữ nguyên số dòng, số tác vụ và tên chương trình."
                 ]
               },
@@ -8511,6 +8519,8 @@
               {
                 "title": "Ver 26.11.25",
                 "items": [
+                  "`[Güncellendi]` InoRobotLab ve InoRobotTP taşınabilir simülasyon paketi K15 (SPC25K15 R7) sürümüne güncellendi. Üretici yetkisiyle sanal denetleyiciye bağlanıldığında mevcut işlevsel güvenlik sayfaları görüntülenebilir. Kaydetme ve eşitleme devre dışıdır. Korece arayüz ve günlük metinleri de düzenlendi.",
+                  "`[Güncellendi]` V1.0.2 Korece yama yükleyicisi, K15 InoRobotLab arayüz metinlerini ve 0x90F4, 0x90AA ve 0x9107 işlevsel güvenlik alarmlarının Korece çevirilerini düzenler.",
                   "`[Güncellendi]` Korece yama yükleyicisi V1.0.1 sürümüne güncellendi. InoRobotLab artık hedef noktadaki çalışma zamanı hatasının nedenini Korece gösteriyor ve satır numarasını, görev numarasını ve program adını koruyor."
                 ]
               },
@@ -10377,6 +10387,8 @@
               {
                 "title": "Ver 26.11.25",
                 "items": [
+                  "`[Обновлено]` Портативный пакет симуляции InoRobotLab и InoRobotTP обновлён до K15 (SPC25K15 R7). При подключении к виртуальному контроллеру с правами производителя можно просматривать существующие страницы функциональной безопасности. Сохранение и синхронизация отключены. Также исправлены тексты интерфейса и журнала на корейском языке.",
+                  "`[Обновлено]` Установщик корейского языкового пакета V1.0.2 исправляет текст интерфейса InoRobotLab K15 и перевод аварийных сообщений функциональной безопасности 0x90F4, 0x90AA и 0x9107.",
                   "`[Обновлено]` Установщик корейского языкового пакета обновлён до V1.0.1. InoRobotLab показывает причину ошибки выполнения в целевой точке на корейском языке, сохраняя номер строки, номер задачи и имя программы."
                 ]
               },

@@ -10,11 +10,11 @@ const softwareGroups = [
         icon: "monitor",
         versions: [
             {
-                tagName: "시뮬레이션 버전 (SPC25K14 R5)",
+                tagName: "시뮬레이션 버전 (SPC25K15 R7)",
                 description: "가상 컨트롤러 시뮬레이션용 InoRobotLab·펜던트 통합 포터블 버전",
-                date: "2026-11-23",
+                date: "2026-11-25",
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "659MB", path: "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K14_20261123_R5.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k14-20261123/InoRobotLab_TP_SPC25K14_20261123_R5.zip" }
+                    { label: "Download Portable", type: "portable", size: "657MB", path: "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k15-20261125/InoRobotLab_TP_SPC25K15_MultiVC_20261125_R7_Runtime.zip" }
                 ]
             },
             {
@@ -74,11 +74,11 @@ const softwareGroups = [
         icon: "languages",
         versions: [
             {
-                tagName: "V1.0.1",
+                tagName: "V1.0.2",
                 description: "InoRobotLab·InoRobotTP R24C4 계열 표준·디스플레이 버전용 한글 패치기",
                 date: "2026-11-25",
                 downloads: [
-                    { label: "Download Install", type: "install", size: "79MB", path: "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.1.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.1/InoRobotKoreanInstaller_V1.0.1.zip" }
+                    { label: "Download Install", type: "install", size: "79MB", path: "InoRobotKoreanInstaller/InoRobotKoreanInstaller_V1.0.2.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobot-korean-installer-v1.0.2/InoRobotKoreanInstaller_V1.0.2.zip" }
                 ]
             }
         ]
