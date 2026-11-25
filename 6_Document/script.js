@@ -424,6 +424,7 @@ const manualData = [
     {
         id: "edu_advanced_string_api",
         title: "문자열 API 예제",
+        downloadOnly: true,
         robotType: "none",
         category: "advanced",
         date: "2026-11-05",
@@ -627,6 +628,26 @@ const certificateFiles = [
     ["cert-lifetime", "Certificate/Lifetime/MTBF_Small_SCARA.pdf"]
 ];
 
+const kcsStandardCategories = new Set(['cert-kcs-6axis', 'cert-kcs-scara']);
+const kcsHighProtectionCategories = new Set(['cert-kcs-6axis-high', 'cert-kcs-scara-high']);
+function getKcsFileNames(categories) {
+    return new Set(certificateFiles
+        .filter(([category]) => categories.has(category))
+        .map(([, path]) => getFileName(path).toLowerCase()));
+}
+
+const kcsStandardFileNames = getKcsFileNames(kcsStandardCategories);
+const kcsHighProtectionFileNames = getKcsFileNames(kcsHighProtectionCategories);
+
+function getCertificateDownloadName(category, path) {
+    const name = getFileName(path);
+    const key = name.toLowerCase();
+    if (!kcsStandardFileNames.has(key) || !kcsHighProtectionFileNames.has(key)) return name;
+    const variant = kcsStandardCategories.has(category) ? '표준형'
+        : kcsHighProtectionCategories.has(category) ? '고방진형' : '';
+    return variant ? name.replace(/\.pdf$/i, extension => `_${variant}${extension}`) : name;
+}
+
 const certificateData = certificateFiles.map(([category, path]) => ({
     id: `cert_${path.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}`,
     title: path.split('/').pop(),
@@ -635,6 +656,7 @@ const certificateData = certificateFiles.map(([category, path]) => ({
     date: "2026-06-15",
     lang: "PDF",
     path,
+    downloadName: getCertificateDownloadName(category, path),
     description: certificateCategoryLabels[category] || "Certificate"
 }));
 
@@ -889,6 +911,7 @@ function renderManualDocument(list, man) {
         extra: man.additionalTag,
         date: man.date
     });
+    if (man.downloadOnly) row.querySelector('[data-action="view"]').remove();
     row.querySelectorAll('[data-action]').forEach(button => { button.dataset.id = man.id; });
     list.appendChild(row);
 }
@@ -1079,7 +1102,7 @@ function resolveManualUrl(path) {
 
 function handleView(id) {
     const man = manualData.find(m => m.id === id);
-    if (!man) return;
+    if (!man || man.downloadOnly) return;
     window.open(resolveManualUrl(man.previewPath || man.path), '_blank');
 }
 
@@ -1087,7 +1110,7 @@ function handleDownload(id) {
     const man = manualData.find(m => m.id === id);
     if (!man) return;
     const path = man.downloadPath || man.path;
-    downloadFile(resolveManualUrl(path), getFileName(path));
+    downloadFile(resolveManualUrl(path), man.downloadName || getFileName(path));
 }
 
 function downloadFile(url, fileName = '') {
