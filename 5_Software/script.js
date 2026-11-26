@@ -10,11 +10,11 @@ const softwareGroups = [
         icon: "monitor",
         versions: [
             {
-                tagName: "시뮬레이션 버전 (SPC25K15 R8)",
+                tagName: "시뮬레이션 버전 (SPC25K15 R9)",
                 description: "가상 컨트롤러 시뮬레이션용 InoRobotLab·펜던트 통합 포터블 버전",
                 date: "2026-11-26",
                 downloads: [
-                    { label: "Download Portable", type: "portable", size: "657MB", path: "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K15_MultiVC_20261126_R8_Runtime.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k15-20261126/InoRobotLab_TP_SPC25K15_MultiVC_20261126_R8_Runtime.zip" }
+                    { label: "Download Portable", type: "portable", size: "657MB", path: "InoRobotLab/Simulation/InoRobotLab_TP_SPC25K15_MultiVC_20261126_R9_Runtime.zip", url: "https://github.com/hois56/InoRobotAssistant/releases/download/inorobotlab-simulation-k15-20261126-r9/InoRobotLab_TP_SPC25K15_MultiVC_20261126_R9_Runtime.zip" }
                 ]
             },
             {

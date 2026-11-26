@@ -1059,6 +1059,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
+                  "`[업데이트]` SPC25K15 R9에서 로봇랩 비전 캘리브레이션을 웹 가상 비전에 연결했습니다. 통신 테스트에서 같은 카메라 설정을 저장해도 연결이 유지되고, 종료 문자가 비어 있어도 전송 문자열을 보냅니다.",
                   "`[업데이트]` InoRobotLab·InoRobotTP SPC25K15 R8에서 웹 3D 시뮬레이션이 브릿지 V2.1로 가상 컨트롤러에 연결할 때 발생하던 -255 오류를 수정했습니다."
                 ]
               },
@@ -2945,6 +2946,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
+                  "`[Updated]` SPC25K15 R9 connects RobotLab vision calibration to web virtual vision. The communication test keeps the connection when saving the same camera endpoint and sends the trigger even with an empty terminator.",
                   "`[Updated]` InoRobotLab and InoRobotTP SPC25K15 R8 fixes error -255 when the web 3D simulator connects to a virtual controller through Bridge V2.1."
                 ]
               },
@@ -4831,6 +4833,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
+                  "`[更新]` SPC25K15 R9 将 RobotLab 视觉标定与网页虚拟视觉连接。通信测试在保存相同相机地址时保持连接，即使结束符为空也会发送触发字符串。",
                   "`[更新]` InoRobotLab 和 InoRobotTP SPC25K15 R8 修复了网页 3D 仿真通过 V2.1 网桥连接虚拟控制器时出现的 -255 错误。"
                 ]
               },
@@ -6717,6 +6720,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
+                  "`[Cập nhật]` SPC25K15 R9 kết nối hiệu chuẩn thị giác của RobotLab với thị giác ảo trên web. Kiểm tra giao tiếp giữ kết nối khi lưu cùng địa chỉ camera và gửi chuỗi kích hoạt ngay cả khi ký tự kết thúc để trống.",
                   "`[Cập nhật]` InoRobotLab và InoRobotTP SPC25K15 R8 sửa lỗi -255 khi trình mô phỏng 3D trên web kết nối với bộ điều khiển ảo qua Bridge V2.1."
                 ]
               },
@@ -8603,6 +8607,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
+                  "`[Güncellendi]` SPC25K15 R9, RobotLab görüntü kalibrasyonunu web sanal görüntü sistemine bağlar. İletişim testi, aynı kamera adresi kaydedildiğinde bağlantıyı korur ve sonlandırıcı boş olsa da tetikleme dizisini gönderir.",
                   "`[Güncellendi]` InoRobotLab ve InoRobotTP SPC25K15 R8, web 3D simülatörünün Bridge V2.1 üzerinden sanal denetleyiciye bağlanırken verdiği -255 hatasını giderir."
                 ]
               },
@@ -10489,6 +10494,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
+                  "`[Обновлено]` SPC25K15 R9 связывает калибровку зрения RobotLab с виртуальным зрением в веб-симуляторе. Проверка связи сохраняет соединение при записи того же адреса камеры и отправляет команду даже без завершающего символа.",
                   "`[Обновлено]` В InoRobotLab и InoRobotTP SPC25K15 R8 исправлена ошибка -255 при подключении веб-симулятора 3D к виртуальному контроллеру через Bridge V2.1."
                 ]
               },
