@@ -1045,6 +1045,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[업데이트]` InoRobotLab·InoRobotTP SPC25K15 R8에서 웹 3D 시뮬레이션이 브릿지 V2.1로 가상 컨트롤러에 연결할 때 발생하던 -255 오류를 수정했습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[업데이트]` InoRobotLab·InoRobotTP 시뮬레이션용 포터블 패키지를 K15(SPC25K15 R7)로 업데이트했습니다. 제조사 권한으로 가상 컨트롤러에 연결하면 기존 설정 창에서 기능 안전 항목을 조회할 수 있으며, 저장과 동기화는 비활성화됩니다. 로봇랩 화면과 로그의 한국어 문구도 다듬었습니다.",
@@ -2912,6 +2918,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Updated]` InoRobotLab and InoRobotTP SPC25K15 R8 fixes error -255 when the web 3D simulator connects to a virtual controller through Bridge V2.1."
+                ]
+              },
               {
                 "title": "Ver 26.11.25",
                 "items": [
@@ -4781,6 +4793,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[更新]` InoRobotLab 和 InoRobotTP SPC25K15 R8 修复了网页 3D 仿真通过 V2.1 网桥连接虚拟控制器时出现的 -255 错误。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[更新]` InoRobotLab 和 InoRobotTP 便携式仿真软件包已更新至 K15（SPC25K15 R7）。以制造商权限连接虚拟控制器后，可在原有页面查看功能安全设置，保存和同步功能已禁用。韩语界面和日志文案也已修订。",
@@ -6648,6 +6666,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Cập nhật]` InoRobotLab và InoRobotTP SPC25K15 R8 sửa lỗi -255 khi trình mô phỏng 3D trên web kết nối với bộ điều khiển ảo qua Bridge V2.1."
+                ]
+              },
               {
                 "title": "Ver 26.11.25",
                 "items": [
@@ -8517,6 +8541,12 @@
             "title": "Software",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Güncellendi]` InoRobotLab ve InoRobotTP SPC25K15 R8, web 3D simülatörünün Bridge V2.1 üzerinden sanal denetleyiciye bağlanırken verdiği -255 hatasını giderir."
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[Güncellendi]` InoRobotLab ve InoRobotTP taşınabilir simülasyon paketi K15 (SPC25K15 R7) sürümüne güncellendi. Üretici yetkisiyle sanal denetleyiciye bağlanıldığında mevcut işlevsel güvenlik sayfaları görüntülenebilir. Kaydetme ve eşitleme devre dışıdır. Korece arayüz ve günlük metinleri de düzenlendi.",
@@ -10384,6 +10414,12 @@
           {
             "title": "Software",
             "versions": [
+              {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Обновлено]` В InoRobotLab и InoRobotTP SPC25K15 R8 исправлена ошибка -255 при подключении веб-симулятора 3D к виртуальному контроллеру через Bridge V2.1."
+                ]
+              },
               {
                 "title": "Ver 26.11.25",
                 "items": [
