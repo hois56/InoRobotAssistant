@@ -127,7 +127,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[추가]` 옵션 옆 정보 아이콘에서 부품 사진과 연결 도면을 미리 볼 수 있습니다. IP67 로봇 바디 옵션에는 IP54 High-protection 컨트롤러로 변경되는 안내를 표시합니다.",
+                  "`[추가]` 옵션 옆 정보 아이콘을 누르면 해당 옵션의 상세 정보를 확인할 수 있습니다.",
+                  "`[추가]` IP67 로봇 바디를 선택하면 IP54 고방진(High-protection) 컨트롤러가 적용된다는 안내가 표시됩니다.",
                   "`[변경]` 모델 상세에서 담은 구성은 구성 목록에서만 엑셀로 내려받을 수 있습니다."
                 ]
               },
@@ -136,7 +137,9 @@
                 "items": [
                   "`[개선]` SCARA 일반형과 클린형의 Z축 길이와 표준 사이클 시간을 나란히 비교하고, 형식별 형번과 상세 사양을 확인할 수 있습니다. 클린형에는 ISO Class 4를 표시합니다. 다관절 카드에 반복 정밀도를, 상세 사양에 축별 허용 토크를 추가했습니다.",
                   "`[개선]` 상세 구성에서 로봇 수량이 적용되는 본체·기본 케이블과 수량을 따로 지정하는 옵션을 구분했습니다. 다관절 I/O 케이블은 선택한 경우에만 구성에 포함됩니다. PROFINET이나 CC-Link를 선택하면 해당 확장 카드가 자동으로 체크되고 두 곳의 수량이 연동됩니다.",
-                  "`[개선]` 타입을 선택하지 않으면 모델 아래에 유료 하드웨어 옵션이 표시됩니다. 로봇 없이도 옵션을 구성 목록에 담고 수량을 조정할 수 있습니다. 각 카드의 품목을 용도별로 묶고 확장 카드는 통신·입출력·안전 확장으로 구분했습니다. R7H 전용 영점 보정 툴의 구매 코드를 반영했습니다. 펜던트 연장 케이블은 펜던트와 기타 액세서리 두 카드에서 담을 수 있습니다. 품목 행을 눌러 선택할 수 있고, SCARA J3 보호 커버는 S4·S7·S10의 일반형과 클린형에 맞춰 표시됩니다.",
+                  "`[개선]` 로봇을 선택하지 않아도 유료 하드웨어 옵션을 구성 목록에 담고 수량을 조정할 수 있습니다. 로봇 타입 필터를 선택하지 않으면 모델 목록 아래에 옵션이 표시되며, 품목 행을 누르면 선택됩니다.",
+                  "`[개선]` 품목을 용도별로 묶고, 확장 카드는 통신·입출력·안전으로 구분했습니다. R7H 전용 영점 보정 도구의 구매 코드를 반영했으며, 펜던트 연장 케이블은 펜던트와 기타 액세서리 양쪽에서 담을 수 있습니다.",
+                  "`[개선]` SCARA J3 보호 커버는 S4·S7·S10 모델의 일반형과 클린형에 맞춰 표시합니다.",
                   "`[개선]` 엑셀 구성서에 구성 수와 로봇 대수를 표시하고, 같은 구매 코드의 주문 수량을 한 줄로 합산합니다.",
                   "`[개선]` 밝은 패널에 파란색으로 버튼과 선택 항목을 표시합니다.",
                   "`[추가]` 모델별 고유 주소와 검색 가능한 상세 페이지를 제공하고, 주소 공유·새로고침·뒤로 가기로 해당 모델의 구성을 다시 열 수 있습니다.",
@@ -159,7 +162,7 @@
                 "title": "Ver 26.09.24",
                 "items": [
                   "`[변경]` 모델 셀렉트의 구성 요소와 구성 내역을 엑셀 파일로 다운로드하도록 변경했습니다.",
-                  "`[변경]` 엑셀 구성 목록에 타입 열을 추가해 로봇·펜던트·악세서리·케이블을 구분하도록 했습니다.",
+                  "`[변경]` 엑셀 구성 목록에 타입 열을 추가해 로봇·펜던트·액세서리·케이블을 구분하도록 했습니다.",
                   "`[변경]` 엑셀 목록에서 다관절·SCARA 로봇 종류와 Arm I/O 연결 위치를 구분하고, 로봇 상세정보에 파워/엔코더 케이블의 가동형·비가동형과 길이를 표시하도록 변경했습니다."
                 ]
               },
@@ -330,7 +333,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[지원]` 웹 시뮬레이션에서 브리지 V2.2를 통해 가상 비전을 컨트롤러에 Socket 또는 EtherNet/IP로 연결할 수 있습니다. 브리지 ZIP에는 실행 파일 하나만 들어 있습니다.",
-                  "`[개선]` 화면을 불러오지 못하면 선택한 언어로 안내가 표시되며 다시 시도할 수 있습니다."
+                  "`[개선]` 3D 시뮬레이션을 불러오지 못하면 선택한 언어로 안내가 표시됩니다. ‘다시 시도’를 눌러 다시 열 수 있습니다."
                 ]
               },
               {
@@ -930,7 +933,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[개선]` 화면 스타일과 아이콘을 사이트에 포함하고 가이드 이미지는 가이드를 열 때 불러와, 첫 화면이 외부 스크립트 없이 더 빨리 열립니다. 프로젝트 옵션 창의 설명 영역과 가이드 창의 배경을 다른 창과 같은 밝은 화면으로 표시합니다.",
+                  "`[개선]` 사용 방법을 열 때 가이드 이미지를 불러오도록 바꿔 첫 화면에서 내려받는 데이터를 줄였습니다. 프로젝트 옵션 설명과 사용 가이드도 다른 창과 같은 밝은 화면으로 통일했습니다.",
                   "`[수정]` 중국어·베트남어·터키어·러시아어에서 프로세스 목록의 번호 열 이름이 '없음'을 뜻하는 단어로 표시되던 문제를 수정했습니다."
                 ]
               },
@@ -1067,8 +1070,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[업데이트]` SPC25K15 R9에서 로봇랩 비전 캘리브레이션을 웹 가상 비전에 연결했습니다. 통신 테스트에서 같은 카메라 설정을 저장해도 연결이 유지되고, 종료 문자가 비어 있어도 전송 문자열을 보냅니다.",
-                  "`[업데이트]` InoRobotLab·InoRobotTP SPC25K15 R8에서 웹 3D 시뮬레이션이 브릿지 V2.1로 가상 컨트롤러에 연결할 때 발생하던 -255 오류를 수정했습니다."
+                  "`[업데이트]` SPC25K15 R9에서 InoRobotLab의 비전 캘리브레이션을 웹 시뮬레이터의 가상 비전에 연결할 수 있습니다. 통신 테스트에서는 같은 카메라 설정을 다시 저장해도 연결이 끊기지 않으며, 종료 문자를 지정하지 않아도 트리거 문자열을 보냅니다.",
+                  "`[업데이트]` InoRobotLab·InoRobotTP SPC25K15 R8에서 웹 3D 시뮬레이션이 브리지 V2.1로 가상 컨트롤러에 연결할 때 발생하던 -255 오류를 수정했습니다."
                 ]
               },
               {
@@ -1384,7 +1387,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[업데이트]` 디버깅 도구 6종을 업데이트했습니다. 각 ZIP에는 Windows에서 실행할 EXE 파일 하나가 들어 있습니다. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[업데이트]` 디버깅 도구 6종을 업데이트했습니다. ZIP의 압축을 푼 뒤 Windows 실행 파일을 열면 됩니다. Trace는 함께 들어 있는 IMC100API.dll을 실행 파일과 같은 폴더에 두세요. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
                   "`[개선]` 디버깅 툴과 영점 보정 화면의 스타일과 아이콘을 사이트에 포함해 외부 스크립트 없이 더 빨리 열립니다. 영점 보정 입력칸은 축과 항목 이름으로 읽힙니다."
                 ]
               },
@@ -2022,7 +2025,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Added]` Preview option photos and wiring diagrams from the info icons. The IP67 robot body option explains the switch to the IP54 High-protection controller.",
+                  "`[Added]` Click the info icon next to an option to see its details.",
+                  "`[Added]` When you select the IP67 robot body, the details explain the switch to an IP54 high-protection controller.",
                   "`[Changed]` Add configurations from the model details, then download them as Excel only from the configuration list."
                 ]
               },
@@ -2031,7 +2035,9 @@
                 "items": [
                   "`[Improved]` SCARA cards compare Z-axis stroke and standard cycle time side by side for standard and cleanroom versions. Each version opens its own model and specifications, with ISO Class 4 shown for cleanroom models. Articulated robot cards show repeatability, and the detail view lists allowable wrist torque by axis.",
                   "`[Improved]` The robot body and standard cable use the robot quantity. Optional components have their own quantities, and articulated robot I/O cables are included only when selected. Selecting PROFINET or CC-Link also selects its expansion card and keeps both quantities in sync.",
-                  "`[Improved]` When no type is selected, hardware options appear below the robot models. They can be added to the configuration list on their own, with editable quantities. Each card groups its items by function. Expansion cards are grouped by communication, I/O and safety, and the R7H calibration tool has its own order code. Teach pendant extension cables can be added from both the Pendant and Other Accessories cards. Click a hardware item row to select it. SCARA J3 covers are available for standard and clean S4, S7 and S10 models.",
+                  "`[Improved]` Add paid hardware options to the configuration list and adjust their quantities without selecting a robot. With no robot type filter selected, the options appear below the model list. Click an item row to select it.",
+                  "`[Improved]` Items are grouped by purpose, with expansion cards grouped by communication, I/O and safety. The R7H zero-calibration tool has its order code, and teach pendant extension cables can be added from either the Pendant or Other Accessories card.",
+                  "`[Improved]` SCARA J3 covers are shown for the matching standard or cleanroom versions of the S4, S7 and S10.",
                   "`[Improved]` Excel exports show configuration and robot totals and combine order quantities into one row per purchase code.",
                   "`[Improved]` Buttons and selected items appear in blue on light panels.",
                   "`[Added]` Each robot now has a searchable detail page and unique address that supports sharing, reload and browser history while preserving configuration.",
@@ -2225,7 +2231,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[Support]` The web simulator can connect virtual vision to controllers over Socket or EtherNet/IP using bridge V2.2. The bridge ZIP contains a single executable.",
-                  "`[Improved]` If the simulator cannot load, it shows a message in the selected language and lets you retry."
+                  "`[Improved]` If the 3D simulator fails to load, it shows a message in your selected language. Select Try again to reopen it."
                 ]
               },
               {
@@ -2825,7 +2831,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Improved]` Styles and icons are now part of the site and guide images load only when the guide opens, so the generator opens faster without external scripts. The Project Options description area and the guide backdrop match the other light dialogs.",
+                  "`[Improved]` Guide images now load when you open the guide, so the initial page loads less. Project Options descriptions and the guide use the same light styling as other dialogs.",
                   "`[Fixed]` The number column in the process list no longer shows a word meaning \"none\" in Chinese, Vietnamese, Turkish and Russian."
                 ]
               },
@@ -2963,7 +2969,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[Updated]` SPC25K15 R9 connects RobotLab vision calibration to web virtual vision. The communication test keeps the connection when saving the same camera endpoint and sends the trigger even with an empty terminator.",
-                  "`[Updated]` InoRobotLab and InoRobotTP SPC25K15 R8 fixes error -255 when the web 3D simulator connects to a virtual controller through Bridge V2.1."
+                  "`[Updated]` InoRobotLab and InoRobotTP SPC25K15 R8 resolve error -255 when the web 3D simulator connects to a virtual controller through Bridge V2.1."
                 ]
               },
               {
@@ -3279,7 +3285,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Updated]` Updated six debugging tools. Each ZIP contains one Windows executable. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Updated]` Six debugging tools were updated. Extract the ZIP, then open the Windows executable. For Trace, keep the included IMC100API.dll next to the executable. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
                   "`[Improved]` The Debugging Tool and Zero Calibration pages include their styles and icons, so they open faster without external scripts. Zero Calibration inputs are announced with their axis and column names."
                 ]
               },
@@ -3589,10 +3595,10 @@
               {
                 "title": "Ver 2.2.0",
                 "items": [
-                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
-                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
-                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
-                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                  "`[Fixed]` Standardized row heights in the Excel label area at 18.",
+                  "`[Fixed]` Fixed some label names appearing in blue. All label text is now black.",
+                  "`[Fixed]` Fixed missing cell borders in the bit label area.",
+                  "`[Fixed]` Fixed inconsistent alignment between label names and descriptions. Both are now left-aligned and vertically centered."
                 ]
               },
               {
@@ -3776,38 +3782,38 @@
               {
                 "title": "Ver 1.3 (2026.11.03)",
                 "items": [
-                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
-                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
-                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                  "`[Added]` Added GLB export for included parts, preserving colors, placement, and coordinate systems. Merged parts are saved as a single mesh at the current preview quality.",
+                  "`[Added]` Added the option to merge selected parts into a single part and save it as STEP while preserving their positions, colors, and precise geometry.",
+                  "`[Improved]` Parts and groups can now be moved or renamed in the model tree, and the edited hierarchy is preserved when saving to STEP."
                 ]
               },
               {
                 "title": "Ver 1.2 (2026.10.30)",
                 "items": [
-                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
-                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
-                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
-                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
-                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
-                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
-                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
-                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
-                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                  "`[Added]` Added the ability to align origin axes parallel or perpendicular to model faces or straight edges and set their direction to X+/X−/Y+/Y−/Z+/Z−.",
+                  "`[Improved]` Apply the reference or opposite direction immediately while retaining alignment constraints on multiple axes. Locked alignments can also be inspected or released.",
+                  "`[Improved]` Applying a new origin and coordinate system makes the selected point the new (0, 0, 0). STEP export now reflects successive changes. Face snapping is supported, and a snapping limitation on some parts in large models was fixed.",
+                  "`[Added]` Added Ctrl+Z and Ctrl+Y to undo and redo showing or hiding parts, including or excluding all parts, and changing the origin and coordinate system. Press Delete to hide selected parts.",
+                  "`[Added]` Added box selection using the drag-selection button or Alt+left-drag. The drag direction determines whether to select only fully enclosed parts or also parts that intersect the box.",
+                  "`[Improved]` Hidden parts appear temporarily in the 3D view while selected and are hidden again when deselected. This temporary display does not change whether they are included in STEP export.",
+                  "`[Improved]` The parent group containing the selected part is indicated without expanding it automatically. Multiple selected items can now be hidden together.",
+                  "`[Fixed]` Fixed missing or altered original part and face colors when importing STEP or saving after excluding parts or changing the origin or axis directions. Parts without color information are shown in gray.",
+                  "`[Fixed]` Fixed unnecessary growth in STEP file size when saving unchanged files or after excluding parts or changing the origin or axis directions."
                 ]
               },
               {
                 "title": "Ver 1.1 (2026.10.23)",
                 "items": [
-                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
-                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                  "`[Added]` Added a Create Group feature to organize child items into groups.",
+                  "`[Fixed]` Fixed downloaded ZIP files being recognized as empty archives."
                 ]
               },
               {
                 "title": "Ver 1.0 (2026.07.25)",
                 "items": [
-                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
-                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
-                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
+                  "`[New]` Introduced a lightweight CAD tool that opens large STEP and STP files directly on the PC and lets you inspect individual parts.",
+                  "`[Added]` Added the option to save only selected parts as a STEP file.",
+                  "`[Added]` Added the ability to change the origin of the file."
                 ]
               }
             ]
@@ -3917,7 +3923,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[新增]` 通过选项旁的信息图标预览部件照片和接线图。IP67 机器人本体选项会提示更换为IP54 高防护控制器。",
+                  "`[新增]` 点击选项旁的信息图标，即可查看该选项的详细信息。",
+                  "`[新增]` 选择 IP67 机器人本体时，详情会提示配套使用的 IP54 高防护控制器。",
                   "`[变更]` 在型号详情页将配置加入列表后，只能从配置列表下载 Excel 文件。"
                 ]
               },
@@ -3926,7 +3933,9 @@
                 "items": [
                   "`[改进]` SCARA 卡片并列显示标准型和洁净型的 Z 轴行程及标准循环时间。选择版本可查看对应型号和详细规格，洁净型标注为 ISO Class 4。多关节机器人卡片新增重复定位精度，详细规格新增各腕轴的允许扭矩。",
                   "`[改进]` 配置详情中，机器人本体和基本电缆使用机器人数量，各选配件可单独设置数量。多关节机器人仅在选中时才添加 I/O 电缆。选择 PROFINET 或 CC-Link 时会自动勾选对应的扩展卡，两处的数量同步更新。",
-                  "`[改进]` 未选择类型时，付费硬件选件显示在机器人型号下方。可单独将选件加入配置列表并调整数量。各卡片内的选件按用途分组，其中扩展卡分为通信、输入/输出和安全扩展，并更新了 R7H 专用零点校准工具的订货代码。示教器延长电缆可在“示教器”和“其他附件”两张卡片中选购。点击硬件行即可选择该项。SCARA J3 防护罩适用于 S4、S7 和 S10 的标准型和洁净型。",
+                  "`[改进]` 无需选择机器人，也可以将付费硬件选件加入配置列表并调整数量。未选择机器人类型筛选条件时，选件显示在型号列表下方。点击对应行即可选择该选件。",
+                  "`[改进]` 选件按用途分组，扩展卡分为通信、输入/输出和安全三类。已补充 R7H 专用零点校准工具的订货代码，示教器延长电缆可从“示教器”或“其他附件”卡片中添加。",
+                  "`[改进]` SCARA J3 防护罩按 S4、S7、S10 的标准型和洁净型分别显示。",
                   "`[改进]` Excel 配置清单显示配置总数和机器人总数，并将相同订货代码的数量合并到一行。",
                   "`[改进]` 浅色面板上的按钮和选中项以蓝色突出显示。",
                   "`[新增]` 每个机器人型号均提供独立地址及可搜索的详情页，支持分享、刷新和浏览器历史记录，并保留原有配置流程。",
@@ -4120,7 +4129,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[支持]` 网页模拟器可通过 V2.2 桥接程序使用 Socket 或 EtherNet/IP 将虚拟视觉连接到控制器。 桥接程序 ZIP 包中仅包含一个可执行文件。",
-                  "`[改进]` 如果仿真器加载失败，会以所选语言显示提示并提供重试按钮。"
+                  "`[改进]` 如果 3D 仿真未能加载，页面会以所选语言显示提示。点击“重试”可重新打开仿真。"
                 ]
               },
               {
@@ -4720,7 +4729,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[改进]` 页面样式和图标已内置于网站，指南图片在打开指南时才加载，生成器无需外部脚本即可更快打开。项目选项窗口的说明区域和指南窗口的背景与其他浅色对话框保持一致。",
+                  "`[改进]` 指南图片改为在打开指南时加载，以减少首屏加载内容。项目选项说明和使用指南也统一采用与其他对话框一致的浅色样式。",
                   "`[修复]` 修复了中文、越南语、土耳其语和俄语中流程列表的序号列标题显示为“无”的问题。"
                 ]
               },
@@ -5174,7 +5183,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[更新]` 更新了六款调试工具。每个 ZIP 仅包含一个 Windows 可执行文件。 Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[更新]` 已更新六款调试工具。解压 ZIP 后运行 Windows 可执行文件。使用 Trace 时，请将随附的 IMC100API.dll 与可执行文件放在同一目录。 Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
                   "`[改进]` 调试工具和零点校准页面已内置样式和图标，无需外部脚本即可更快打开。零点校准输入框会以轴名和列名进行朗读。"
                 ]
               },
@@ -5484,10 +5493,10 @@
               {
                 "title": "Ver 2.2.0",
                 "items": [
-                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
-                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
-                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
-                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                  "`[修复]` 将 Excel 标签区域的行高统一为 18。",
+                  "`[修复]` 修复了部分标签名称显示为蓝色的问题，文字统一使用黑色。",
+                  "`[修复]` 修复了位标签区域的单元格边框丢失的问题。",
+                  "`[修复]` 修复了标签名称与说明对齐方式不一致的问题，统一为左对齐、垂直居中。"
                 ]
               },
               {
@@ -5671,38 +5680,38 @@
               {
                 "title": "Ver 1.3 (2026.11.03)",
                 "items": [
-                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
-                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
-                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                  "`[新增]` 可将纳入的零件导出为 GLB 文件，同时保留颜色、位置和坐标系。合并后的零件保存为单个网格，并采用当前预览质量。",
+                  "`[新增]` 可将选中的多个零件合并为一个零件并保存为 STEP，同时保留位置、颜色及精确几何形状。",
+                  "`[改进]` 可在模型树中移动零件或组并为其重命名，编辑后的树结构会在保存 STEP 时保留。"
                 ]
               },
               {
                 "title": "Ver 1.2 (2026.10.30)",
                 "items": [
-                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
-                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
-                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
-                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
-                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
-                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
-                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
-                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
-                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                  "`[新增]` 可使原点坐标轴与模型的面或直边平行或垂直，并指定 X+/X−/Y+/Y−/Z+/Z− 方向。",
+                  "`[改进]` 保留多根轴的对齐约束时，可立即应用参考方向或反方向，也可查看或解除已锁定的对齐。",
+                  "`[改进]` 应用原点和坐标系后，所选位置成为新的 (0, 0, 0)。连续多次应用的更改会反映在保存的 STEP 文件中。支持面吸附，并修复了大型模型中部分零件无法正常吸附的问题。",
+                  "`[新增]` 通过 Ctrl+Z 和 Ctrl+Y 可撤销或重做零件的显示与隐藏、全部纳入或排除以及原点与坐标系修改。按 Delete 可隐藏选中的零件。",
+                  "`[新增]` 可通过拖动选择按钮或按住 Alt 并用鼠标左键拖动进行框选。拖动方向决定是只选择完全位于框内的零件，还是也选择与选框相交的零件。",
+                  "`[改进]` 已隐藏的零件在选中时会暂时显示在 3D 视图中，取消选择后再次隐藏。临时显示不会改变该零件是否纳入 STEP 导出。",
+                  "`[改进]` 无需自动展开组，即可标示所选零件所属的上级组；选中多个项目后可一次性隐藏。",
+                  "`[修复]` 修复了导入 STEP 时，以及排除零件或修改原点、轴方向后保存时，原有的零件或面的颜色发生变化或丢失的问题。无颜色信息的零件显示为灰色。",
+                  "`[修复]` 修复了直接保存 STEP 时，以及排除零件或修改原点、轴方向后保存时，文件体积无谓增大的问题。"
                 ]
               },
               {
                 "title": "Ver 1.1 (2026.10.23)",
                 "items": [
-                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
-                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                  "`[新增]` 新增创建组功能，可将下级项目归组管理。",
+                  "`[修复]` 修复了下载的 ZIP 文件被识别为空压缩包的问题。"
                 ]
               },
               {
                 "title": "Ver 1.0 (2026.07.25)",
                 "items": [
-                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
-                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
-                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
+                  "`[新增]` 推出轻量级 CAD 工具，可在电脑上直接打开大型 STEP 或 STP 文件，并逐个查看零件。",
+                  "`[新增]` 支持仅将选中的零件保存为 STEP 文件。",
+                  "`[新增]` 支持修改文件的原点位置。"
                 ]
               }
             ]
@@ -5812,7 +5821,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Thêm]` Xem ảnh phụ kiện và sơ đồ đấu nối từ biểu tượng thông tin cạnh tùy chọn. Tùy chọn thân robot IP67 giải thích việc chuyển sang bộ điều khiển High-protection IP54.",
+                  "`[Thêm]` Bấm biểu tượng thông tin bên cạnh tùy chọn để xem chi tiết của tùy chọn đó.",
+                  "`[Thêm]` Khi chọn thân robot IP67, phần chi tiết sẽ cho biết bộ điều khiển IP54 loại bảo vệ cao đi kèm.",
                   "`[Thay đổi]` Thêm cấu hình từ trang chi tiết mẫu robot, sau đó chỉ tải tệp Excel từ danh sách cấu hình."
                 ]
               },
@@ -5821,7 +5831,9 @@
                 "items": [
                   "`[Cải tiến]` Thẻ SCARA hiển thị song song hành trình trục Z và thời gian chu kỳ tiêu chuẩn của phiên bản tiêu chuẩn và phòng sạch. Khi chọn phiên bản, thẻ mở đúng mã mẫu và thông số. Các mẫu phòng sạch được ghi là ISO Class 4. Thẻ robot khớp nối hiển thị độ lặp lại và phần thông số chi tiết có mô-men xoắn cho phép của từng trục cổ tay.",
                   "`[Cải tiến]` Thân robot và cáp tiêu chuẩn dùng số lượng robot đã nhập. Các tùy chọn có số lượng riêng. Cáp I/O của robot khớp nối chỉ được thêm khi được chọn. Khi chọn PROFINET hoặc CC-Link, card mở rộng tương ứng cũng được chọn và số lượng ở hai mục được đồng bộ.",
-                  "`[Cải tiến]` Khi chưa chọn loại, các tùy chọn phần cứng trả phí xuất hiện bên dưới danh sách mẫu robot. Có thể thêm riêng từng tùy chọn vào danh sách cấu hình và điều chỉnh số lượng. Các mục trong mỗi thẻ được nhóm theo chức năng. Card mở rộng được chia thành truyền thông, I/O và an toàn. Dụng cụ hiệu chuẩn điểm 0 cho R7H có mã đặt hàng riêng. Có thể thêm cáp nối dài tay dạy từ cả hai thẻ Tay dạy và Phụ kiện khác. Nhấn vào hàng để chọn phụ kiện. Vỏ bảo vệ J3 cho SCARA dùng được với cả bản tiêu chuẩn và bản phòng sạch của S4, S7 và S10.",
+                  "`[Cải tiến]` Bạn có thể thêm và chỉnh số lượng tùy chọn phần cứng trả phí trong danh sách cấu hình mà không cần chọn robot. Khi chưa lọc theo loại robot, các tùy chọn nằm dưới danh sách mẫu. Bấm vào dòng tương ứng để chọn.",
+                  "`[Cải tiến]` Các mục được nhóm theo công dụng. Card mở rộng được chia thành nhóm truyền thông, I/O và an toàn. Mã đặt hàng của dụng cụ hiệu chỉnh zero cho R7H đã được bổ sung. Có thể thêm cáp nối dài tay dạy từ mục Tay dạy hoặc Phụ kiện khác.",
+                  "`[Cải tiến]` Nắp bảo vệ J3 của SCARA được hiển thị theo phiên bản tiêu chuẩn hoặc phòng sạch tương ứng của S4, S7 và S10.",
                   "`[Cải tiến]` Bảng Excel hiển thị tổng số cấu hình và robot, đồng thời cộng số lượng đặt hàng có cùng mã vào một dòng.",
                   "`[Cải thiện]` Các nút và mục đang chọn được tô xanh dương trên nền sáng.",
                   "`[Thêm]` Mỗi mẫu robot có địa chỉ và trang chi tiết có thể tìm kiếm, hỗ trợ chia sẻ, tải lại và lịch sử trình duyệt với quy trình cấu hình hiện có.",
@@ -6015,7 +6027,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[Hỗ trợ]` Trình mô phỏng web có thể kết nối thị giác ảo với bộ điều khiển qua Socket hoặc EtherNet/IP bằng cầu nối V2.2. Tệp ZIP của cầu nối chỉ chứa một tệp thực thi.",
-                  "`[Cải tiến]` Nếu không tải được trình mô phỏng, trang sẽ hiển thị thông báo bằng ngôn ngữ đã chọn và cho phép thử lại."
+                  "`[Cải tiến]` Nếu không tải được mô phỏng 3D, trang sẽ hiện thông báo bằng ngôn ngữ đã chọn. Bấm Thử lại để mở lại."
                 ]
               },
               {
@@ -6615,7 +6627,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cải tiến]` Kiểu hiển thị và biểu tượng nay có sẵn trong trang, hình ảnh hướng dẫn chỉ tải khi mở hướng dẫn, nên trình tạo mở nhanh hơn mà không cần script bên ngoài. Vùng mô tả của cửa sổ Tùy chọn dự án và nền cửa sổ hướng dẫn đồng bộ với các hộp thoại sáng khác.",
+                  "`[Cải tiến]` Hình ảnh chỉ được tải khi mở hướng dẫn để giảm lượng dữ liệu tải ở màn hình đầu tiên. Phần mô tả tùy chọn dự án và hướng dẫn dùng giao diện sáng như các hộp thoại khác.",
                   "`[Sửa lỗi]` Cột số thứ tự của danh sách quy trình không còn hiển thị từ mang nghĩa “không” trong tiếng Trung, tiếng Việt, tiếng Thổ Nhĩ Kỳ và tiếng Nga."
                 ]
               },
@@ -7069,7 +7081,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Cập nhật]` Đã cập nhật sáu công cụ gỡ lỗi. Mỗi tệp ZIP chứa một tệp thực thi Windows. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Cập nhật]` Đã cập nhật sáu công cụ gỡ lỗi. Giải nén ZIP rồi mở tệp thực thi trên Windows. Với Trace, hãy giữ tệp IMC100API.dll đi kèm trong cùng thư mục với tệp thực thi. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
                   "`[Cải tiến]` Trang Công cụ gỡ lỗi và Hiệu chỉnh điểm 0 đã có sẵn kiểu hiển thị và biểu tượng nên mở nhanh hơn mà không cần script bên ngoài. Các ô nhập hiệu chỉnh điểm 0 được đọc kèm tên trục và tên cột."
                 ]
               },
@@ -7379,10 +7391,10 @@
               {
                 "title": "Ver 2.2.0",
                 "items": [
-                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
-                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
-                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
-                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                  "`[Sửa lỗi]` Đồng nhất chiều cao hàng trong vùng nhãn Excel ở mức 18.",
+                  "`[Sửa lỗi]` Sửa lỗi một số tên nhãn hiển thị màu xanh lam. Toàn bộ chữ trên nhãn nay có màu đen.",
+                  "`[Sửa lỗi]` Sửa lỗi mất đường viền ô trong vùng nhãn bit.",
+                  "`[Sửa lỗi]` Sửa lỗi tên nhãn và phần mô tả có cách căn lề khác nhau. Cả hai nay được căn trái và căn giữa theo chiều dọc."
                 ]
               },
               {
@@ -7566,38 +7578,38 @@
               {
                 "title": "Ver 1.3 (2026.11.03)",
                 "items": [
-                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
-                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
-                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                  "`[Thêm]` Cho phép xuất các chi tiết được đưa vào tệp GLB mà vẫn giữ màu sắc, vị trí và hệ tọa độ. Các chi tiết đã gộp được lưu thành một lưới duy nhất theo chất lượng xem trước hiện tại.",
+                  "`[Thêm]` Cho phép gộp các chi tiết đã chọn thành một chi tiết duy nhất và lưu dưới dạng STEP mà vẫn giữ vị trí, màu sắc và hình học chính xác.",
+                  "`[Cải tiến]` Có thể di chuyển hoặc đổi tên chi tiết và nhóm trong cây mô hình. Cấu trúc cây sau khi chỉnh sửa được giữ lại khi lưu STEP."
                 ]
               },
               {
                 "title": "Ver 1.2 (2026.10.30)",
                 "items": [
-                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
-                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
-                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
-                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
-                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
-                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
-                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
-                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
-                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                  "`[Thêm]` Cho phép căn các trục tọa độ tại gốc song song hoặc vuông góc với mặt hay cạnh thẳng của mô hình và đặt theo hướng X+/X−/Y+/Y−/Z+/Z−.",
+                  "`[Cải tiến]` Có thể áp dụng ngay hướng tham chiếu hoặc hướng ngược lại mà vẫn giữ các ràng buộc căn chỉnh của nhiều trục, đồng thời có thể kiểm tra hoặc mở khóa căn chỉnh đã khóa.",
+                  "`[Cải tiến]` Khi áp dụng gốc và hệ tọa độ mới, vị trí được chọn trở thành (0, 0, 0) mới. Tệp STEP lưu cả những thay đổi áp dụng liên tiếp. Hỗ trợ bắt dính vào mặt và khắc phục hạn chế bắt dính ở một số chi tiết trong mô hình lớn.",
+                  "`[Thêm]` Dùng Ctrl+Z và Ctrl+Y để hoàn tác và làm lại thao tác ẩn hoặc hiện chi tiết, đưa vào hoặc loại trừ toàn bộ chi tiết và thay đổi gốc hay hệ tọa độ. Nhấn Delete để ẩn các chi tiết đã chọn.",
+                  "`[Thêm]` Hỗ trợ chọn theo khung chữ nhật bằng nút chọn kéo hoặc bằng cách giữ Alt và kéo chuột trái. Hướng kéo quyết định chỉ chọn chi tiết nằm hoàn toàn trong khung hay chọn cả chi tiết giao với khung.",
+                  "`[Cải tiến]` Các chi tiết bị ẩn tạm thời hiện trong khung nhìn 3D khi được chọn và ẩn lại khi bỏ chọn. Việc hiển thị tạm thời không làm thay đổi trạng thái đưa vào khi xuất STEP.",
+                  "`[Cải tiến]` Hiển thị nhóm cấp trên chứa chi tiết đã chọn mà không tự động mở rộng nhóm. Có thể chọn rồi ẩn nhiều mục cùng lúc.",
+                  "`[Sửa lỗi]` Sửa lỗi màu gốc của chi tiết hoặc mặt bị thay đổi hay mất khi nhập STEP hoặc khi lưu sau khi loại trừ chi tiết, đổi gốc hay hướng trục. Chi tiết không có thông tin màu được hiển thị màu xám.",
+                  "`[Sửa lỗi]` Sửa lỗi tệp STEP tăng dung lượng không cần thiết khi lưu nguyên trạng hoặc khi lưu sau khi loại trừ chi tiết, đổi gốc hay hướng trục."
                 ]
               },
               {
                 "title": "Ver 1.1 (2026.10.23)",
                 "items": [
-                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
-                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                  "`[Thêm]` Thêm chức năng Tạo nhóm để gom và quản lý các mục con.",
+                  "`[Sửa lỗi]` Sửa lỗi tệp ZIP tải xuống bị nhận dạng là tệp nén rỗng."
                 ]
               },
               {
                 "title": "Ver 1.0 (2026.07.25)",
                 "items": [
-                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
-                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
-                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
+                  "`[Mới]` Ra mắt công cụ CAD gọn nhẹ cho phép mở tệp STEP hoặc STP dung lượng lớn trực tiếp trên máy tính và kiểm tra từng chi tiết.",
+                  "`[Thêm]` Cho phép chỉ lưu các chi tiết đã chọn vào tệp STEP.",
+                  "`[Thêm]` Cho phép thay đổi vị trí gốc tọa độ của tệp."
                 ]
               }
             ]
@@ -7707,7 +7719,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Eklendi]` Seçeneklerin yanındaki bilgi simgelerinden parça fotoğraflarını ve bağlantı şemalarını önizleyin. IP67 robot gövdesi seçeneği IP54 High-protection kontrolöre geçişi açıklar.",
+                  "`[Eklendi]` Bir seçeneğin ayrıntılarını görmek için yanındaki bilgi simgesine tıklayın.",
+                  "`[Eklendi]` IP67 robot gövdesini seçtiğinizde kullanılacak yüksek korumalı IP54 denetleyici ayrıntılarda belirtilir.",
                   "`[Değiştirildi]` Model ayrıntılarından yapılandırmaları listeye ekleyin. Excel dosyası yalnızca yapılandırma listesinden indirilebilir."
                 ]
               },
@@ -7716,7 +7729,9 @@
                 "items": [
                   "`[İyileştirildi]` SCARA kartlarında standart ve temiz oda tiplerinin Z ekseni strokları ve standart çevrim süreleri yan yana gösterilir. Seçilen tipin model numarası ve teknik özellikleri açılır. Temiz oda modelleri ISO Class 4 olarak belirtilir. Mafsallı robot kartlarına tekrarlanabilirlik, ayrıntılara ise bilek eksenlerinin izin verilen torkları eklendi.",
                   "`[İyileştirildi]` Robot gövdesi ve standart kablo için robot adedi kullanılır. İsteğe bağlı bileşenlerin adetleri ayrı girilir. Mafsallı robotların G/Ç kabloları yalnızca seçildiğinde eklenir. PROFINET veya CC-Link seçildiğinde ilgili genişletme kartı da seçilir ve iki bölümdeki adet birlikte güncellenir.",
-                  "`[İyileştirildi]` Tür seçilmediğinde ücretli donanım seçenekleri robot modellerinin altında görünür. Bu seçenekler robot seçmeden yapılandırma listesine eklenebilir ve miktarları değiştirilebilir. Her karttaki ürünler işlevlerine göre gruplandı. Genişletme kartları iletişim, giriş/çıkış ve güvenlik olarak ayrıldı. R7H sıfır noktası kalibrasyon aparatı için sipariş kodu güncellendi. Programlama kumandası uzatma kabloları hem Programlama kumandası hem de Diğer Aksesuarlar kartından eklenebilir. Donanım satırına tıklayarak seçim yapabilirsiniz. SCARA J3 kapakları S4, S7 ve S10 modellerinin standart ve temiz oda sürümleri için sunulur.",
+                  "`[İyileştirildi]` Robot seçmeden ücretli donanım seçeneklerini yapılandırma listesine ekleyebilir ve miktarlarını değiştirebilirsiniz. Robot türü filtresi seçilmediğinde seçenekler model listesinin altında görünür. Seçmek için ilgili satıra tıklayın.",
+                  "`[İyileştirildi]` Ürünler kullanım amacına göre gruplandı. Genişletme kartları iletişim, G/Ç ve güvenlik olarak ayrıldı. R7H sıfır kalibrasyon aracının sipariş kodu eklendi. Programlama kumandası uzatma kablosu hem kumanda hem de Diğer Aksesuarlar kartından eklenebilir.",
+                  "`[İyileştirildi]` SCARA J3 koruyucu kapakları, S4, S7 ve S10’un uygun standart veya temiz oda sürümüne göre gösterilir.",
                   "`[İyileştirildi]` Excel listesinde toplam yapılandırma ve robot sayısı gösterilir. Aynı sipariş koduna ait miktarlar tek satırda toplanır.",
                   "`[İyileştirildi]` Açık renkli panellerde düğmeler ve seçili öğeler maviyle vurgulanıyor.",
                   "`[Eklendi]` Her robot modeli için aranabilir ayrıntı sayfası ve paylaşma, yenileme ve tarayıcı geçmişini destekleyen benzersiz adres eklendi; mevcut yapılandırma akışı korundu.",
@@ -7910,7 +7925,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[Destek]` Web simülatöründe sanal görüntü işleme, V2.2 köprüsü üzerinden Socket veya EtherNet/IP ile kontrolöre bağlanabilir. Köprü ZIP arşivi tek bir yürütülebilir dosya içerir.",
-                  "`[İyileştirildi]` Simülatör yüklenemezse seçilen dilde bir bildirim gösterilir ve yeniden denenebilir."
+                  "`[İyileştirildi]` 3D simülasyonu yüklenemezse seçtiğiniz dilde bir bildirim gösterilir. Yeniden açmak için Tekrar dene düğmesine tıklayın."
                 ]
               },
               {
@@ -8510,7 +8525,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[İyileştirildi]` Stiller ve simgeler artık sitenin parçası, kılavuz görselleri yalnızca kılavuz açıldığında yüklenir; oluşturucu harici betik olmadan daha hızlı açılır. Proje Seçenekleri açıklama alanı ve kılavuz arka planı diğer açık renkli pencerelerle aynıdır.",
+                  "`[İyileştirildi]` İlk ekranın yükünü azaltmak için kılavuz görselleri yalnızca kılavuz açıldığında yüklenir. Proje seçeneklerinin açıklamaları ve kılavuz, diğer pencerelerle aynı açık renkli tasarımı kullanır.",
                   "`[Düzeltildi]` Süreç listesindeki numara sütunu Çince, Vietnamca, Türkçe ve Rusçada artık \"yok\" anlamına gelen bir kelime göstermiyor."
                 ]
               },
@@ -8964,7 +8979,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Güncellendi]` Altı hata ayıklama aracı güncellendi. Her ZIP bir Windows yürütülebilir dosyası içeriyor. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Güncellendi]` Altı hata ayıklama aracı güncellendi. ZIP arşivini açıp Windows yürütülebilir dosyasını çalıştırın. Trace için arşivdeki IMC100API.dll dosyasını yürütülebilir dosyayla aynı klasörde tutun. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
                   "`[İyileştirildi]` Hata Ayıklama Aracı ve Sıfır Kalibrasyonu sayfaları stillerini ve simgelerini içerir; harici betik olmadan daha hızlı açılır. Sıfır kalibrasyonu giriş alanları eksen ve sütun adlarıyla okunur."
                 ]
               },
@@ -9274,10 +9289,10 @@
               {
                 "title": "Ver 2.2.0",
                 "items": [
-                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
-                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
-                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
-                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                  "`[Düzeltildi]` Excel'deki etiket alanında satır yüksekliği 18 olarak standartlaştırıldı.",
+                  "`[Düzeltildi]` Bazı etiket adlarının mavi görünmesine neden olan sorun giderildi. Metin rengi siyah olarak standartlaştırıldı.",
+                  "`[Düzeltildi]` Bit etiket alanındaki hücre kenarlıklarının kaybolmasına neden olan sorun giderildi.",
+                  "`[Düzeltildi]` Etiket adları ve açıklamalar arasındaki hizalama tutarsızlığı giderildi. Her ikisi de artık sola hizalı ve dikey olarak ortalanmış durumda."
                 ]
               },
               {
@@ -9461,38 +9476,38 @@
               {
                 "title": "Ver 1.3 (2026.11.03)",
                 "items": [
-                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
-                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
-                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                  "`[Eklendi]` Dahil edilen parçalar renkleri, yerleşimleri ve koordinat sistemleri korunarak GLB olarak dışa aktarılabiliyor. Birleştirilen parçalar, geçerli önizleme kalitesinde tek bir ağ (mesh) olarak kaydediliyor.",
+                  "`[Eklendi]` Seçilen parçalar, konumları, renkleri ve hassas geometrileri korunarak tek bir parçada birleştirilebiliyor ve STEP olarak kaydedilebiliyor.",
+                  "`[İyileştirildi]` Model ağacında parçalar ve gruplar taşınabiliyor ya da yeniden adlandırılabiliyor. Düzenlenen ağaç yapısı STEP dosyasına kaydediliyor."
                 ]
               },
               {
                 "title": "Ver 1.2 (2026.10.30)",
                 "items": [
-                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
-                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
-                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
-                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
-                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
-                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
-                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
-                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
-                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                  "`[Eklendi]` Orijindeki koordinat eksenleri model yüzeylerine veya düz kenarlara paralel ya da dik hizalanabiliyor ve X+/X−/Y+/Y−/Z+/Z− yönü atanabiliyor.",
+                  "`[İyileştirildi]` Birden çok eksenin hizalama kısıtları korunurken referans yönü veya zıt yön anında uygulanabiliyor. Kilitli hizalamalar görüntülenebiliyor veya kilitleri kaldırılabiliyor.",
+                  "`[İyileştirildi]` Orijin ve koordinat sistemi uygulandığında seçilen konum yeni (0, 0, 0) noktası oluyor. Art arda uygulanan değişiklikler de STEP dosyasına yansıtılıyor. Yüzeye yakalama desteği eklendi ve büyük modellerde bazı parçalarda yakalamayı sınırlayan sorun giderildi.",
+                  "`[Eklendi]` Ctrl+Z ve Ctrl+Y ile parçaları gizleme veya gösterme, tümünü dahil etme veya hariç tutma ve orijin ya da koordinat sistemi değişiklikleri geri alınabiliyor ve yinelenebiliyor. Delete tuşu seçilen parçaları gizliyor.",
+                  "`[Eklendi]` Sürükleyerek seçim düğmesiyle veya Alt tuşunu basılı tutup sol fare düğmesiyle sürükleyerek dikdörtgen seçim yapılabiliyor. Sürükleme yönüne göre yalnızca tamamen içeride kalan parçalar ya da seçim alanına kısmen girenler de seçiliyor.",
+                  "`[İyileştirildi]` Gizli parçalar seçili oldukları sürece 3B görünümde geçici olarak gösteriliyor ve seçim kaldırıldığında yeniden gizleniyor. Geçici gösterim, parçaların STEP dışa aktarımına dahil edilme durumunu değiştirmiyor.",
+                  "`[İyileştirildi]` Seçilen parçanın ait olduğu üst grup otomatik olarak genişletilmeden gösteriliyor. Birden çok seçili öğe tek işlemle gizlenebiliyor.",
+                  "`[Düzeltildi]` STEP içe aktarılırken veya parçalar hariç tutulduktan, orijin ya da eksen yönleri değiştirildikten sonra kaydedilirken özgün parça ve yüzey renklerinin değişmesine ya da kaybolmasına neden olan sorun giderildi. Renk bilgisi olmayan parçalar gri gösteriliyor.",
+                  "`[Düzeltildi]` STEP dosyası değişiklik yapılmadan veya parçalar hariç tutulduktan, orijin ya da eksen yönleri değiştirildikten sonra kaydedildiğinde dosya boyutunun gereksiz yere artmasına neden olan sorun giderildi."
                 ]
               },
               {
                 "title": "Ver 1.1 (2026.10.23)",
                 "items": [
-                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
-                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                  "`[Eklendi]` Alt öğeleri aynı grupta toplayıp yönetmek için grup oluşturma özelliği eklendi.",
+                  "`[Düzeltildi]` İndirilen ZIP dosyasının boş bir arşiv olarak algılanmasına neden olan sorun giderildi."
                 ]
               },
               {
                 "title": "Ver 1.0 (2026.07.25)",
                 "items": [
-                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
-                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
-                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
+                  "`[Yeni]` Büyük STEP ve STP dosyalarını doğrudan bilgisayarda açıp parçaları tek tek incelemeyi sağlayan hafif bir CAD aracı eklendi.",
+                  "`[Eklendi]` Yalnızca seçilen parçaları STEP dosyasına kaydetme desteği eklendi.",
+                  "`[Eklendi]` Dosyanın koordinat orijininin konumu değiştirilebiliyor."
                 ]
               }
             ]
@@ -9602,7 +9617,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Добавлено]` По значку информации рядом с опцией можно посмотреть фотографии деталей и схемы подключения. Для корпуса IP67 показано пояснение о переходе на контроллер High-protection IP54.",
+                  "`[Добавлено]` Чтобы посмотреть подробности об опции, нажмите значок информации рядом с ней.",
+                  "`[Добавлено]` При выборе корпуса робота IP67 в описании указан соответствующий контроллер IP54 повышенной защиты.",
                   "`[Изменено]` Добавьте конфигурации на странице модели, затем скачайте файл Excel из списка конфигураций."
                 ]
               },
@@ -9611,7 +9627,9 @@
                 "items": [
                   "`[Улучшено]` Карточки SCARA позволяют сравнить ход оси Z и стандартное время цикла обычного исполнения и исполнения для чистых помещений. При выборе исполнения открываются его номер модели и характеристики. Для моделей для чистых помещений указан класс ISO 4. В карточках шарнирных роботов указана повторяемость, а в характеристиках — допустимый крутящий момент по осям запястья.",
                   "`[Улучшено]` Количество роботов применяется к корпусу и штатному кабелю. Количество дополнительных компонентов задаётся отдельно. Кабели ввода-вывода для шарнирных роботов добавляются только при выборе. При выборе PROFINET или CC-Link соответствующая плата расширения отмечается автоматически. Количество синхронизируется в обоих разделах.",
-                  "`[Улучшено]` Если тип не выбран, платные аппаратные опции отображаются под моделями роботов. Их можно добавлять в список отдельно от робота и изменять количество. В каждой карточке позиции сгруппированы по назначению. Для плат расширения выделены группы связи, ввода-вывода и безопасности. Уточнён код заказа приспособления для калибровки нуля R7H. Удлинительные кабели пульта обучения можно добавить из карточек «Пульт обучения» и «Другие аксессуары». Нажмите на строку, чтобы выбрать позицию. Кожухи SCARA J3 доступны для стандартных исполнений S4, S7 и S10 и версий для чистых помещений.",
+                  "`[Улучшено]` Платные аппаратные опции можно добавить в список конфигураций и изменить их количество, не выбирая робота. Если фильтр по типу робота не задан, опции отображаются под списком моделей. Чтобы выбрать позицию, нажмите на её строку.",
+                  "`[Улучшено]` Позиции сгруппированы по назначению. Платы расширения разделены на группы связи, ввода-вывода и безопасности. Добавлен код заказа приспособления для калибровки нуля R7H. Удлинитель кабеля пульта обучения можно добавить из карточки пульта или из раздела «Другие аксессуары».",
+                  "`[Улучшено]` Кожухи J3 для SCARA показаны для соответствующих стандартных версий и версий для чистых помещений моделей S4, S7 и S10.",
                   "`[Улучшено]` В Excel указано общее число конфигураций и роботов. Количества позиций с одинаковым кодом заказа суммируются в одной строке.",
                   "`[Улучшено]` На светлых панелях кнопки и выбранные элементы выделены синим цветом.",
                   "`[Добавлено]` Для каждой модели добавлены отдельный адрес и доступная для поиска страница характеристик с поддержкой ссылок, перезагрузки и истории браузера при сохранении настройки.",
@@ -9805,7 +9823,7 @@
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[Поддержка]` В веб-симуляторе виртуальное зрение можно подключить к контроллеру через мост V2.2 по Socket или EtherNet/IP. ZIP-архив моста содержит один исполняемый файл.",
-                  "`[Улучшено]` Если симулятор не загрузится, появится сообщение на выбранном языке и кнопка повторной попытки."
+                  "`[Улучшено]` Если 3D-симуляция не загрузится, появится сообщение на выбранном языке. Чтобы открыть её снова, нажмите «Повторить»."
                 ]
               },
               {
@@ -10405,7 +10423,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Улучшено]` Стили и значки теперь входят в состав сайта, а изображения руководства загружаются только при его открытии, поэтому генератор открывается быстрее без внешних скриптов. Область описания в окне «Параметры проекта» и фон окна руководства оформлены так же, как другие светлые окна.",
+                  "`[Улучшено]` Изображения загружаются только при открытии руководства, поэтому на первом экране загружается меньше данных. Описание параметров проекта и руководство оформлены в том же светлом стиле, что и другие окна.",
                   "`[Исправлено]` Столбец номеров в списке процессов больше не подписан словом со значением «нет» на китайском, вьетнамском, турецком и русском языках."
                 ]
               },
@@ -10859,7 +10877,7 @@
               {
                 "title": "Ver 26.11.21",
                 "items": [
-                  "`[Обновлено]` Обновлено шесть инструментов отладки. Каждый ZIP содержит один исполняемый файл Windows. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
+                  "`[Обновлено]` Обновлены шесть инструментов отладки. Распакуйте ZIP и запустите исполняемый файл Windows. Для Trace оставьте входящий в архив файл IMC100API.dll в той же папке, что и исполняемый файл. Communication Tester V5.0 · Label Generator V2.0 · Trace V2.0 · Log Analyzer V2.0 · Project Compare V3.0 · CAD Lightweight V2.0",
                   "`[Улучшено]` Страницы инструмента отладки и калибровки нуля содержат собственные стили и значки и открываются быстрее без внешних скриптов. Поля ввода калибровки нуля озвучиваются с названием оси и столбца."
                 ]
               },
@@ -11169,10 +11187,10 @@
               {
                 "title": "Ver 2.2.0",
                 "items": [
-                  "`[수정]` Excel 라벨 영역의 행 높이를 18로 통일했습니다.",
-                  "`[수정]` 일부 라벨명이 파란색으로 표시되던 문제를 해결하고 글자색을 검은색으로 통일했습니다.",
-                  "`[수정]` 비트 라벨 영역의 셀 테두리가 사라지던 문제를 해결했습니다.",
-                  "`[수정]` 라벨명과 설명의 정렬이 서로 다르게 표시되던 문제를 해결하고, 왼쪽 정렬과 세로 가운데 정렬로 통일했습니다."
+                  "`[Исправлено]` Высота строк в области этикеток Excel унифицирована и теперь составляет 18.",
+                  "`[Исправлено]` Исправлено отображение некоторых названий этикеток синим цветом. Теперь весь текст этикеток отображается чёрным.",
+                  "`[Исправлено]` Восстановлены пропадавшие границы ячеек в области битовых этикеток.",
+                  "`[Исправлено]` Исправлено различие в выравнивании названий и описаний этикеток. Теперь и названия, и описания выравниваются по левому краю и по центру по вертикали."
                 ]
               },
               {
@@ -11356,38 +11374,38 @@
               {
                 "title": "Ver 1.3 (2026.11.03)",
                 "items": [
-                  "`[추가]` 포함한 부품을 색상·배치·좌표계를 유지한 GLB 파일로 내보낼 수 있도록 했습니다. 합친 부품은 하나의 메시로 저장하며, 현재 미리보기 품질을 적용합니다.",
-                  "`[추가]` 선택한 여러 부품을 위치·색상·정밀 형상을 유지한 하나의 부품으로 합치고 STEP으로 저장할 수 있도록 했습니다.",
-                  "`[개선]` 모델 트리에서 부품·그룹을 이동하거나 이름을 바꾸고, 편집한 트리 구조를 STEP 저장에 반영할 수 있도록 했습니다."
+                  "`[Добавлено]` Добавлен экспорт включённых деталей в GLB с сохранением цветов, расположения и систем координат. Объединённые детали сохраняются в виде одной полигональной сетки с текущим качеством предпросмотра.",
+                  "`[Добавлено]` Выбранные детали можно объединить в одну и сохранить в STEP с сохранением их положения, цветов и точной геометрии.",
+                  "`[Улучшено]` Детали и группы можно перемещать и переименовывать в дереве модели. Изменённая структура дерева сохраняется в STEP."
                 ]
               },
               {
                 "title": "Ver 1.2 (2026.10.30)",
                 "items": [
-                  "`[추가]` 영점 좌표축을 모델의 면·직선 모서리에 평행 또는 수직으로 맞추고, X+/X−/Y+/Y−/Z+/Z− 방향을 지정할 수 있도록 했습니다.",
-                  "`[개선]` 여러 축의 맞춤 조건을 유지하면서 기준 방향·반대 방향을 즉시 적용하고, 고정된 맞춤을 확인하거나 해제할 수 있도록 했습니다.",
-                  "`[개선]` 영점·좌표계를 적용하면 선택한 위치가 새 0,0,0이 되며, 여러 번 적용한 변경도 STEP 저장에 반영되도록 했습니다. 면 스냅을 지원하고 대용량 모델의 일부 부품에서 스냅이 제한되던 문제를 해결했습니다.",
-                  "`[추가]` Ctrl+Z·Ctrl+Y로 부품 숨김·표시, 전체 포함·제외, 영점·좌표계 변경을 되돌리거나 다시 실행하고, Delete 키로 선택한 부품을 숨길 수 있도록 했습니다.",
-                  "`[추가]` 드래그 선택 버튼과 Alt+왼쪽 드래그로 사각형 선택을 지원합니다. 드래그 방향에 따라 완전히 포함된 부품 또는 일부가 걸친 부품을 선택할 수 있습니다.",
-                  "`[개선]` 숨긴 부품을 선택한 동안에는 3D 화면에 임시로 표시하고, 선택을 해제하면 다시 숨기도록 했습니다. 임시 표시는 STEP 내보내기 포함 상태를 바꾸지 않습니다.",
-                  "`[개선]` 그룹을 자동으로 펼치지 않고 선택 부품이 포함된 상위 그룹을 표시하며, 여러 항목을 선택한 뒤 한 번에 숨길 수 있도록 했습니다.",
-                  "`[수정]` STEP 가져오기와 부품 제외·원점·축 방향 변경 후 저장할 때 원본 부품·면 색상이 바뀌거나 누락되던 문제를 해결했습니다. 색상 정보가 없는 부품은 회색으로 표시합니다.",
-                  "`[수정]` STEP을 그대로 저장하거나 부품 제외·원점·축 방향 변경 후 저장할 때 파일 크기가 불필요하게 증가하던 문제를 해결했습니다."
+                  "`[Добавлено]` Оси системы координат можно выравнивать параллельно или перпендикулярно граням и прямым рёбрам модели и задавать направление X+/X−/Y+/Y−/Z+/Z−.",
+                  "`[Улучшено]` Опорное или противоположное направление применяется сразу с сохранением ограничений выравнивания для нескольких осей. Зафиксированные выравнивания можно просматривать и разблокировать.",
+                  "`[Улучшено]` При применении нового начала и системы координат выбранная точка становится новым (0, 0, 0). При сохранении STEP учитываются все последовательно применённые изменения. Добавлена привязка к граням и устранено ограничение привязки для некоторых деталей в больших моделях.",
+                  "`[Добавлено]` Сочетания Ctrl+Z и Ctrl+Y позволяют отменять и повторять скрытие и показ деталей, включение и исключение всех деталей, а также изменение начала и системы координат. Клавиша Delete скрывает выбранные детали.",
+                  "`[Добавлено]` Добавлено выделение прямоугольной рамкой с помощью кнопки выбора перетаскиванием или перетаскивания левой кнопкой мыши с зажатой Alt. Направление перетаскивания определяет, выбираются ли только детали, полностью попавшие в рамку, или также детали, пересекающие её.",
+                  "`[Улучшено]` Скрытые детали временно отображаются в 3D-виде, пока они выбраны, и снова скрываются при снятии выделения. Временное отображение не влияет на включение деталей в экспорт STEP.",
+                  "`[Улучшено]` Родительская группа выбранной детали отмечается без автоматического разворачивания. Несколько выбранных элементов можно скрыть за одно действие.",
+                  "`[Исправлено]` Исправлена потеря или замена исходных цветов деталей и граней при импорте STEP и при сохранении после исключения деталей или изменения начала координат либо направлений осей. Детали без информации о цвете отображаются серым.",
+                  "`[Исправлено]` Устранено необоснованное увеличение размера файла при сохранении STEP без изменений и после исключения деталей или изменения начала координат либо направлений осей."
                 ]
               },
               {
                 "title": "Ver 1.1 (2026.10.23)",
                 "items": [
-                  "`[추가]` 하위 항목들을 그룹으로 묶어 관리할 수 있도록 그룹 만들기 기능을 추가했습니다.",
-                  "`[수정]` 다운로드한 ZIP 파일을 빈 압축파일로 인식하던 문제를 해결했습니다."
+                  "`[Добавлено]` Добавлена функция создания групп для организации вложенных элементов.",
+                  "`[Исправлено]` Исправлена ошибка, из-за которой скачанный ZIP распознавался как пустой архив."
                 ]
               },
               {
                 "title": "Ver 1.0 (2026.07.25)",
                 "items": [
-                  "`[신규]` 대용량 STEP/STP 파일을 PC에서 직접 불러와 부품별로 확인할 수 있는 경량 CAD 도구를 추가했습니다.",
-                  "`[추가]` 선택한 부품만 STEP 파일로 저장할 수 있도록 지원합니다.",
-                  "`[추가]` 파일의 영점 위치를 수정할 수 있습니다."
+                  "`[Новое]` Добавлен лёгкий CAD-инструмент для открытия больших файлов STEP и STP прямо на ПК и просмотра отдельных деталей.",
+                  "`[Добавлено]` Добавлено сохранение только выбранных деталей в файл STEP.",
+                  "`[Добавлено]` Добавлена возможность менять положение начала координат файла."
                 ]
               }
             ]
