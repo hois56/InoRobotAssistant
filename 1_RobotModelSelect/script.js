@@ -97,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal elements
     const modalOverlay = document.getElementById('options-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
-    const downloadComponentsBtn = document.getElementById('download-components-btn');
     const addToCartBtn = document.getElementById('add-to-cart-btn');
     const modalBody = document.getElementById('modal-body');
     const cartToggleBtn = document.getElementById('cart-toggle-btn');
@@ -376,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadCartItems() {
+        if (isManualEmbed) return [];
         try {
             const raw = localStorage.getItem(cartStorageKey);
             const parsed = raw ? JSON.parse(raw) : [];
@@ -389,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let cartItems = loadCartItems();
 
     function persistCartItems() {
+        // The embedded guide demonstrates the cart without modifying the user's saved configurations.
+        if (isManualEmbed) return;
         try {
             localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
         } catch (error) {
@@ -1759,7 +1761,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialCatalogUrl = new URL(window.location.href);
     if (initialCatalogUrl.pathname.startsWith(modelPages.routePrefix)) initialCatalogUrl.pathname = modelPages.catalogPath;
     initialCatalogUrl.searchParams.delete('model');
-    const catalogNavigationUrl = initialCatalogUrl.pathname + initialCatalogUrl.search + initialCatalogUrl.hash;
+    function catalogNavigationUrl() {
+        const target = new URL(initialCatalogUrl);
+        const locale = new URLSearchParams(window.location.search).get('lang');
+        if (locale) target.searchParams.set('lang', locale);
+        return target.pathname + target.search + target.hash;
+    }
 
     function updateModelPageMetadata(product) {
         const i18n = window.InoRobotI18n;
@@ -1801,12 +1808,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = new URL(window.location.href);
         target.pathname = modelPages.modelPath(product.id);
         target.searchParams.delete('model');
-        target.hash = '';
-        if (target.pathname + target.search === window.location.pathname + window.location.search) return;
+        // Opening a new model drops the previous page's fragment, but a shared
+        // model permalink's existing fragment survives initial load and language changes.
+        if (!replace) target.hash = '';
+        const targetUrl = target.pathname + target.search + target.hash;
+        if (targetUrl === window.location.pathname + window.location.search + window.location.hash) return;
         const previous = history.state && typeof history.state === 'object' ? history.state : {};
         const nextState = {...previous};
-        if (!replace) nextState.inorobotModelModal = {listUrl: catalogNavigationUrl};
-        history[replace ? 'replaceState' : 'pushState'](nextState, '', target.pathname + target.search);
+        if (!replace) nextState.inorobotModelModal = {listUrl: catalogNavigationUrl()};
+        history[replace ? 'replaceState' : 'pushState'](nextState, '', targetUrl);
     }
 
     function restoreModelFromLocation() {
@@ -2493,7 +2503,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             const previous = history.state && typeof history.state === 'object' ? {...history.state} : {};
             delete previous.inorobotModelModal;
-            history.replaceState(previous, '', catalogNavigationUrl);
+            history.replaceState(previous, '', catalogNavigationUrl());
         }
     }
 
@@ -2754,11 +2764,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
-    downloadComponentsBtn.addEventListener('click', () => {
-        const items = cartItems.length > 0 ? cartItems : [collectCurrentCartItem()].filter(Boolean);
-        downloadConfigurationWorkbook(items, downloadComponentsBtn);
-    });
 
     cartDownloadBtn?.addEventListener('click', () => downloadConfigurationWorkbook(cartItems, cartDownloadBtn));
     document.getElementById('download-cad-btn').addEventListener('click', async () => {
@@ -3285,16 +3290,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return modalOverlay.style.display === 'flex';
         }
 
-        function highlightManualDownloads(targetName = 'both') {
-            const cadButton = document.getElementById('download-cad-btn');
-            const componentsButton = document.getElementById('download-components-btn');
-            const targets = targetName === 'cad'
-                ? [cadButton]
-                : targetName === 'pdf'
-                    ? [componentsButton]
-                    : [cadButton, componentsButton];
-            const pointTarget = targetName === 'cad' ? cadButton : componentsButton;
-            return highlightManualTargets(targets, pointTarget, { ring: false, hover: true, scroll: false });
+        function highlightManualCadDownload() {
+            const button = document.getElementById('download-cad-btn');
+            return highlightManualTargets(button ? [button] : [], button, { ring: false, hover: true, scroll: false });
         }
 
         function configureManualOptions(shouldHighlight = false) {
@@ -3320,7 +3318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             openManualProduct();
             if (scene === 'downloads') {
                 configureManualOptions(false);
-                return highlightManualDownloads('both');
+                return highlightManualCadDownload();
             }
             return true;
         }
@@ -3367,10 +3365,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function showManualPreview(progress = 0) {
             closeManualPreview();
-            const item = collectCurrentCartItem();
-            if (!item) return false;
-            const report = createConfigurationReport([item]);
-            const filename = getConfigurationWorkbookFilename([item]);
+            if (!cartItems.length) return false;
+            const report = createConfigurationReport(cartItems);
+            const filename = getConfigurationWorkbookFilename(cartItems);
             const viewer = document.createElement('section');
             viewer.className = 'model-manual-document-viewer';
             viewer.innerHTML = `
@@ -3399,17 +3396,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
 
-        function resetManualDownloadButtons() {
+        function resetManualCadButton() {
             const cadButton = document.getElementById('download-cad-btn');
-            const componentsButton = document.getElementById('download-components-btn');
             if (cadButton && currentActiveProduct) {
                 const hasCad = Boolean(getCad3dPath(currentActiveProduct));
                 cadButton.textContent = uiText(hasCad ? 'CAD 다운로드' : 'CAD 파일 없음');
                 cadButton.disabled = !hasCad;
-            }
-            if (componentsButton) {
-                componentsButton.textContent = uiText('구성 요소 엑셀 다운로드');
-                componentsButton.disabled = false;
             }
         }
 
@@ -3459,7 +3451,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectManualOption(name, value, false);
             });
             manualConfiguredOptionCount = optionCount;
-            resetManualDownloadButtons();
+            resetManualCadButton();
             modalBody.scrollTop = Math.min(previousScrollTop, Math.max(0, modalBody.scrollHeight - modalBody.clientHeight));
         }
 
@@ -3485,8 +3477,8 @@ document.addEventListener('DOMContentLoaded', () => {
             manualConfiguredOptionCount = Math.max(manualConfiguredOptionCount, index + 1);
         }
 
-        function pointAtManualDownload(kind, options = {}) {
-            const button = document.getElementById(kind === 'cad' ? 'download-cad-btn' : 'download-components-btn');
+        function pointAtManualCadDownload(options = {}) {
+            const button = document.getElementById('download-cad-btn');
             return highlightManualTargets(button ? [button] : [], button, {
                 ring: false,
                 hover: true,
@@ -3494,7 +3486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 onActivate: options.onActivate,
                 scroll: false,
                 updateFocus: !options.keepFocus,
-                cursorX: kind === 'cad' ? 0.68 : 0.72
+                cursorX: 0.68
             });
         }
 
@@ -3584,7 +3576,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (cue === 'cad_focus' || cue === 'cad_press' || cue === 'cad_done') {
                 prepareManualConfiguredModal(4);
                 const button = document.getElementById('download-cad-btn');
-                pointAtManualDownload('cad', {
+                pointAtManualCadDownload({
                     pressed: cue === 'cad_press',
                     onActivate: cue === 'cad_press' && button
                         ? () => { button.textContent = uiText('준비 중...'); }
@@ -3595,22 +3587,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showManualToast(`Inovance_CAD_${demoProductId}.zip`);
                     manualFocusPoint = { x: window.innerWidth - 180, y: window.innerHeight - 78 };
                 }
-            } else if (cue === 'pdf_focus' || cue === 'pdf_press' || cue === 'pdf_done') {
-                prepareManualConfiguredModal(4);
-                const button = document.getElementById('download-components-btn');
-                pointAtManualDownload('pdf', {
-                    pressed: cue === 'pdf_press',
-                    onActivate: cue === 'pdf_press' && button
-                        ? () => { button.textContent = uiText('구성서 생성 중...'); }
-                        : null,
-                    keepFocus: cue === 'pdf_done'
-                });
-                if (cue === 'pdf_done') {
-                    showManualToast(`Inovance_Config_${demoProductId}.xlsx`);
-                    manualFocusPoint = { x: window.innerWidth - 180, y: window.innerHeight - 78 };
-                }
             } else if (cue === 'preview') {
-                prepareManualConfiguredModal(4);
                 clearManualTargets();
                 showManualPreview(0);
             }
@@ -3618,7 +3595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.addEventListener('click', event => {
-            if (event.target.closest('#download-cad-btn, #download-components-btn')) {
+            if (event.target.closest('#download-cad-btn, #cart-download-btn')) {
                 event.preventDefault();
                 event.stopImmediatePropagation();
             }
@@ -3640,7 +3617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showProduct: showManualProduct,
             openProduct: openManualProduct,
             selectOption: selectManualOption,
-            highlightDownloads: highlightManualDownloads,
+            highlightDownloads: highlightManualCadDownload,
             clearHighlights: clearManualTargets,
             setPaused: paused => {
                 manualPaused = Boolean(paused);
@@ -3662,12 +3639,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeManualToast();
                 clearManualTargets();
                 closeOptionsModal();
+                cartItems = [];
+                renderCart();
+                setCartOpen(false);
                 setManualFilters([]);
                 window.scrollTo({ top: 0, behavior: 'auto' });
             },
             getState: () => ({
                 cue: manualCue,
                 modalOpen: modalOverlay.style.display === 'flex',
+                cartOpen: cartOverlay.style.display === 'flex',
+                cartCount: cartItems.length,
                 productId: currentActiveProduct?.id || null,
                 optionCount: manualConfiguredOptionCount,
                 options: {

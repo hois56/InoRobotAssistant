@@ -193,6 +193,12 @@ test('Document 가이드는 분류를 펼쳐 검색하고 미리보기 뒤 내�
 });
 
 test('Robot Model Select 가이드는 필터·옵션·구매 코드·다운로드를 단계마다 보여 준다', async ({page}) => {
+    const savedCart = JSON.stringify([{
+        kind: 'hardware', id: 'hardware-test', code: 'EXISTING', name: 'Existing configuration', quantity: 2
+    }]);
+    await page.addInitScript(value => {
+        if (window === window.top) localStorage.setItem('inorobot.robotModelSelect.cart.v1', value);
+    }, savedCart);
     const opened = await openGuide(page, 'model');
     await walkSteps(page, opened);
     await seek(page, timeOf(opened, 'model_code') + 1500);
@@ -201,8 +207,13 @@ test('Robot Model Select 가이드는 필터·옵션·구매 코드·다운로�
     expect(configured.options).toMatchObject({cableType: 'High Flex (유연형)', pendant: 'without-cover', communication: 'IRCB501-2PN-BD'});
     await seek(page, timeOf(opened, 'model_cad') + 2000);
     expect(await page.evaluate(() => window.ToolGuide.getState().child.toast)).toBe('Inovance_CAD_IR-R25-178S-INT.zip');
+    await seek(page, timeOf(opened, 'model_excel') + 1500);
+    expect(await childData(page, 'model')).toMatchObject({modalOpen: false, cartOpen: true, cartCount: 1});
+    expect(await page.evaluate(() => window.ToolGuide.getState().child.toast)).toBe('Inovance_Config_IR-R25-178S-INT.xlsx');
+    expect(await page.evaluate(() => localStorage.getItem('inorobot.robotModelSelect.cart.v1'))).toBe(savedCart);
     await seek(page, 0);
     await expect.poll(async () => (await childData(page, 'model')).modalOpen).toBe(false);
+    expect(await childData(page, 'model')).toMatchObject({cartOpen: false, cartCount: 0});
 });
 
 // Plays the guide frame by frame inside one task, the way the player does while playing (no forced
@@ -258,9 +269,8 @@ test('Robot Model Select 가이드는 긴 옵션 창도 읽을 수 있는 속도
     expect(code.at(-1).modal, 'the purchase code step has finished scrolling').toBe(code.at(-40).modal);
 });
 
-// Opening the spreadsheet preview used to close and rebuild the options window and the model cards
-// underneath it, so the picture changed all at once as the preview started.
-test('Robot Model Select 가이드는 구성 내역을 열 때 상세 창을 다시 만들지 않는다', async ({page}) => {
+// Opening the spreadsheet preview must preserve the saved configuration and the page underneath it.
+test('Robot Model Select 가이드는 구성 내역을 열 때 구성 목록과 화면을 유지한다', async ({page}) => {
     await page.setViewportSize({width: 1536, height: 730});
     const opened = await openGuide(page, 'model');
     const from = timeOf(opened, 'model_excel') + 1500;

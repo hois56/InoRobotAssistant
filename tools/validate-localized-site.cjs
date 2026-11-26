@@ -497,31 +497,35 @@ assert(runtime.includes('function translateFromPageData') && /get\('pageTranslat
 assert(runtime.includes('const storedLocale = readSharedLocale() || readSessionLocale();')
     && runtime.includes('const initialLocale = storedLocale || DEFAULT_LOCALE;'), 'Direct tool access does not prioritize the shared locale with a Korean fallback.');
 assert(runtime.includes("currentPath === '/' && storedLocale && storedLocale !== DEFAULT_LOCALE")
-    && runtime.includes('window.location.replace(targetPath)'), 'The canonical Korean landing route can overwrite a stored non-Korean locale.');
+    && runtime.includes('window.location.replace(localPath(currentUrl))'), 'The canonical Korean landing route can overwrite a stored non-Korean locale.');
 assert(runtime.includes("'/kr/': 'ko'") && runtime.includes("'/cn/': 'zh-CN'") && runtime.includes("'/vn/': 'vi'")
     && runtime.includes("'/tr/': 'tr'") && runtime.includes("'/ru/': 'ru'"), 'Landing route map is incomplete.');
 assert(runtime.includes('function formatNumber') && runtime.includes('function formatDate'), 'Locale number/date formatters are missing.');
-assert(runtime.includes('window.location.assign(LANDING_ROUTES[nextLocale])'), 'Landing language changes do not navigate to their localized route.');
+assert(runtime.includes('target.pathname = LANDING_ROUTES[nextLocale]') && runtime.includes('window.location.assign(localPath(target))'), 'Landing language changes do not navigate to their localized route.');
 assert(runtime.includes('new BroadcastChannel(CHANNEL_NAME)') && runtime.includes("window.addEventListener('storage'") && runtime.includes("window.addEventListener('pageshow'"), 'Locale changes are not synchronized across pages, tabs, and back-forward restoration.');
-assert(runtime.includes('window.location.replace(targetPath)'), 'A restored landing page does not move to the current locale route.');
+assert(runtime.includes('window.location.replace(localPath(url))'), 'A restored landing page does not move to the current locale route.');
 assert(runtime.includes("select.setAttribute('aria-label', 'Language')"), 'Runtime language selector needs an accessible name.');
 assert(runtime.includes("document.querySelector('[data-i18n-language-slot]')") && runtime.includes("container.dataset.embedded = languageSlot ? 'true' : 'false'"), 'Runtime does not support page-specific language switcher slots.');
-['/', '/kr/', '/en/', '/cn/', '/vn/', '/tr/', '/ru/'].forEach(route => {
-    assert(runtime.includes(`a[href="${route}"]`), 'Runtime does not refresh home links already pointing to ' + route + '.');
-});
+assert(runtime.includes('hasOwn.call(ROUTE_LOCALES, href)'), 'Runtime does not refresh links already pointing to a landing route.');
 assert(runtime.includes("link.setAttribute('data-i18n-home-link', '')"), 'Runtime does not retain home links for later locale changes.');
 const resolveInitialLocaleSource = extractNamedFunction(runtime, 'resolveInitialLocale');
 assert(Boolean(resolveInitialLocaleSource), 'Runtime initial-locale resolver cannot be tested.');
 if (resolveInitialLocaleSource) {
-    function testInitialLocaleScenario({ pathname, routeLocale, sharedLocale, sessionLocale }) {
+    function testInitialLocaleScenario({ pathname, query = '', routeLocale, sharedLocale, sessionLocale }) {
         const result = { replacements: [], persisted: [], sessionWrites: [] };
         const context = {
             window: {
                 location: {
                     pathname,
+                    href: 'https://inovancerobot.com' + pathname + query,
                     replace(target) { result.replacements.push(target); }
                 }
             },
+            URL,
+            urlLocaleIsPinned: false,
+            LOCALE_PARAMETER: 'lang',
+            SUPPORTED_LOCALES: localeCodes,
+            TOOL_PAGE_PATH: /^\/6_Document\/$/,
             DEFAULT_LOCALE: 'ko',
             LANDING_ROUTES: { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' },
             getRouteLocale: () => routeLocale,
@@ -534,7 +538,8 @@ if (resolveInitialLocaleSource) {
                 return normalized.endsWith('/') ? normalized : normalized + '/';
             }
         };
-        vm.runInNewContext(`${resolveInitialLocaleSource}; this.selectedLocale = resolveInitialLocale();`, context);
+        const helpers = ['readUrlLocale', 'localPath'].map(name => extractNamedFunction(runtime, name)).join('\n');
+        vm.runInNewContext(`${helpers}\n${resolveInitialLocaleSource}; this.selectedLocale = resolveInitialLocale();`, context);
         return { ...result, selectedLocale: context.selectedLocale };
     }
 
@@ -567,6 +572,26 @@ if (resolveInitialLocaleSource) {
     assert(explicitEnglishRoute.selectedLocale === 'en'
         && explicitEnglishRoute.persisted.at(-1) === 'en'
         && explicitEnglishRoute.replacements.length === 0, 'An explicit localized landing route does not override the stored locale.');
+
+    const sharedDocument = testInitialLocaleScenario({
+        pathname: '/6_Document/',
+        query: '?lang=ru&ref=example#section',
+        routeLocale: null,
+        sharedLocale: 'en',
+        sessionLocale: 'tr'
+    });
+    assert(sharedDocument.selectedLocale === 'ru'
+        && sharedDocument.persisted.length === 0
+        && sharedDocument.replacements.length === 0, 'An explicitly localized shared tool must not overwrite the saved language.');
+
+    const invalidParameter = testInitialLocaleScenario({
+        pathname: '/6_Document/',
+        query: '?lang=fr',
+        routeLocale: null,
+        sharedLocale: 'en',
+        sessionLocale: null
+    });
+    assert(invalidParameter.selectedLocale === 'en', 'An unsupported language parameter must fall back to the saved language.');
 }
 const localServer = read('tools/serve-local.cjs');
 ['0_Home/ko/index.html', '0_Home/kr/index.html', '0_Home/en/index.html', '0_Home/zh-CN/index.html', '0_Home/vi/index.html', '0_Home/tr/index.html', '0_Home/ru/index.html'].forEach(file => {
@@ -575,23 +600,47 @@ const localServer = read('tools/serve-local.cjs');
 ['.git', '.wrangler', 'backups', 'publish-stability', 'tmp'].forEach(segment => {
     assert(localServer.includes("'" + segment + "'"), 'Local server must block sensitive path segment ' + segment + '.');
 });
-const updateHomeLinksSource = extractNamedFunction(runtime, 'updateHomeLinks');
-assert(Boolean(updateHomeLinksSource), 'Runtime home-link updater cannot be tested.');
-if (updateHomeLinksSource) {
-    const homeLink = {
-        attributes: { href: '/' },
-        setAttribute(name, value) { this.attributes[name] = value; }
-    };
+const navigationLinkSource = extractNamedFunction(runtime, 'localizeNavigationLink');
+assert(Boolean(navigationLinkSource), 'Runtime navigation-link localizer cannot be tested.');
+if (navigationLinkSource) {
+    function anchor(href, attributes = {}) {
+        return {
+            tagName: 'A',
+            attributes: { href, ...attributes },
+            hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name); },
+            getAttribute(name) { return this.attributes[name] ?? null; },
+            setAttribute(name, value) { this.attributes[name] = value; }
+        };
+    }
+    const homeLink = anchor('/');
+    const toolLink = anchor('/6_Document/?original=value#section');
+    const downloadLink = anchor('/6_Document/export.zip', { download: '' });
+    const guideLink = anchor('/1_RobotModelSelect/?embed=manual', { 'data-tool-guide-launch': '' });
     vm.runInNewContext(`
         let currentLocale = 'zh-CN';
+        let urlLocaleIsPinned = false;
+        const hasOwn = Object.prototype.hasOwnProperty;
+        const LOCALE_PARAMETER = 'lang';
         const LANDING_ROUTES = { ko: '/', en: '/en/', 'zh-CN': '/cn/', vi: '/vn/', tr: '/tr/', ru: '/ru/' };
-        ${updateHomeLinksSource}
-        updateHomeLinks();
+        const ROUTE_LOCALES = { '/': 'ko', '/cn/': 'zh-CN' };
+        const normalizePath = value => value;
+        ${extractNamedFunction(runtime, 'localPath')}
+        ${navigationLinkSource}
+        [homeLink, toolLink, downloadLink, guideLink].forEach(localizeNavigationLink);
         currentLocale = 'en';
-        updateHomeLinks();
-    `, { document: { querySelectorAll: () => [homeLink] } });
-    assert(homeLink.attributes.href === '/en/', 'A home link remains on the previous landing locale after a tool-page language change.');
-    assert(Object.prototype.hasOwnProperty.call(homeLink.attributes, 'data-i18n-home-link'), 'A localized home link is not retained for later locale changes.');
+        urlLocaleIsPinned = true;
+        [homeLink, toolLink, downloadLink, guideLink].forEach(localizeNavigationLink);
+    `, {
+        homeLink, toolLink, downloadLink, guideLink, URL,
+        TOOL_PAGE_PATH: /^\/(?:6_Document|1_RobotModelSelect)\/$/,
+        document: { baseURI: 'https://inovancerobot.com/' },
+        window: { location: { origin: 'https://inovancerobot.com' } }
+    });
+    assert(homeLink.attributes.href === '/en/?lang=en', 'A home link remains on the previous landing locale after a shared tool-page language change.');
+    assert(homeLink.hasAttribute('data-i18n-home-link'), 'A localized home link is not retained for later locale changes.');
+    assert(toolLink.attributes.href === '/6_Document/?original=value&lang=en#section', 'A tool link loses its language, query, or fragment.');
+    assert(downloadLink.attributes.href === '/6_Document/export.zip', 'A download link must stay unchanged.');
+    assert(guideLink.attributes.href === '/1_RobotModelSelect/?embed=manual', 'Manual guide embeds must stay unchanged.');
 }
 const localeStyles = read('Language/runtime/i18n.css');
 assert(localeStyles.includes('position: fixed !important') && localeStyles.includes('right: 18px !important') && localeStyles.includes('left: auto !important'), 'The language UI is not fixed to the upper-right corner.');

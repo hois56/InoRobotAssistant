@@ -1163,7 +1163,8 @@
             { id: 'model_comm', target: modelOptionGroup('commSelection', 'IRCB501-2PN-BD'), pointer: modelOption('commSelection', 'IRCB501-2PN-BD'), click: [1500], actions: [[1500, () => chooseModelOption('commSelection', 'IRCB501-2PN-BD')]] },
             { id: 'model_code', target: '#dynamic-purchase-code', pointer: false },
             { id: 'model_cad', target: withToast('#download-cad-btn'), pointer: '#download-cad-btn', scroll: false, click: [700], toast: [1100, '다운로드 완료', `Inovance_CAD_${MODEL_ID}.zip`] },
-            { id: 'model_excel', target: withToast('#download-components-btn'), pointer: '#download-components-btn', scroll: false, click: [700], toast: [1100, '다운로드 완료', `Inovance_Config_${MODEL_ID}.xlsx`] },
+            { id: 'model_add_cart', target: '#add-to-cart-btn', pointer: '#add-to-cart-btn', scroll: false, click: [800], actions: [[800, () => $('#add-to-cart-btn')?.click()]], result: '#cart-overlay .cart-panel', resultAt: 800 },
+            { id: 'model_excel', target: withToast('#cart-download-btn'), pointer: '#cart-download-btn', scroll: false, click: [700], toast: [1100, '다운로드 완료', `Inovance_Config_${MODEL_ID}.xlsx`] },
             {
                 id: 'model_preview', target: '.model-manual-document-viewer', pointer: false, scroll: false, ring: false,
                 enter: () => modelApi()?.renderTimelineCue?.('preview', { force: true }),

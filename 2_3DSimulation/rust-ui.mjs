@@ -1,5 +1,3 @@
-import { createView } from './wasm/dom.mjs';
-
 const entry = document.getElementById('rust-simulator');
 function loadScript(url) {
     return new Promise((resolve, reject) => {
@@ -12,18 +10,18 @@ function loadScript(url) {
 }
 document.body.inert = true;
 try {
-    const { engine } = await import('./wasm/engine.mjs');
+    const [{ createView }, { engine }] = await Promise.all([
+        import('./wasm/dom.mjs'),
+        import('./wasm/engine.mjs')
+    ]);
     const view = createView(engine, document);
     entry.replaceWith(view);
     await loadScript(entry.dataset.localeScript);
     await loadScript(entry.dataset.guide);
     await import(new URL(entry.dataset.main, document.baseURI).href);
 } catch (error) {
-    const message = document.createElement('p');
-    message.setAttribute('role', 'alert');
-    message.textContent = '3D Simulation · ' + (error?.message || String(error));
-    document.body.prepend(message);
-    throw error;
+    console.error('3D simulation startup failed', error);
+    entry.dispatchEvent(new Event('simulation:boot-failed'));
 } finally {
     document.body.inert = false;
 }

@@ -6,6 +6,15 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const host = '127.0.0.1';
 const port = Number(process.env.TEST_SERVER_PORT || 4173);
+const landingPaths = new Map([
+  ['/', '/0_Home/ko/index.html'],
+  ['/kr/', '/0_Home/kr/index.html'],
+  ['/en/', '/0_Home/en/index.html'],
+  ['/cn/', '/0_Home/zh-CN/index.html'],
+  ['/vn/', '/0_Home/vi/index.html'],
+  ['/tr/', '/0_Home/tr/index.html'],
+  ['/ru/', '/0_Home/ru/index.html']
+]);
 const mimeTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
   ['.csv', 'text/csv; charset=utf-8'],
@@ -36,7 +45,7 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  if (requestPath === '/') requestPath = '/0_Home/ko/index.html';
+  requestPath = landingPaths.get(requestPath) || requestPath;
   const filePath = path.resolve(repoRoot, `.${requestPath}`);
   const relative = path.relative(repoRoot, filePath);
   if (relative.startsWith('..') || path.isAbsolute(relative)) {

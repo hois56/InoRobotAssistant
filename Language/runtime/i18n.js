@@ -2,6 +2,8 @@
     'use strict';
 
     const STORAGE_KEY = 'inorobot.locale';
+    const LOCALE_PARAMETER = 'lang';
+    const TOOL_PAGE_PATH = /^\/(?:1_RobotModelSelect(?:\/models\/[a-z0-9-]+)?|2_3DSimulation|3_ToolSelector|4_ProjectGenerator|5_Software|6_Document|7_DebuggingTool(?:\/ZeroCalibration)?|Servo|privacy)\/$/i;
     const CHANNEL_NAME = 'inorobot.locale.sync';
     const DEFAULT_LOCALE = 'ko';
     const SUPPORTED_LOCALES = ['ko', 'en', 'zh-CN', 'vi', 'tr', 'ru'];
@@ -53,6 +55,8 @@
     let mutationObserver = null;
     let localeChannel = null;
     let localeSynchronizationReady = false;
+    // A shared link sets the language for this tab, not the recipient's global preference.
+    let urlLocaleIsPinned = false;
 
     function normalizePath(pathname) {
         const value = String(pathname || '/').replace(/\/index\.html$/i, '/');
@@ -65,6 +69,25 @@
 
     function isLandingPage() {
         return Boolean(getRouteLocale());
+    }
+
+    function readUrlLocale(url) {
+        const locale = url.searchParams.get(LOCALE_PARAMETER);
+        return SUPPORTED_LOCALES.includes(locale) ? locale : null;
+    }
+
+    function localPath(url) {
+        return url.pathname + url.search + url.hash;
+    }
+
+    function updateLocationLocale() {
+        const url = new URL(window.location.href);
+        if (!TOOL_PAGE_PATH.test(normalizePath(url.pathname)) || url.searchParams.has('embed')) return;
+        if (url.searchParams.get(LOCALE_PARAMETER) === currentLocale
+            && url.searchParams.getAll(LOCALE_PARAMETER).length === 1) return;
+        url.searchParams.set(LOCALE_PARAMETER, currentLocale);
+        // Preserve the tool's own history state (e.g. the model detail modal).
+        window.history.replaceState(window.history.state, '', localPath(url));
     }
 
     function readStorageLocale(storage) {
@@ -114,6 +137,17 @@
 
     function resolveInitialLocale() {
         const routeLocale = getRouteLocale();
+        const currentUrl = new URL(window.location.href);
+        const urlLocale = readUrlLocale(currentUrl);
+        if (urlLocale && !currentUrl.searchParams.has('embed')
+            && (routeLocale || TOOL_PAGE_PATH.test(normalizePath(currentUrl.pathname)))) {
+            urlLocaleIsPinned = true;
+            if (routeLocale && routeLocale !== urlLocale) {
+                currentUrl.pathname = LANDING_ROUTES[urlLocale];
+                window.location.replace(localPath(currentUrl));
+            }
+            return urlLocale;
+        }
         const storedLocale = readSharedLocale() || readSessionLocale();
         if (routeLocale) {
             const currentPath = normalizePath(window.location.pathname);
@@ -121,7 +155,8 @@
                 writeSessionLocale(storedLocale);
                 const targetPath = LANDING_ROUTES[storedLocale] || '/';
                 if (normalizePath(targetPath) !== currentPath) {
-                    window.location.replace(targetPath);
+                    currentUrl.pathname = targetPath;
+                    window.location.replace(localPath(currentUrl));
                 }
                 return storedLocale;
             }
@@ -304,6 +339,8 @@
             node = walker.nextNode();
         }
 
+        localizeNavigationLinks(root);
+
         const explicitAttributeKeys = {
             title: 'i18nTitle',
             'aria-label': 'i18nAriaLabel',
@@ -376,22 +413,33 @@
         });
     }
 
-    function updateHomeLinks() {
-        const homePath = LANDING_ROUTES[currentLocale] || '/';
-        const landingSelectors = [
-            'a[data-i18n-home-link]',
-            'a[href="/"]',
-            'a[href="/kr/"]',
-            'a[href="/en/"]',
-            'a[href="/cn/"]',
-            'a[href="/vn/"]',
-            'a[href="/tr/"]',
-            'a[href="/ru/"]'
-        ];
-        document.querySelectorAll(landingSelectors.join(', ')).forEach(function (link) {
+    function localizeNavigationLink(link) {
+        if (link.tagName !== 'A' || link.hasAttribute('download')) return;
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#')) return;
+        let target;
+        try { target = new URL(href, document.baseURI); } catch { return; }
+        if (target.origin !== window.location.origin) return;
+
+        if (!link.hasAttribute('data-tool-guide-launch')
+            && (link.hasAttribute('data-i18n-home-link') || hasOwn.call(ROUTE_LOCALES, href))) {
             link.setAttribute('data-i18n-home-link', '');
-            link.setAttribute('href', homePath);
-        });
+            target.pathname = LANDING_ROUTES[currentLocale];
+            if (urlLocaleIsPinned) target.searchParams.set(LOCALE_PARAMETER, currentLocale);
+            else target.searchParams.delete(LOCALE_PARAMETER);
+        } else {
+            if (!TOOL_PAGE_PATH.test(normalizePath(target.pathname)) || target.searchParams.has('embed')) return;
+            if (target.searchParams.get(LOCALE_PARAMETER) === currentLocale
+                && target.searchParams.getAll(LOCALE_PARAMETER).length === 1) return;
+            target.searchParams.set(LOCALE_PARAMETER, currentLocale);
+        }
+        const localized = localPath(target);
+        if (href !== localized) link.setAttribute('href', localized);
+    }
+
+    function localizeNavigationLinks(root) {
+        if (root.nodeType === Node.ELEMENT_NODE) localizeNavigationLink(root);
+        if (root.querySelectorAll) root.querySelectorAll('a[href]').forEach(localizeNavigationLink);
     }
 
     function createLanguageSwitcher() {
@@ -440,7 +488,10 @@
                 if (!SUPPORTED_LOCALES.includes(nextLocale)) return;
                 if (isLandingPage()) {
                     persistLocale(nextLocale, true);
-                    window.location.assign(LANDING_ROUTES[nextLocale]);
+                    const target = new URL(window.location.href);
+                    target.pathname = LANDING_ROUTES[nextLocale];
+                    target.searchParams.delete(LOCALE_PARAMETER);
+                    window.location.assign(localPath(target));
                 } else {
                     setLocale(nextLocale);
                 }
@@ -462,6 +513,10 @@
                 textSources.delete(mutation.target);
                 translateTextNode(mutation.target, true);
             } else if (mutation.type === 'attributes') {
+                if (mutation.attributeName === 'href') {
+                    localizeNavigationLink(mutation.target);
+                    return;
+                }
                 const sources = getAttributeSourceMap(mutation.target);
                 const name = mutation.attributeName;
                 const current = mutation.target.getAttribute(name);
@@ -500,7 +555,7 @@
             subtree: true,
             characterData: true,
             attributes: true,
-            attributeFilter: TRANSLATED_ATTRIBUTES
+            attributeFilter: [...TRANSLATED_ATTRIBUTES, 'href']
         });
     }
 
@@ -508,7 +563,6 @@
         stopObserver();
         updateMetadata();
         walkAndTranslate(document.body, Boolean(captureSource));
-        updateHomeLinks();
         createLanguageSwitcher();
         startObserver();
     }
@@ -520,8 +574,10 @@
         if (options && options.persist === false) {
             writeSessionLocale(nextLocale);
         } else {
+            urlLocaleIsPinned = false;
             persistLocale(nextLocale, !options || options.broadcast !== false);
         }
+        updateLocationLocale();
         applyLocale(false);
         document.dispatchEvent(new CustomEvent('inorobot:languagechange', {
             detail: { locale: nextLocale, previousLocale: previousLocale }
@@ -530,13 +586,15 @@
     }
 
     function synchronizeLocale(locale) {
-        if (!SUPPORTED_LOCALES.includes(locale)) return;
+        if (urlLocaleIsPinned || !SUPPORTED_LOCALES.includes(locale)) return;
 
         writeSessionLocale(locale);
         if (isLandingPage()) {
             const targetPath = LANDING_ROUTES[locale] || '/';
             if (normalizePath(window.location.pathname) !== normalizePath(targetPath)) {
-                window.location.replace(targetPath);
+                const url = new URL(window.location.href);
+                url.pathname = targetPath;
+                window.location.replace(localPath(url));
                 return;
             }
         }
@@ -572,6 +630,9 @@
                 synchronizeLocale(event.newValue);
             }
         });
+        // Same-document navigation, such as closing a model detail modal, restores
+        // a previous address without rerunning init. Keep that entry shareable too.
+        window.addEventListener('popstate', updateLocationLocale);
         window.addEventListener('pageshow', synchronizeFromStorage);
         window.addEventListener('focus', synchronizeFromStorage);
         document.addEventListener('visibilitychange', function () {
@@ -590,6 +651,7 @@
     function init() {
         setupLocaleSynchronization();
         currentLocale = resolveInitialLocale();
+        updateLocationLocale();
         applyLocale(true);
         document.dispatchEvent(new CustomEvent('inorobot:i18nready', {
             detail: { locale: currentLocale }

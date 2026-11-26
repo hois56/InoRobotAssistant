@@ -64,3 +64,7 @@ node tools\validate-localized-site.cjs
 - `0_Home/tr/index.html`
 - `0_Home/ru/index.html`
 - `sitemap.xml`
+
+## 공유 링크 언어
+
+도구·모델 상세 링크는 주소의 `lang` 값(`ko`, `en`, `zh-CN`, `vi`, `tr`, `ru`)으로 공유받은 화면의 언어를 지정할 수 있습니다. 예: `/6_Document/?lang=ru`. 링크를 연 것만으로는 브라우저에 저장된 기본 언어가 바뀌지 않습니다. 언어 선택기로 직접 바꾸면 그 선택이 저장됩니다. 파일 다운로드, 가이드 임베드, 검색 엔진의 정규 주소에는 언어 매개변수를 붙이지 않습니다.

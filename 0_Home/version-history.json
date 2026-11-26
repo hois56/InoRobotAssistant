@@ -34,6 +34,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[개선]` 공유한 도구 링크를 열면 링크에 지정된 언어가 유지됩니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[개선]` 모든 화면이 처음 열릴 때 내려받는 번역 데이터 용량을 절반 가까이 줄여 화면이 더 빨리 표시됩니다.",
@@ -121,7 +127,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[추가]` 옵션 옆 정보 아이콘에서 부품 사진과 연결 도면을 미리 볼 수 있습니다. IP67 로봇 바디 옵션에는 IP54 High-protection 컨트롤러로 변경되는 안내를 표시합니다."
+                  "`[추가]` 옵션 옆 정보 아이콘에서 부품 사진과 연결 도면을 미리 볼 수 있습니다. IP67 로봇 바디 옵션에는 IP54 High-protection 컨트롤러로 변경되는 안내를 표시합니다.",
+                  "`[변경]` 모델 상세에서 담은 구성은 구성 목록에서만 엑셀로 내려받을 수 있습니다."
                 ]
               },
               {
@@ -322,7 +329,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[지원]` 웹 시뮬레이션에서 브리지 V2.2를 통해 가상 비전을 컨트롤러에 Socket 또는 EtherNet/IP로 연결할 수 있습니다. 브리지 ZIP에는 실행 파일 하나만 들어 있습니다."
+                  "`[지원]` 웹 시뮬레이션에서 브리지 V2.2를 통해 가상 비전을 컨트롤러에 Socket 또는 EtherNet/IP로 연결할 수 있습니다. 브리지 ZIP에는 실행 파일 하나만 들어 있습니다.",
+                  "`[개선]` 화면을 불러오지 못하면 선택한 언어로 안내가 표시되며 다시 시도할 수 있습니다."
                 ]
               },
               {
@@ -1921,6 +1929,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Improved]` Shared tool links open in the language specified in the link."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[Improved]` Every page downloads about half as much translation data when it first opens, so pages appear sooner.",
@@ -2008,7 +2022,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Added]` Preview option photos and wiring diagrams from the info icons. The IP67 robot body option explains the switch to the IP54 High-protection controller."
+                  "`[Added]` Preview option photos and wiring diagrams from the info icons. The IP67 robot body option explains the switch to the IP54 High-protection controller.",
+                  "`[Changed]` Add configurations from the model details, then download them as Excel only from the configuration list."
                 ]
               },
               {
@@ -2209,7 +2224,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Support]` The web simulator can connect virtual vision to controllers over Socket or EtherNet/IP using bridge V2.2. The bridge ZIP contains a single executable."
+                  "`[Support]` The web simulator can connect virtual vision to controllers over Socket or EtherNet/IP using bridge V2.2. The bridge ZIP contains a single executable.",
+                  "`[Improved]` If the simulator cannot load, it shows a message in the selected language and lets you retry."
                 ]
               },
               {
@@ -3808,6 +3824,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[改进]` 打开分享的工具链接时会保留链接指定的语言。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[改进]` 所有页面首次打开时下载的翻译数据量减少近一半，页面显示更快。",
@@ -3895,7 +3917,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[新增]` 通过选项旁的信息图标预览部件照片和接线图。IP67 机器人本体选项会提示更换为IP54 高防护控制器。"
+                  "`[新增]` 通过选项旁的信息图标预览部件照片和接线图。IP67 机器人本体选项会提示更换为IP54 高防护控制器。",
+                  "`[变更]` 在型号详情页将配置加入列表后，只能从配置列表下载 Excel 文件。"
                 ]
               },
               {
@@ -4096,7 +4119,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[支持]` 网页模拟器可通过 V2.2 桥接程序使用 Socket 或 EtherNet/IP 将虚拟视觉连接到控制器。 桥接程序 ZIP 包中仅包含一个可执行文件。"
+                  "`[支持]` 网页模拟器可通过 V2.2 桥接程序使用 Socket 或 EtherNet/IP 将虚拟视觉连接到控制器。 桥接程序 ZIP 包中仅包含一个可执行文件。",
+                  "`[改进]` 如果仿真器加载失败，会以所选语言显示提示并提供重试按钮。"
                 ]
               },
               {
@@ -5695,6 +5719,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Cải tiến]` Liên kết công cụ được chia sẻ sẽ mở bằng ngôn ngữ đã chỉ định trong liên kết."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[Cải tiến]` Dữ liệu bản dịch tải về khi mở mỗi trang lần đầu giảm gần một nửa, giúp trang hiển thị nhanh hơn.",
@@ -5782,7 +5812,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Thêm]` Xem ảnh phụ kiện và sơ đồ đấu nối từ biểu tượng thông tin cạnh tùy chọn. Tùy chọn thân robot IP67 giải thích việc chuyển sang bộ điều khiển High-protection IP54."
+                  "`[Thêm]` Xem ảnh phụ kiện và sơ đồ đấu nối từ biểu tượng thông tin cạnh tùy chọn. Tùy chọn thân robot IP67 giải thích việc chuyển sang bộ điều khiển High-protection IP54.",
+                  "`[Thay đổi]` Thêm cấu hình từ trang chi tiết mẫu robot, sau đó chỉ tải tệp Excel từ danh sách cấu hình."
                 ]
               },
               {
@@ -5983,7 +6014,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Hỗ trợ]` Trình mô phỏng web có thể kết nối thị giác ảo với bộ điều khiển qua Socket hoặc EtherNet/IP bằng cầu nối V2.2. Tệp ZIP của cầu nối chỉ chứa một tệp thực thi."
+                  "`[Hỗ trợ]` Trình mô phỏng web có thể kết nối thị giác ảo với bộ điều khiển qua Socket hoặc EtherNet/IP bằng cầu nối V2.2. Tệp ZIP của cầu nối chỉ chứa một tệp thực thi.",
+                  "`[Cải tiến]` Nếu không tải được trình mô phỏng, trang sẽ hiển thị thông báo bằng ngôn ngữ đã chọn và cho phép thử lại."
                 ]
               },
               {
@@ -7582,6 +7614,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[İyileştirildi]` Paylaşılan araç bağlantıları, bağlantıda belirtilen dilde açılır."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[İyileştirildi]` Her sayfa ilk açılışta yaklaşık yarı yarıya daha az çeviri verisi indirir; sayfalar daha hızlı görüntülenir.",
@@ -7669,7 +7707,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Eklendi]` Seçeneklerin yanındaki bilgi simgelerinden parça fotoğraflarını ve bağlantı şemalarını önizleyin. IP67 robot gövdesi seçeneği IP54 High-protection kontrolöre geçişi açıklar."
+                  "`[Eklendi]` Seçeneklerin yanındaki bilgi simgelerinden parça fotoğraflarını ve bağlantı şemalarını önizleyin. IP67 robot gövdesi seçeneği IP54 High-protection kontrolöre geçişi açıklar.",
+                  "`[Değiştirildi]` Model ayrıntılarından yapılandırmaları listeye ekleyin. Excel dosyası yalnızca yapılandırma listesinden indirilebilir."
                 ]
               },
               {
@@ -7870,7 +7909,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Destek]` Web simülatöründe sanal görüntü işleme, V2.2 köprüsü üzerinden Socket veya EtherNet/IP ile kontrolöre bağlanabilir. Köprü ZIP arşivi tek bir yürütülebilir dosya içerir."
+                  "`[Destek]` Web simülatöründe sanal görüntü işleme, V2.2 köprüsü üzerinden Socket veya EtherNet/IP ile kontrolöre bağlanabilir. Köprü ZIP arşivi tek bir yürütülebilir dosya içerir.",
+                  "`[İyileştirildi]` Simülatör yüklenemezse seçilen dilde bir bildirim gösterilir ve yeniden denenebilir."
                 ]
               },
               {
@@ -9469,6 +9509,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.26",
+                "items": [
+                  "`[Улучшено]` Ссылки на инструменты открываются на языке, указанном в ссылке."
+                ]
+              },
+              {
                 "title": "Ver 26.11.21",
                 "items": [
                   "`[Улучшено]` При первом открытии каждая страница загружает почти вдвое меньше данных перевода и отображается быстрее.",
@@ -9556,7 +9602,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Добавлено]` По значку информации рядом с опцией можно посмотреть фотографии деталей и схемы подключения. Для корпуса IP67 показано пояснение о переходе на контроллер High-protection IP54."
+                  "`[Добавлено]` По значку информации рядом с опцией можно посмотреть фотографии деталей и схемы подключения. Для корпуса IP67 показано пояснение о переходе на контроллер High-protection IP54.",
+                  "`[Изменено]` Добавьте конфигурации на странице модели, затем скачайте файл Excel из списка конфигураций."
                 ]
               },
               {
@@ -9757,7 +9804,8 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Поддержка]` В веб-симуляторе виртуальное зрение можно подключить к контроллеру через мост V2.2 по Socket или EtherNet/IP. ZIP-архив моста содержит один исполняемый файл."
+                  "`[Поддержка]` В веб-симуляторе виртуальное зрение можно подключить к контроллеру через мост V2.2 по Socket или EtherNet/IP. ZIP-архив моста содержит один исполняемый файл.",
+                  "`[Улучшено]` Если симулятор не загрузится, появится сообщение на выбранном языке и кнопка повторной попытки."
                 ]
               },
               {

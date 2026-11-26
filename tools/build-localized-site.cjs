@@ -130,6 +130,17 @@ function getLocaleBundleCacheVersion(locales) {
     return crypto.createHash('sha256').update(serializeLocaleBundle(locales)).digest('hex').slice(0, 12);
 }
 
+const localeRuntimeCacheVersion = crypto.createHash('sha256')
+    .update(fs.readFileSync(path.join(root, 'Language/runtime/i18n.js')))
+    .digest('hex').slice(0, 12);
+
+function injectLocaleRuntimeCacheVersion(html) {
+    return html.replace(
+        /((?:src|data-locale-script)="\/Language\/runtime\/i18n\.js)(?:\?v=[^"]*)?"/g,
+        '$1?v=' + localeRuntimeCacheVersion + '"'
+    );
+}
+
 function injectLocaleBundleCacheVersion(html, cacheVersion) {
     return html.replace(
         /(src="\/Language\/runtime\/locales-data\.js)(?:\?v=[^"]*)?"/g,
@@ -300,7 +311,7 @@ function ensureRuntimeReferences(html) {
     if (!output.includes('/Language/runtime/icon-fallback.js')) {
         output = output.replace('</head>', '    <script src="/Language/runtime/icon-fallback.js" defer></script>\n</head>');
     }
-    return output;
+    return injectLocaleRuntimeCacheVersion(output);
 }
 
 function escapeHtmlAttribute(value) {
@@ -460,7 +471,7 @@ function updatePrivacyLocaleCacheVersion(cacheVersion) {
     const relativePath = 'privacy/index.html';
     const filePath = path.join(root, relativePath);
     const source = fs.readFileSync(filePath, 'utf8');
-    const updated = injectLocaleBundleCacheVersion(source, cacheVersion);
+    const updated = injectLocaleBundleCacheVersion(injectLocaleRuntimeCacheVersion(source), cacheVersion);
     if (updated !== source) fs.writeFileSync(filePath, updated, 'utf8');
 }
 

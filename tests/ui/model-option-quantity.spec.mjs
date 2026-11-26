@@ -265,24 +265,31 @@ test('로봇 수량에 바깥 여백이 없고 핀 수와 펜던트 선택 안�
     expect(await pendantHint.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(14);
 });
 
-test('단일 구성과 구성 목록을 실제 엑셀로 내보내면 필수·선택 품목과 로봇 수량을 구분한다', async ({page}) => {
+test('구성 목록에서만 엑셀을 내보내며 필수·선택 품목과 로봇 수량을 구분한다', async ({page}) => {
     await page.goto('/1_RobotModelSelect/models/IR-R4H-54S-INT/');
     await page.locator('#robot-quantity').fill('2');
     const cardCode = '01650028';
     const card = page.locator('[name="commSelection"][data-code="' + cardCode + '"]');
     await card.check();
     await card.locator('..').getByRole('spinbutton').fill('4');
-    const single = await exportSheet(page, '#download-components-btn');
+    await expect(page.locator('#add-to-cart-btn')).toBeVisible();
+    await expect(page.locator('#download-cad-btn')).toBeVisible();
+    await expect(page.locator('#download-components-btn')).toHaveCount(0);
+    await page.locator('#add-to-cart-btn').click();
+    const single = await exportSheet(page, '#cart-download-btn');
     expect(single.headers).toEqual(['순번', '형번', '코드', '타입', '상세 정보', '수량', '품목 구분']);
     expect(single.summary.slice(-4)).toEqual(['총 구성 수', '1', '총 로봇 수량', '2']);
     expect(single.items.map(row => row.slice(5))).toEqual([['2', '본체 (필수)'], ['4', '선택 옵션']]);
     expect(single.items[1][2]).toBe(cardCode);
     expect(single.items[1][3]).toBe('통신');
+    await page.locator('#cart-list [data-cart-action="edit"]').click();
     await page.locator('[name="robotBodyOption"][value="clean"]').check();
-    const clean = await exportSheet(page, '#download-components-btn');
+    await page.locator('#add-to-cart-btn').click();
+    const clean = await exportSheet(page, '#cart-download-btn');
     expect(clean.summary.slice(-4)).toEqual(single.summary.slice(-4));
     expect(clean.items.map(row => row.slice(5))).toEqual([['2', '본체 (필수)'], ['2', '케이블 (필수)'], ['4', '선택 옵션']]);
     expect(clean.items[1][2]).toBe(single.items[0][2]);
+    await page.locator('#cart-list [data-cart-action="edit"]').click();
     await page.locator('[name="robotBodyOption"][value="standard"]').check();
     await page.locator('#add-to-cart-btn').click();
     await page.goto('/1_RobotModelSelect/models/IR-S7-60Z20S-INT/');
@@ -298,6 +305,26 @@ test('단일 구성과 구성 목록을 실제 엑셀로 내보내면 필수·�
     expect(cart.items[2][2]).toBe(cardCode);
     expect(cart.items[2][3].split('\n')).toEqual(['통신', '확장 카드']);
     expect(cart.range).toBe('A4:G7');
+});
+
+test('다른 모델 상세를 방문해도 엑셀에는 구성 목록에 담은 모델과 수량만 들어간다', async ({page}) => {
+    await page.addInitScript(() => localStorage.setItem('inorobot.locale', 'en'));
+    const catalog = '/1_RobotModelSelect/';
+    const savedModel = 'IR-R7H-70S-INT';
+    const unsavedModel = 'IR-R10H-120S-INT';
+    await page.goto(catalog + 'models/' + savedModel + '/');
+    await page.locator('#robot-quantity').fill('2');
+    await expect(page.getByRole('button', {name:'Add configuration'})).toBeVisible();
+    await expect(page.getByRole('button', {name:'Download Components (Excel)'})).toHaveCount(0);
+    await page.locator('#add-to-cart-btn').click();
+
+    await page.goto(catalog + 'models/' + unsavedModel + '/');
+    await page.locator('#robot-quantity').fill('7');
+    await expect(page.locator('#download-components-btn')).toHaveCount(0);
+    await page.locator('#close-modal-btn').click();
+    await page.locator('#cart-toggle-btn').click();
+    const report = await exportSheet(page, '#cart-download-btn');
+    expect(report.items.map(row => [row[1], row[5]])).toEqual([[savedModel, '2']]);
 });
 
 test('유료 하드웨어를 단독으로 담아 수량을 수정·복원하고 로봇 옵션과 같은 코드로 합산한다', async ({page}) => {
