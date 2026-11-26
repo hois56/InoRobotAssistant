@@ -2234,7 +2234,7 @@
     "로컬 통신 서버에 연결 중": "Yerel iletişim sunucusuna bağlanılıyor",
     "가상 비전 통신에 연결 중": "Sanal görüntü işlemeye bağlanılıyor",
     "가상 비전 통신에 연결할 수 없습니다.": "Sanal görüntü işlemeye bağlanılamadı.",
-    "컨트롤러 연결 창에서 브리지 V2.2 이상을 다운로드한 뒤 ZIP 전체를 풀고 브리지를 실행해 주세요.": "Kontrolör bağlantı panelinden V2.2 veya üzeri köprüyü indirin, ZIP dosyasının tamamını çıkarın ve köprüyü çalıştırın.",
+    "컨트롤러 연결 창에서 브리지를 다운로드하고 ZIP 안의 InoRobotVirtualControllerBridge.exe를 실행해 주세요.": "Kontrolör bağlantı panelinden köprüyü indirin, InoRobotVirtualControllerBridge.exe dosyasını ZIP arşivinden çıkarıp çalıştırın.",
     "가상 비전을 지원하는 최신 브리지를 다운로드하여 실행해 주세요.": "Sanal görüntü işlemeyi destekleyen en güncel köprüyü indirip çalıştırın.",
     "로컬 통신 서버 연결이 끊겨 다시 연결합니다.": "Yerel iletişim sunucusu bağlantısı koptu; yeniden bağlanılıyor.",
     "로컬 통신 서버에 연결할 수 없습니다.": "Yerel iletişim sunucusuna bağlanılamıyor.",

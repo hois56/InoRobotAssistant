@@ -316,7 +316,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[지원]` 웹 시뮬레이션에서 브리지 V2.2를 통해 가상 비전을 컨트롤러에 Socket 또는 EtherNet/IP로 연결할 수 있습니다."
+                  "`[지원]` 웹 시뮬레이션에서 브리지 V2.2를 통해 가상 비전을 컨트롤러에 Socket 또는 EtherNet/IP로 연결할 수 있습니다. 브리지 ZIP에는 실행 파일 하나만 들어 있습니다."
                 ]
               },
               {
@@ -2196,7 +2196,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Support]` The web simulator can connect virtual vision to controllers over Socket or EtherNet/IP using bridge V2.2."
+                  "`[Support]` The web simulator can connect virtual vision to controllers over Socket or EtherNet/IP using bridge V2.2. The bridge ZIP contains a single executable."
                 ]
               },
               {
@@ -4076,7 +4076,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[支持]` 网页模拟器可通过 V2.2 桥接程序使用 Socket 或 EtherNet/IP 将虚拟视觉连接到控制器。"
+                  "`[支持]` 网页模拟器可通过 V2.2 桥接程序使用 Socket 或 EtherNet/IP 将虚拟视觉连接到控制器。 桥接程序 ZIP 包中仅包含一个可执行文件。"
                 ]
               },
               {
@@ -5956,7 +5956,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Hỗ trợ]` Trình mô phỏng web có thể kết nối thị giác ảo với bộ điều khiển qua Socket hoặc EtherNet/IP bằng cầu nối V2.2."
+                  "`[Hỗ trợ]` Trình mô phỏng web có thể kết nối thị giác ảo với bộ điều khiển qua Socket hoặc EtherNet/IP bằng cầu nối V2.2. Tệp ZIP của cầu nối chỉ chứa một tệp thực thi."
                 ]
               },
               {
@@ -7836,7 +7836,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Destek]` Web simülatöründe sanal görüntü işleme, V2.2 köprüsü üzerinden Socket veya EtherNet/IP ile kontrolöre bağlanabilir."
+                  "`[Destek]` Web simülatöründe sanal görüntü işleme, V2.2 köprüsü üzerinden Socket veya EtherNet/IP ile kontrolöre bağlanabilir. Köprü ZIP arşivi tek bir yürütülebilir dosya içerir."
                 ]
               },
               {
@@ -9716,7 +9716,7 @@
               {
                 "title": "Ver 26.11.26",
                 "items": [
-                  "`[Поддержка]` В веб-симуляторе виртуальное зрение можно подключить к контроллеру через мост V2.2 по Socket или EtherNet/IP."
+                  "`[Поддержка]` В веб-симуляторе виртуальное зрение можно подключить к контроллеру через мост V2.2 по Socket или EtherNet/IP. ZIP-архив моста содержит один исполняемый файл."
                 ]
               },
               {

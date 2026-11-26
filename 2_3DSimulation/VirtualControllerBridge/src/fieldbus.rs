@@ -25,16 +25,7 @@ pub async fn poll(ip: Ipv4Addr, latest: Arc<Mutex<Snapshot>>) {
 }
 
 async fn read_session(ip: Ipv4Addr, latest: &Mutex<Snapshot>) -> io::Result<()> {
-    let socket = TcpSocket::new_v4()?;
-    if ip.is_loopback() {
-        socket.bind(SocketAddr::from((ip, 0)))?;
-    }
-    let mut peer = timeout(
-        Duration::from_secs(2),
-        socket.connect(SocketAddr::from((ip, 44818))),
-    )
-    .await??;
-    peer.set_nodelay(true)?;
+    let mut peer = connect(ip.is_loopback().then_some(ip), ip, 44818).await?;
     let registration = exchange(&mut peer, 0x65, 0, &[1, 0, 0, 0]).await?;
     let session = u32::from_le_bytes(registration[4..8].try_into().unwrap());
     if session == 0 {
@@ -100,7 +91,7 @@ async fn read_assembly(
     Ok(None)
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     peer: &mut TcpStream,
     command: u16,
     session: u32,
@@ -124,4 +115,22 @@ async fn exchange(
         Ok(reply)
     })
     .await?
+}
+
+pub(super) async fn connect(
+    bind: Option<Ipv4Addr>,
+    ip: Ipv4Addr,
+    port: u16,
+) -> io::Result<TcpStream> {
+    let socket = TcpSocket::new_v4()?;
+    if let Some(address) = bind {
+        socket.bind(SocketAddr::from((address, 0)))?;
+    }
+    let peer = timeout(
+        Duration::from_secs(2),
+        socket.connect(SocketAddr::from((ip, port))),
+    )
+    .await??;
+    peer.set_nodelay(true)?;
+    Ok(peer)
 }

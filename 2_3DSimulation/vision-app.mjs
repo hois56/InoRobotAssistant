@@ -782,7 +782,7 @@ export function createVisionApp(adapter) {
         if (attempt !== state.connectionAttempt || linkMode() !== 'external') return;
         if (!server?.token) {
             disconnectExternal();
-            setLinkStatus('error', text(server?.error || '컨트롤러 연결 창에서 브리지 V2.2 이상을 다운로드한 뒤 ZIP 전체를 풀고 브리지를 실행해 주세요.'));
+            setLinkStatus('error', text(server?.error || '컨트롤러 연결 창에서 브리지를 다운로드하고 ZIP 안의 InoRobotVirtualControllerBridge.exe를 실행해 주세요.'));
             return;
         }
         let socket;

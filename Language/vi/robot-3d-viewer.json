@@ -2234,7 +2234,7 @@
     "로컬 통신 서버에 연결 중": "Đang kết nối máy chủ truyền thông cục bộ",
     "가상 비전 통신에 연결 중": "Đang kết nối với thị giác ảo",
     "가상 비전 통신에 연결할 수 없습니다.": "Không thể kết nối với thị giác ảo.",
-    "컨트롤러 연결 창에서 브리지 V2.2 이상을 다운로드한 뒤 ZIP 전체를 풀고 브리지를 실행해 주세요.": "Tải cầu nối V2.2 trở lên từ bảng kết nối bộ điều khiển, giải nén toàn bộ tệp ZIP rồi chạy cầu nối.",
+    "컨트롤러 연결 창에서 브리지를 다운로드하고 ZIP 안의 InoRobotVirtualControllerBridge.exe를 실행해 주세요.": "Tải cầu nối từ bảng kết nối bộ điều khiển, giải nén rồi chạy InoRobotVirtualControllerBridge.exe.",
     "가상 비전을 지원하는 최신 브리지를 다운로드하여 실행해 주세요.": "Tải xuống và chạy phiên bản cầu nối mới nhất có hỗ trợ thị giác ảo.",
     "로컬 통신 서버 연결이 끊겨 다시 연결합니다.": "Mất kết nối máy chủ truyền thông cục bộ, đang kết nối lại.",
     "로컬 통신 서버에 연결할 수 없습니다.": "Không thể kết nối máy chủ truyền thông cục bộ.",
