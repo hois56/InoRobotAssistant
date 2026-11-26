@@ -52,7 +52,7 @@ for (const name of [
     'simulator-rust/solidworks/sldprt-export-MIT.txt',
     '2_3DSimulation/VirtualControllerBridge/src', '2_3DSimulation/VirtualControllerBridge/Cargo.toml',
     '2_3DSimulation/VirtualControllerBridge/Cargo.lock', '2_3DSimulation/VirtualControllerBridge/build.rs',
-    '2_3DSimulation/VirtualControllerBridge/README.md', '2_3DSimulation/VirtualControllerBridge/Assets/bridge.ico',
+    '2_3DSimulation/VirtualControllerBridge/package.ps1', '2_3DSimulation/VirtualControllerBridge/README.md', '2_3DSimulation/VirtualControllerBridge/Assets/bridge.ico',
     '2_3DSimulation/VirtualControllerBridge/Assets/bridge.rc', '2_3DSimulation/VirtualControllerBridge/Native/MSVCR120.dll'
 ]) await copy(name);
 if (bridgeZip) {

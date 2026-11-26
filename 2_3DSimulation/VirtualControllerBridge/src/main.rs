@@ -6,6 +6,7 @@ mod fieldbus;
 mod outbox;
 mod pipes;
 mod sdk;
+mod vision;
 mod worker;
 
 use axum::{
@@ -36,7 +37,7 @@ use worker::{Command, Connection, Worker, DEFAULT_INTERVAL};
 
 const SERVICE: &str = "InoRobotVirtualControllerBridge";
 const PRODUCT: &str = "InoRobot Virtual Controller Bridge";
-const VERSION: &str = "2.1";
+const VERSION: &str = "2.2";
 const BRIDGE_PORT: u16 = 5055;
 const MAX_MESSAGE: usize = 64 * 1024;
 
@@ -167,6 +168,7 @@ async fn serve(listen: TcpListener, app: Arc<App>) -> io::Result<()> {
     let router = Router::new()
         .route("/api/health", get(health))
         .route("/ws", get(websocket))
+        .route("/virtualvision/", get(vision::websocket))
         .layer(middleware::from_fn_with_state(
             Arc::clone(&app),
             origin_policy,
@@ -238,7 +240,7 @@ async fn health(State(app): State<Arc<App>>, headers: HeaderMap) -> Response {
     Json(json!({"service":SERVICE,"version":VERSION,"implementation":"rust","configured":true,
         "connected":slots.iter().flatten().any(|connection| connection.lock().unwrap().connected),
         "connectionCount":slots.iter().flatten().count(),"controllerPort":2222,"sampleIntervalMs":DEFAULT_INTERVAL,
-        "conveyorTrackingVersion":1,"pairingToken":app.token})).into_response()
+        "conveyorTrackingVersion":1,"virtualVisionVersion":1,"pairingToken":app.token})).into_response()
 }
 
 async fn websocket(State(app): State<Arc<App>>, upgrade: WebSocketUpgrade) -> Response {
@@ -264,7 +266,7 @@ fn authenticated(text: &str, token: &str) -> bool {
             == 0
 }
 
-async fn session(mut socket: WebSocket, app: Arc<App>) {
+async fn pair(socket: &mut WebSocket, app: &App) -> bool {
     if !matches!(timeout(Duration::from_secs(10), socket.recv()).await,
         Ok(Some(Ok(Message::Text(text)))) if authenticated(&text, &app.token))
     {
@@ -276,6 +278,13 @@ async fn session(mut socket: WebSocket, app: Arc<App>) {
             }))),
         )
         .await;
+        return false;
+    }
+    true
+}
+
+async fn session(mut socket: WebSocket, app: Arc<App>) {
+    if !pair(&mut socket, &app).await {
         return;
     }
     let connection = Arc::new(Mutex::new(Connection::default()));

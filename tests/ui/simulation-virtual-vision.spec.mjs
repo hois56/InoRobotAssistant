@@ -349,11 +349,19 @@ test('the test Vision module activates its own upward Camera and keeps its part 
 test('vision communication uses controllers and preserves both roles for Socket and Ethernet/IP', async ({ page }, testInfo) => {
     const configured = [];
     let tokenRequests = 0;
-    await page.route('**/api/virtualbus-token', route => { tokenRequests++; return route.fulfill({ json: { token: 'vision-test-token-'.repeat(3) } }); });
-    await page.routeWebSocket('**/virtualvision/', socket => {
+    await page.route('**/api/virtualbus-token', route => route.fulfill({ status: 404, body: '' }));
+    const pairingToken = 'vision-bridge-test-token';
+    await page.route('http://127.0.0.1:5055/api/health', route => route.fulfill({
+        json: { service: 'InoRobotVirtualControllerBridge', virtualVisionVersion: 1, pairingToken }
+    }));
+    await page.routeWebSocket('ws://127.0.0.1:5055/virtualvision/', socket => {
         socket.onMessage(raw => {
             const message = JSON.parse(raw);
-            if (message.type === 'hello') socket.send(JSON.stringify({ type: 'ready' }));
+            if (message.type === 'hello') {
+                expect(message.token).toBe(pairingToken);
+                tokenRequests++;
+                socket.send(JSON.stringify({ type: 'ready' }));
+            }
             if (message.type === 'configure') {
                 configured.push(message.config);
                 socket.send(JSON.stringify({ type: 'status', status: { state: message.config.role === 'server' ? 'listening' : 'connected' } }));
@@ -424,6 +432,9 @@ test('vision communication uses controllers and preserves both roles for Socket 
 test('vision communication waits for a click and never retries failed or dropped sessions', async ({ page }) => {
     let tokenRequests = 0, failToken = true;
     const sessions = [];
+    await page.route('http://127.0.0.1:5055/api/health', route => route.fulfill({
+        json: { service: 'InoRobotVirtualControllerBridge', pairingToken: 'old-bridge-token' }
+    }));
     await page.route('**/api/virtualbus-token', route => {
         tokenRequests++;
         return route.fulfill(failToken ? { status: 503, json: {} } : { json: { token: 'vision-test-token-'.repeat(3) } });
@@ -445,7 +456,7 @@ test('vision communication waits for a click and never retries failed or dropped
     expect(tokenRequests).toBe(0);
     const connect = panel.locator('[data-vision-action="connect"]');
     await connect.click();
-    await expect(panel.locator('[data-vision-out="link"]')).toContainText('오류');
+    await expect(panel.locator('[data-vision-out="link"]')).toContainText('최신 브리지를 다운로드');
     await expect(connect).toHaveText('연결');
     await page.waitForTimeout(5500);
     expect(tokenRequests).toBe(1);

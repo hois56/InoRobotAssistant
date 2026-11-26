@@ -148,7 +148,7 @@ import {
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
 import { createEquipmentApp } from './equipment-app.mjs?v=20261123-live-settings';
-import { createVisionApp } from './vision-app.mjs?v=20261124-tracking-bus';
+import { createVisionApp } from './vision-app.mjs?v=20261126-web-bridge';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 import { equipmentObjectRef } from './equipment-scene.mjs?v=20261123-grip-time';
 import { normalizeModelGroupTree, walkModelGroups, modelGroupPath, modelGroupAtPath, dissolveModelGroup, moveModelsToGroup } from './model-group-tree-core.mjs';
@@ -38309,8 +38309,20 @@ const visionApp = createVisionApp({
         writeInputWord: writeVisionInputWord
     },
     saveProgress: () => scheduleMotionProjectSave(),
-    serverToken: () => getOlpVirtualBusToken({ force: true }),
-    serverUrl: () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/virtualvision/`
+    async visionServer() {
+        if (location.protocol === 'http:' || document.body.dataset.localCollaboration === 'true') {
+            const token = await getOlpVirtualBusToken({ force: true });
+            if (token) return { token, url: `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/virtualvision/` };
+        }
+        const core = await ensureVirtualControllerCore();
+        const bridge = core.getVirtualControllerSource('bridge');
+        const response = await fetch(bridge.healthUrl, { cache: 'no-store' });
+        if (!response.ok) return null;
+        const health = await response.json();
+        if (health.service !== 'InoRobotVirtualControllerBridge' || !health.pairingToken) return null;
+        if (!health.virtualVisionVersion) return { error: '가상 비전을 지원하는 최신 브리지를 다운로드하여 실행해 주세요.' };
+        return { token: health.pairingToken, url: new URL('/virtualvision/', bridge.socketUrl).href };
+    }
 });
 
 function getIoStandardInputTarget() {

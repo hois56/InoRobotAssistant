@@ -774,26 +774,28 @@ export function createVisionApp(adapter) {
         const attempt = state.connectionAttempt;
         state.connecting = true;
         state.attemptConfig = JSON.stringify(buildVisionLinkConfig(config()));
-        setLinkStatus('connecting', text('로컬 통신 서버에 연결 중'));
-        state.connectTimer = setTimeout(() => {
-            if (attempt !== state.connectionAttempt) return;
-            disconnectExternal();
-            setLinkStatus('error', text('로컬 통신 서버에 연결할 수 없습니다.'));
-        }, 5000);
-        let token;
-        try { token = await adapter.serverToken?.(); } catch { token = null; }
+        setLinkStatus('connecting', text('가상 비전 통신에 연결 중'));
+        // The first cross-origin health request can wait for the user's
+        // browser permission to access the local network.
+        let server;
+        try { server = await adapter.visionServer(); } catch { server = null; }
         if (attempt !== state.connectionAttempt || linkMode() !== 'external') return;
-        if (!token) {
+        if (!server?.token) {
             disconnectExternal();
-            setLinkStatus('error', text('외부 통신은 가상환경_시작.bat로 실행한 로컬 서버에서만 사용할 수 있습니다.'));
+            setLinkStatus('error', text(server?.error || '컨트롤러 연결 창에서 브리지 V2.2 이상을 다운로드한 뒤 ZIP 전체를 풀고 브리지를 실행해 주세요.'));
             return;
         }
         let socket;
-        try { socket = new WebSocket(adapter.serverUrl()); }
+        try { socket = new WebSocket(server.url); }
         catch (error) { disconnectExternal(); setLinkStatus('error', error.message); return; }
         state.socket = socket;
         state.socketReady = false;
-        socket.addEventListener('open', () => { if (state.socket === socket) socket.send(JSON.stringify({ type: 'hello', token })); });
+        state.connectTimer = setTimeout(() => {
+            if (attempt !== state.connectionAttempt) return;
+            disconnectExternal();
+            setLinkStatus('error', text('가상 비전 통신에 연결할 수 없습니다.'));
+        }, 5000);
+        socket.addEventListener('open', () => { if (state.socket === socket) socket.send(JSON.stringify({ type: 'hello', token: server.token })); });
         socket.addEventListener('message', event => {
             if (state.socket !== socket) return;
             let message;
@@ -827,12 +829,15 @@ export function createVisionApp(adapter) {
         });
         socket.addEventListener('close', () => {
             if (state.socket !== socket) return;
+            const failure = state.link.state === 'error' ? state.link.message
+                : !state.socketReady ? text('가상 비전 통신에 연결할 수 없습니다.') : '';
             disconnectExternal();
+            if (failure) setLinkStatus('error', failure);
         });
         socket.addEventListener('error', () => {
             if (state.socket !== socket) return;
             disconnectExternal();
-            setLinkStatus('error', text('로컬 통신 서버에 연결할 수 없습니다.'));
+            setLinkStatus('error', text('가상 비전 통신에 연결할 수 없습니다.'));
         });
     }
 

@@ -15,8 +15,8 @@ BEGIN
 END
 
 1 VERSIONINFO
- FILEVERSION 2,1,0,0
- PRODUCTVERSION 2,1,0,0
+ FILEVERSION 2,2,0,0
+ PRODUCTVERSION 2,2,0,0
  FILEOS 0x40004
  FILETYPE 1
 BEGIN
@@ -25,11 +25,11 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "InoRobot 3D Simulation controller bridge"
-            VALUE "FileVersion", "2.1.0.0"
+            VALUE "FileVersion", "2.2.0.0"
             VALUE "InternalName", "InoRobotVirtualControllerBridge"
             VALUE "OriginalFilename", "InoRobotVirtualControllerBridge.exe"
             VALUE "ProductName", "InoRobot Virtual Controller Bridge"
-            VALUE "ProductVersion", "2.1"
+            VALUE "ProductVersion", "2.2"
         END
     END
     BLOCK "VarFileInfo"
