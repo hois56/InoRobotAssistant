@@ -24,6 +24,114 @@ async function exportSheet(page, button) {
     }
 }
 
+test('옵션 사진은 행의 크기와 선택을 유지하며 IP67의 IP54 컨트롤러 변경을 설명한다', async ({page}) => {
+    await page.setViewportSize({width:1440, height:960});
+    await page.goto('/1_RobotModelSelect/models/IR-R4H-54S-INT/');
+    const trigger = page.locator('[data-option-photo="ip67"]');
+    const row = trigger.locator('..');
+    const ip67 = row.locator('input[value="ip67"]');
+    const preview = page.locator('#option-photo-preview');
+    await trigger.scrollIntoViewIfNeeded();
+    const before = await row.boundingBox();
+    await expect(preview).not.toBeVisible();
+    await trigger.hover();
+    await expect(preview.locator('img')).toHaveAttribute('src', /IP67_Controller_change\.png$/);
+    await expect(preview).toContainText('IP54 등급의 High-protection 컨트롤러');
+    await expect(ip67).not.toBeChecked();
+    expect(await row.boundingBox()).toEqual(before);
+    const previewBox = await preview.boundingBox();
+    expect(previewBox.width).toBeGreaterThan(500);
+    expect(previewBox.width).toBeLessThanOrEqual(616);
+    const gaps = [previewBox.x - before.x - before.width, before.x - previewBox.x - previewBox.width,
+        previewBox.y - before.y - before.height, before.y - previewBox.y - previewBox.height];
+    expect(gaps.some(gap => gap >= 0 && gap <= 8)).toBe(true);
+    await preview.hover();
+    await expect(preview).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(preview).not.toBeVisible();
+
+    for (const [option, heading, container] of [
+        ['expansion', '컨트롤러 확장 카드 (선택)', '#expansion-cards-container'],
+        ['coupler', '리모트 커플러 (선택)', '#remote-couplers-container']
+    ]) {
+        const icon = page.locator(`[data-option-photo="${option}"]`);
+        await expect(icon).toHaveCount(1);
+        await expect(icon.locator('..').getByRole('heading')).toHaveText(heading);
+        await expect(page.locator(`${container} .option-photo-trigger`)).toHaveCount(0);
+    }
+    const photos = [
+        ['powerCable', 'Power_Encoder_Cable_Langth.png', '로봇 바디와 컨트롤러를 연결하는 케이블의 길이를 선택합니다.'],
+        ['pendant', 'TP200_Cable_Langth.png', '펜던트와 컨트롤러를 연결하는 케이블의 길이를 선택합니다.'],
+        ['ioCable', '6-axis_IO_Cable.png'],
+        ['expansion', 'Expansion Card.png', '최대 슬롯 4개'],
+        ['coupler', 'GL20.png', 'EtherCAT으로 연결'],
+        ['axisZeroing', '6-axis_Zero_cali_Tool.png'],
+        ['battery', 'Abs_Encoder_Battery.png', '로봇 바디에 기본 내장되어 출고'],
+        ['pendantPlug', 'TP_E-stop_dummy_plug.png', '1개가 기본 제공'],
+        ['pendantExtension', 'TP_Extension_Cable.png', '펜던트 케이블 길이가 짧을 때']
+    ];
+    for (const [option, file, caption] of photos) {
+        await page.locator(`[data-option-photo="${option}"]`).first().hover();
+        await expect(preview).toBeVisible();
+        await expect(preview.locator('img')).toHaveAttribute('src', new RegExp(encodeURIComponent(file) + '$'));
+        if (caption) await expect(preview.locator('p')).toContainText(caption);
+        await page.keyboard.press('Escape');
+    }
+});
+
+test('좁은 화면과 유료 하드웨어에서 사진을 열고 닫아도 품목이 선택되지 않는다', async ({page}) => {
+    await page.setViewportSize({width:360, height:800});
+    await page.goto('/1_RobotModelSelect/models/IR-S4-40Z15S-INT/');
+    const preview = page.locator('#option-photo-preview');
+    await expect(page.locator('[data-option-photo="ioCable"]')).toHaveCount(0);
+    const cover = page.locator('[data-option-photo="cover"]').first();
+    await cover.click();
+    await expect(preview.locator('img')).toHaveAttribute('src', /SCARA_Telescopic_cover\.png$/);
+    await expect(cover.locator('..').getByRole('checkbox')).not.toBeChecked();
+    const bounds = await preview.boundingBox();
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(360);
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(800);
+    await cover.click();
+    await expect(preview).not.toBeVisible();
+    const zeroing = page.locator('[data-option-photo="scaraZeroing"]').first();
+    const checkbox = zeroing.locator('..').getByRole('checkbox');
+    await checkbox.focus();
+    // Move through the accompanying label's controls to the preview button.
+    await page.keyboard.press('Tab');
+    await expect(zeroing).toBeFocused();
+    await expect(preview.locator('img')).toHaveAttribute('src', /SCARA_Zero_cali_Tool\.png$/);
+    await expect(preview).toBeVisible();
+
+    await page.goto('/1_RobotModelSelect/');
+    await page.locator('[data-option-id="paid-hardware"]').click();
+    await page.locator('[data-hardware-category="accessories"]').click();
+    const dialog = page.locator('#hardware-dialog');
+    const dummyPlug = dialog.locator('[data-option-photo="pendantPlug"]');
+    await dummyPlug.click();
+    await expect(dialog.locator('#option-photo-preview')).toBeVisible();
+    await expect(preview.locator('img')).toHaveAttribute('src', /TP_E-stop_dummy_plug\.png$/);
+    await expect(dummyPlug.locator('..').getByRole('checkbox')).not.toBeChecked();
+    const plugIcon = await dummyPlug.boundingBox();
+    const plugPreview = await preview.boundingBox();
+    expect(plugPreview.y + plugPreview.height <= plugIcon.y || plugPreview.y >= plugIcon.y + plugIcon.height).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(preview).not.toBeVisible();
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    for (const group of ['expansion', 'coupler']) {
+        await page.locator(`[data-hardware-category="${group}"]`).click();
+        await expect(dialog.locator('.option-photo-trigger')).toHaveCount(1);
+        await dialog.locator(`.hardware-dialog-heading [data-option-photo="${group}"]`).click();
+        await expect(preview.locator('p')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('Escape');
+        await expect(dialog).not.toBeVisible();
+    }
+});
+
 test('필수 로봇 구성 옆에 수량을 표시하고 모델별 선택 항목을 순서대로 나눈다', async ({page}) => {
     const headings = ['로봇 구성 (필수)', '펜던트 구성 (선택)', 'I/O 케이블 구성 (선택)', '통신 구성 (선택)',
         '컨트롤러 확장 카드 (선택)', '리모트 커플러 (선택)', '기타 액세서리 (선택)'];

@@ -244,6 +244,70 @@ body::before {
 .configuration-note { margin: 0 0 8px; }
 div.configuration-hint { margin-bottom: 5px; }
 small.configuration-hint { display: block; margin-top: 4px; }
+.option-photo-row { display: flex; align-items: flex-start; gap: 5px; }
+.option-photo-row:has(> .cable-option) { align-items: center; }
+.option-photo-row > label { flex: 1; min-width: 0; }
+.option-photo-trigger {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-inline-start: 4px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--tool-accent);
+    vertical-align: middle;
+    cursor: pointer;
+}
+.option-photo-row > .option-photo-trigger,
+.configuration-heading > .option-photo-trigger,
+.hardware-dialog-heading > .option-photo-trigger { margin: 0; }
+.option-photo-trigger::before {
+    content: 'i';
+    display: grid;
+    place-items: center;
+    width: 12px;
+    height: 12px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font: 700 10px/1 system-ui, sans-serif;
+}
+.option-photo-trigger:is(:hover, [aria-expanded="true"]) { background: var(--tool-hover); }
+.option-photo-trigger:focus-visible { outline: 2px solid currentColor; outline-offset: 1px; }
+.option-photo-preview {
+    --option-photo-image-height: min(348px, 48vh, var(--option-photo-image-height-limit, 348px));
+    --option-photo-inline-size: min(592px, calc(100vw - 40px), calc(var(--option-photo-ratio, 1) * var(--option-photo-image-height)));
+    position: fixed;
+    inset: auto;
+    z-index: 1100;
+    max-width: min(616px, calc(100vw - 16px));
+    max-height: var(--option-photo-height-limit, calc(100vh - 16px));
+    overflow: auto;
+    margin: 0;
+    padding: 9px;
+    border: 1px solid var(--tool-line);
+    border-radius: 8px;
+    background: var(--tool-surface);
+    color: var(--text-main);
+    box-shadow: 0 4px 14px rgb(20 40 58 / 18%);
+}
+.option-photo-preview img {
+    display: block;
+    width: var(--option-photo-inline-size);
+    height: auto;
+    margin-inline: auto;
+}
+.option-photo-preview p {
+    max-width: max(var(--option-photo-inline-size), min(280px, calc(100vw - 40px)));
+    margin: 7px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
 .configuration-sections .option-item-code { display: none; }
 .configuration-sections input:checked + div .option-item-code { display: inline; }
 .robot-quantity {
@@ -779,6 +843,7 @@ html.model-manual-paused .model-manual-spotlight {
 }
 .hardware-dialog::backdrop { background: rgb(20 40 58 / 45%); }
 .hardware-dialog-content { display: flex; flex-direction: column; max-height: inherit; }
+.hardware-dialog-heading { display: flex; align-items: center; gap: 6px; }
 .hardware-dialog h2 { margin: 0; font: inherit; font-size: 20px; font-weight: 700; }
 .hardware-dialog .close-btn { min-width: 36px; min-height: 36px; }
 #hardware-order-form { display: flex; flex-direction: column; min-height: 0; }

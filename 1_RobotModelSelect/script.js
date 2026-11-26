@@ -111,6 +111,207 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartClearBtn = document.getElementById('cart-clear-btn');
     const cartDownloadBtn = document.getElementById('cart-download-btn');
 
+    const optionPhotos = {
+        ip67: {
+            file: '1.Robot Config/IP67_Controller_change.png',
+            caption: 'IP67 로봇 바디를 선택하면 컨트롤러가 IP54 등급의 High-protection 컨트롤러로 변경됩니다.'
+        },
+        powerCable: {
+            file: '1.Robot Config/Power_Encoder_Cable_Langth.png',
+            caption: '로봇 바디와 컨트롤러를 연결하는 케이블의 길이를 선택합니다.'
+        },
+        pendant: {
+            file: '2.Teach Pendant/TP200_Cable_Langth.png',
+            caption: '펜던트와 컨트롤러를 연결하는 케이블의 길이를 선택합니다.'
+        },
+        ioCable: {file: '3.IO cables/6-axis_IO_Cable.png'},
+        expansion: {
+            file: '4.Expansion Card/Expansion Card.png',
+            caption: '컨트롤러 슬롯에 추가로 장착하는 확장 카드를 선택합니다. (최대 슬롯 4개)'
+        },
+        coupler: {
+            file: '6.Remote Couplers/GL20.png',
+            caption: '리모트 커플러를 로봇 컨트롤러에 EtherCAT으로 연결해 사용할 수 있습니다.'
+        },
+        axisZeroing: {file: '7.Other Accessories/6-axis_Zero_cali_Tool.png'},
+        battery: {
+            file: '7.Other Accessories/Abs_Encoder_Battery.png',
+            caption: '로봇의 절대값 엔코더에 전원을 공급하는 배터리입니다. (로봇 바디에 기본 내장되어 출고되며, 추가 구매를 원할 때 체크하세요.)'
+        },
+        cover: {file: '7.Other Accessories/SCARA_Telescopic_cover.png'},
+        scaraZeroing: {file: '7.Other Accessories/SCARA_Zero_cali_Tool.png'},
+        pendantPlug: {
+            file: '7.Other Accessories/TP_E-stop_dummy_plug.png',
+            caption: '펜던트를 사용하지 않을 때 펜던트 연결부의 비상정지 회로를 유지하는 전용 플러그입니다. (1개가 기본 제공되며, 추가 구매를 원할 때 체크하세요.)'
+        },
+        pendantExtension: {
+            file: '7.Other Accessories/TP_Extension_Cable.png',
+            caption: '펜던트 케이블 길이가 짧을 때 사용하는 연장 케이블입니다.'
+        }
+    };
+    const optionPhotoCaptionId = 'option-photo-caption';
+    const photoPreview = document.createElement('div');
+    photoPreview.id = 'option-photo-preview';
+    photoPreview.className = 'option-photo-preview';
+    photoPreview.setAttribute('popover', 'manual');
+    photoPreview.hidden = true;
+    let photoTrigger = null;
+    let dismissedPhotoTrigger = null;
+    let photoPinned = false;
+    let photoCloseTimer;
+
+    function optionPhotoButton(photo, name) {
+        return photo ? `<button class="option-photo-trigger" type="button" data-option-photo="${photo}"
+            aria-label="${escapeHtml(`${name} · ${uiText('미리보기')}`)}" aria-controls="${photoPreview.id}"
+            aria-expanded="false"></button>` : '';
+    }
+
+    function optionPhotoRow(choice, photo, name) {
+        return photo ? `<div class="option-photo-row">${choice}${optionPhotoButton(photo, name)}</div>` : choice;
+    }
+
+    function closeOptionPhoto() {
+        clearTimeout(photoCloseTimer);
+        if (!photoTrigger) return;
+        photoTrigger.setAttribute('aria-expanded', 'false');
+        photoTrigger.removeAttribute('aria-describedby');
+        photoTrigger = null;
+        photoPinned = false;
+        if (!photoPreview.hidden) photoPreview.hidePopover?.();
+        photoPreview.hidden = true;
+    }
+
+    function closeOptionPhotoAfterLeave() {
+        clearTimeout(photoCloseTimer);
+        photoCloseTimer = setTimeout(() => {
+            if (!photoPinned && !photoTrigger?.matches(':hover, :focus-visible') && !photoPreview.matches(':hover')) {
+                closeOptionPhoto();
+            }
+        }, 180);
+    }
+
+    function dismissOptionPhoto() {
+        dismissedPhotoTrigger = photoTrigger;
+        closeOptionPhoto();
+    }
+
+    function positionOptionPhoto(trigger) {
+        const {left, right, top, bottom} = trigger.getBoundingClientRect();
+        const scrollArea = trigger.closest('.modal-body, .hardware-parts')?.getBoundingClientRect();
+        if (scrollArea && (bottom <= scrollArea.top || top >= scrollArea.bottom)) {
+            closeOptionPhoto();
+            return;
+        }
+        photoPreview.style.removeProperty('--option-photo-height-limit');
+        photoPreview.style.removeProperty('--option-photo-image-height-limit');
+        let {width, height} = photoPreview.getBoundingClientRect();
+        const edge = 8;
+        const gap = 6;
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+        let x = right + gap;
+        let y = top + (bottom - top - height) / 2;
+        if (x + width > viewportWidth - edge) {
+            x = left - width - gap;
+            const row = trigger.closest('.option-photo-row, .configuration-heading, .hardware-dialog-heading, h4, .configuration-hint')?.getBoundingClientRect();
+            if (x < edge || (row && x + width > row.left)) {
+                const aboveEdge = (row?.top ?? top) - gap;
+                const belowEdge = (row?.bottom ?? bottom) + gap;
+                const above = aboveEdge - edge;
+                const below = viewportHeight - belowEdge - edge;
+                const placeBelow = height <= below || (height > above && below >= above);
+                const available = placeBelow ? below : above;
+                if (available < height && available > 0) {
+                    const imageHeight = photoPreview.firstElementChild.getBoundingClientRect().height;
+                    const captionAndFrame = height - imageHeight;
+                    photoPreview.style.setProperty('--option-photo-height-limit', `${available}px`);
+                    photoPreview.style.setProperty('--option-photo-image-height-limit', `${Math.max(64, available - captionAndFrame - 2)}px`);
+                    ({width, height} = photoPreview.getBoundingClientRect());
+                }
+                x = right - width;
+                y = placeBelow ? belowEdge : aboveEdge - height;
+            }
+        }
+        photoPreview.style.left = `${Math.max(edge, Math.min(x, viewportWidth - width - edge))}px`;
+        photoPreview.style.top = `${Math.max(edge, Math.min(y, viewportHeight - height - edge))}px`;
+    }
+
+    async function showOptionPhoto(trigger) {
+        clearTimeout(photoCloseTimer);
+        if (photoTrigger === trigger) return;
+        closeOptionPhoto();
+        photoTrigger = trigger;
+        const owner = trigger.closest('dialog') || document.body;
+        if (photoPreview.parentElement !== owner) owner.appendChild(photoPreview);
+        const photo = optionPhotos[trigger.dataset.optionPhoto];
+        const image = new Image();
+        image.alt = photo.caption ? '' : trigger.getAttribute('aria-label');
+        photoPreview.replaceChildren(image);
+        if (photo.caption) {
+            const caption = document.createElement('p');
+            caption.id = optionPhotoCaptionId;
+            caption.textContent = uiText(photo.caption);
+            photoPreview.appendChild(caption);
+        }
+        image.src = new URL(`상세설명/${photo.file}`, document.baseURI).href;
+        try {
+            await image.decode();
+        } catch {
+            if (photoPreview.firstElementChild === image) closeOptionPhoto();
+            return;
+        }
+        if (photoTrigger !== trigger || !trigger.isConnected || photoPreview.firstElementChild !== image) return;
+        photoPreview.style.setProperty('--option-photo-ratio', image.naturalWidth / image.naturalHeight);
+        photoPreview.hidden = false;
+        photoPreview.showPopover?.();
+        trigger.setAttribute('aria-expanded', 'true');
+        if (photo.caption) trigger.setAttribute('aria-describedby', optionPhotoCaptionId);
+        positionOptionPhoto(trigger);
+    }
+
+    const findPhotoTrigger = target => target.closest?.('.option-photo-trigger');
+    document.addEventListener('pointerover', event => {
+        const trigger = findPhotoTrigger(event.target);
+        if (event.pointerType === 'touch' || (trigger && trigger === dismissedPhotoTrigger)) return;
+        dismissedPhotoTrigger = null;
+        if (trigger) showOptionPhoto(trigger);
+    });
+    document.addEventListener('pointerout', event => {
+        if (photoTrigger && findPhotoTrigger(event.target) === photoTrigger) closeOptionPhotoAfterLeave();
+    });
+    document.addEventListener('focusin', event => {
+        const trigger = findPhotoTrigger(event.target);
+        if (trigger?.matches(':focus-visible')) showOptionPhoto(trigger);
+    });
+    document.addEventListener('focusout', event => {
+        if (event.target === photoTrigger) closeOptionPhotoAfterLeave();
+    });
+    document.addEventListener('click', event => {
+        const trigger = findPhotoTrigger(event.target);
+        if (trigger) {
+            if (photoTrigger === trigger && photoPinned) dismissOptionPhoto();
+            else {
+                showOptionPhoto(trigger);
+                photoPinned = true;
+            }
+        } else if (!photoPreview.contains(event.target)) {
+            closeOptionPhoto();
+        }
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && photoTrigger) {
+            event.preventDefault();
+            dismissOptionPhoto();
+        }
+    }, true);
+    const repositionOptionPhoto = () => {
+        if (photoTrigger && !photoPreview.hidden) positionOptionPhoto(photoTrigger);
+    };
+    document.addEventListener('scroll', repositionOptionPhoto, true);
+    window.addEventListener('resize', repositionOptionPhoto);
+    photoPreview.addEventListener('pointerenter', () => clearTimeout(photoCloseTimer));
+    photoPreview.addEventListener('pointerleave', closeOptionPhotoAfterLeave);
+
     let currentActiveProduct = null;
     let editingCartItemId = null;
     const cartStorageKey = 'inorobot.robotModelSelect.cart.v1';
@@ -637,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ['비상정지 보호 커버 있음', part => part.type === 'Pendant' && part.emergency_stop_cover],
             ['티칭 펜던트 연장 케이블', part => isPendantExtensionCable(part.name)]
         ]},
-        {id: 'expansion', label: '확장 카드', type: 'Expansion Card'},
+        {id: 'expansion', label: '확장 카드', type: 'Expansion Card', photo: 'expansion'},
         {id: 'accessories', label: '기타 악세서리', type: 'Accessory', groups: [
             ['Homing tool', part => part.type === 'Zeroing tool'],
             ['펜던트 케이블·플러그', part => isPendantExtensionCable(part.name) || part.type === 'Pendant dummy Plug'],
@@ -645,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ['Encoder Battery', part => part.type === 'Encoder Battery'],
             ['Fork lift tool for robots', part => part.type === 'Fork lift tool']
         ]},
-        {id: 'coupler', label: '리모트 커플러', type: 'Remote Coupler', groups: [
+        {id: 'coupler', label: '리모트 커플러', type: 'Remote Coupler', photo: 'coupler', groups: [
             ['EtherCAT 커플러', part => /EtherCAT remote module/i.test(part.description)],
             ['디지털 입출력', part => /digital (input|output) module/i.test(part.description)],
             ['아날로그 입출력', part => /analog (input|output) module/i.test(part.description)]
@@ -659,6 +860,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function isPendantExtensionCable(name) {
         return /teach pendant extension cable/i.test(name);
+    }
+    function hardwareOptionPhoto(part) {
+        if (isPendantExtensionCable(part.name)) return 'pendantExtension';
+        switch (part.type) {
+            case 'Pendant': return 'pendant';
+            case 'Encoder Battery': return 'battery';
+            case 'Telescopic Cover': return 'cover';
+            case 'Pendant dummy Plug': return 'pendantPlug';
+            case 'Zeroing tool':
+                return ['32020626', '32020627', '32040084'].includes(part.code) ? 'scaraZeroing' : 'axisZeroing';
+            default: return '';
+        }
     }
     for (const category of hardwareCategories) {
         category.parts = state.accessories.filter(part => hardwareCategoryType(part) === category.type
@@ -715,18 +928,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderHardwareDetails(category, selected = new Map()) {
+        closeOptionPhoto();
         hardwareDialog.dataset.category = category.id;
-        hardwareDialog.querySelector('h2').textContent = uiText(category.label);
+        const title = uiText(category.label);
+        const heading = hardwareDialog.querySelector('.hardware-dialog-heading');
+        heading.querySelector('#hardware-title').textContent = title;
+        heading.querySelector('.option-photo-trigger')?.remove();
+        heading.insertAdjacentHTML('beforeend', optionPhotoButton(category.photo, title));
         hardwareAddButton.textContent = uiText('구성 목록에 담기');
         hardwareAddButton.disabled = !selected.size;
         const labels = ['품목명', '구매 코드', '호환 모델', '수량'].map(key => escapeHtml(uiText(key)));
         function partRow(part) {
-            const name = escapeHtml(uiText(part.name));
+            const title = uiText(part.name);
+            const name = escapeHtml(title);
             const code = escapeHtml(part.code);
             const checked = selected.has(part.code);
             const targets = part.target_models === 'All' ? uiText('전체 모델') : part.target_models;
-            return `<tr><th scope="row"><label class="hardware-choice"><input type="checkbox" name="hardwarePart" value="${code}"${checked ? ' checked' : ''}>
-                <span>${name}<small>${escapeHtml(hardwareDescription(part))}</small></span></label></th>
+            const choice = `<label class="hardware-choice"><input type="checkbox" name="hardwarePart" value="${code}"${checked ? ' checked' : ''}>
+                <span>${name}<small>${escapeHtml(hardwareDescription(part))}</small></span></label>`;
+            return `<tr><th scope="row">${optionPhotoRow(choice, hardwareOptionPhoto(part), title)}</th>
                 <td data-label="${labels[1]}"><code>${code}</code></td><td data-label="${labels[2]}">${escapeHtml(targets)}</td>
                 <td data-label="${labels[3]}"><input class="hardware-quantity" type="number" min="1" step="1" required
                     aria-label="${name} ${labels[3]}" value="${escapeHtml(selected.get(part.code) ?? 1)}"${checked ? '' : ' disabled'}></td></tr>`;
@@ -738,6 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hardwareDialog.querySelector('.hardware-parts').innerHTML = `<table><thead><tr>${labels.map(label => `<th scope="col">${label}</th>`).join('')}</tr></thead>${bodies}</table>`;
     }
 
+    hardwareDialog.addEventListener('close', closeOptionPhoto);
     hardwareOrderForm.addEventListener('click', event => {
         if (event.target.closest('label, input, button')) return;
         const checkbox = event.target.closest('tr')?.querySelector('[name="hardwarePart"]');
@@ -1606,6 +1827,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const product = state.products.find(p => p.id === productId);
         if (!product) return;
 
+        closeOptionPhoto();
         currentActiveProduct = product;
         editingCartItemId = editingId;
 
@@ -1780,9 +2002,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const baseCode = (product.cables && product.cables.length > 0) ? product.cables[0].code : 'N/A';
 
-        const optionalHeading = title => `
+        const optionalHeading = (title, photo) => `
             <div class="configuration-heading">
                 <h3>${escapeHtml(uiText(title))}</h3>
+                ${optionPhotoButton(photo, uiText(title))}
                 <span class="configuration-codes"></span>
             </div>`;
 
@@ -1803,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </label>
                     </div>
                     <div class="configuration-field">
-                        <h4>${uiText('파워/엔코더 케이블 길이')}</h4>
+                        <h4>${uiText('파워/엔코더 케이블 길이')}${optionPhotoButton('powerCable', uiText('파워/엔코더 케이블 길이'))}</h4>
                         <div id="cable-len-container" class="configuration-options"></div>
                     </div>
                     <div class="configuration-field">
@@ -1822,7 +2045,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </li>
                 ${is6Axis ? `
                 <li>
-                    ${optionalHeading('I/O 케이블 구성 (선택)')}
+                    ${optionalHeading('I/O 케이블 구성 (선택)', 'ioCable')}
                     <div class="configuration-field">
                         <h4 id="arm-cable-title">${uiText('Arm I/O 케이블')}</h4>
                         <div id="arm-container" class="configuration-stack"></div>
@@ -1851,11 +2074,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </li>
                 <li>
-                    ${optionalHeading('컨트롤러 확장 카드 (선택)')}
+                    ${optionalHeading('컨트롤러 확장 카드 (선택)', 'expansion')}
                     <div id="expansion-cards-container" class="configuration-stack"></div>
                 </li>
                 <li>
-                    ${optionalHeading('리모트 커플러 (선택)')}
+                    ${optionalHeading('리모트 커플러 (선택)', 'coupler')}
                     <div id="remote-couplers-container" class="configuration-stack"></div>
                 </li>
                 <li>
@@ -1934,19 +2157,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const inputName = isScara ? 'scaraVariant' : 'robotBodyOption';
             const selectedId = isScara ? product.id : 'standard';
             bodyOptions.forEach(option => {
-                const btn = document.createElement('label');
-                btn.className = 'cable-option';
-                btn.style.margin = '0';
-                btn.style.alignItems = 'center';
-                btn.style.minWidth = '190px';
-                btn.innerHTML = `
+                const name = uiText(option.label);
+                const choice = `<label class="cable-option" style="margin:0; min-width:190px;">
                     <input type="radio" name="${inputName}" value="${option.id}" ${option.id === selectedId ? 'checked' : ''} data-label="${option.label}" data-spec="${option.spec}">
                     <span>
-                        <strong>${uiText(option.label)}</strong>
+                        <strong>${name}</strong>
                         <small class="configuration-hint">${localizeDisplayText(option.spec)}</small>
                     </span>
-                `;
-                robotBodyOptionContainer.appendChild(btn);
+                </label>`;
+                robotBodyOptionContainer.insertAdjacentHTML('beforeend', optionPhotoRow(choice, option.id === 'ip67' ? 'ip67' : '', name));
             });
         }
 
@@ -2036,7 +2255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div style="margin-top:4px;">
-                <div class="configuration-hint">${uiText('펜던트 길이 선택')}</div>
+                <div class="configuration-hint">${uiText('펜던트 길이 선택')}${optionPhotoButton('pendant', uiText('펜던트 길이 선택'))}</div>
                 <div style="display:flex; flex-wrap:wrap; gap:10px;" id="pendant-length-radios"></div>
             </div>
         `;
@@ -2192,19 +2411,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const otherOptions = compatible.filter(a => hardwareCategoryType(a) === 'Accessory');
 
         if (otherOptions.length > 0) {
-            otherOptions.forEach(acc => {
-                const lbl = document.createElement('label');
-                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
-                lbl.innerHTML = `
+            otherAccContainer.innerHTML = otherOptions.map(acc => {
+                const name = uiText(acc.name || 'Accessory');
+                const choice = `<label class="expansion-card-choice">
                     <input type="checkbox" name="accSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
-                    <div style="flex:1;">
-                        <strong>${uiText(acc.name || 'Accessory')}</strong>
+                    <div class="expansion-card-description">
+                        <strong>${name}</strong>
                         <span class="option-item-code code-badge">${acc.code}</span>
                         <br><span class="configuration-hint">${uiText(acc.description)}</span>
                     </div>
-                `;
-                otherAccContainer.appendChild(lbl);
-            });
+                </label>`;
+                return optionPhotoRow(choice, hardwareOptionPhoto(acc), name);
+            }).join('');
             otherAccContainer.addEventListener('change', updateHeaderCodes);
         } else {
             otherAccContainer.innerHTML = `<span class="configuration-hint">${uiText('기타 악세서리가 없습니다.')}</span>`;
@@ -2233,19 +2451,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const remoteCouplerOptions = accs.filter(a => a.type === 'Remote Coupler');
 
         if (remoteCouplerOptions.length > 0) {
-            remoteCouplerOptions.forEach(acc => {
-                const lbl = document.createElement('label');
-                lbl.style.display = "flex"; lbl.style.alignItems = "start"; lbl.style.gap = "8px"; lbl.style.fontSize = "14px"; lbl.style.cursor = "pointer";
-                lbl.innerHTML = `
+            remoteCouplerContainer.innerHTML = remoteCouplerOptions.map(acc => `<label class="expansion-card-choice">
                     <input type="checkbox" name="remoteCouplerSelection" value="${acc.code}" data-desc="${acc.name} - ${acc.description}" data-spec="${acc.spec || ''}" style="margin-top:3px;">
-                    <div style="flex:1;">
+                    <div class="expansion-card-description">
                         <strong>${uiText(acc.name)}</strong>
                         <span class="option-item-code code-badge">${acc.code}</span>
                         <br><span class="configuration-hint">${uiText(acc.description)}</span>
                     </div>
-                `;
-                remoteCouplerContainer.appendChild(lbl);
-            });
+                </label>`).join('');
             remoteCouplerContainer.addEventListener('change', updateHeaderCodes);
         } else {
             remoteCouplerContainer.innerHTML = `<span class="configuration-hint">${uiText('리모트 커플러 옵션이 없습니다.')}</span>`;
@@ -2268,6 +2481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeOptionsModal({syncUrl = true} = {}) {
+        closeOptionPhoto();
         const wasOpen = modalOverlay.style.display !== 'none';
         modalOverlay.style.display = 'none';
         currentActiveProduct = null;
