@@ -36,7 +36,9 @@
               {
                 "title": "Ver 26.11.27",
                 "items": [
-                  "`[수정]` 로컬 테스트와 미리보기에서 발생한 방문은 운영 사이트 통계에 포함되지 않습니다."
+                  "`[수정]` 로컬 테스트와 미리보기에서 발생한 방문은 운영 사이트 통계에 포함되지 않습니다.",
+                  "`[추가]` 홈에서 AI 챗봇으로 로봇 모델, 알람 코드, CAD와 매뉴얼을 질문하고 답변의 출처를 열 수 있습니다.",
+                  "`[개선]` AI 챗봇 질문 처리 방식과 보관 안내를 개인정보처리방침에 추가했습니다."
                 ]
               },
               {
@@ -130,6 +132,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[수정]` 클린형 로봇의 예상 납기를 10주로 업데이트했습니다."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -1212,6 +1220,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[수정]` 티치 펜던트 매뉴얼의 PDF 표시 제목을 실제 파일명과 맞췄습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[수정]` 로봇 셀렉션 가이드와 리플릿 PDF의 미리보기 및 다운로드 링크를 수정했습니다."
@@ -1940,7 +1954,9 @@
               {
                 "title": "Ver 26.11.27",
                 "items": [
-                  "`[Fixed]` Visits from local tests and previews are no longer included in production site statistics."
+                  "`[Fixed]` Visits from local tests and previews are no longer included in production site statistics.",
+                  "`[Added]` Ask the homepage AI chatbot about robot models, alarms, CAD files, and manuals, and open the sources behind its answers.",
+                  "`[Improved]` The privacy policy now explains how the AI chatbot handles and retains submitted questions."
                 ]
               },
               {
@@ -2034,6 +2050,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Fixed]` Updated the estimated lead time for cleanroom robots to 10 weeks."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -3116,6 +3138,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Fixed]` The teach pendant manual’s PDF title now matches its filename."
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[Fixed]` Fixed the PDF preview and download links for the robot selection guide and leaflet."
@@ -3844,7 +3872,9 @@
               {
                 "title": "Ver 26.11.27",
                 "items": [
-                  "`[修复]` 本地测试和预览产生的访问不再计入正式网站统计。"
+                  "`[修复]` 本地测试和预览产生的访问不再计入正式网站统计。",
+                  "`[新增]` 可在首页向 AI 聊天助手咨询机器人型号、报警代码、CAD 文件和手册，并打开回答所引用的资料。",
+                  "`[改进]` 隐私政策补充了 AI 聊天助手的问题处理和保留说明。"
                 ]
               },
               {
@@ -3938,6 +3968,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[修正]` 洁净型机器人的预计交期更新为 10 周。"
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -5020,6 +5056,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[修正]` 示教器手册的 PDF 显示标题与实际文件名一致。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[修复]` 修复了机器人选型指南和产品折页 PDF 的预览和下载链接。"
@@ -5748,7 +5790,9 @@
               {
                 "title": "Ver 26.11.27",
                 "items": [
-                  "`[Đã sửa]` Lượt truy cập từ môi trường thử nghiệm cục bộ và bản xem trước không còn được tính vào thống kê của trang chính thức."
+                  "`[Đã sửa]` Lượt truy cập từ môi trường thử nghiệm cục bộ và bản xem trước không còn được tính vào thống kê của trang chính thức.",
+                  "`[Bổ sung]` Hỏi chatbot AI ở trang chủ về mẫu robot, mã cảnh báo, tệp CAD và tài liệu, rồi mở nguồn tham khảo trong câu trả lời.",
+                  "`[Cải tiến]` Chính sách quyền riêng tư giải thích cách chatbot AI xử lý và lưu giữ câu hỏi."
                 ]
               },
               {
@@ -5842,6 +5886,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Đã sửa]` Cập nhật thời gian giao hàng dự kiến của robot phòng sạch thành 10 tuần."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -6924,6 +6974,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Đã sửa]` Tiêu đề hiển thị của PDF hướng dẫn tay dạy giờ khớp với tên tệp."
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[Sửa lỗi]` Đã sửa liên kết xem trước và tải xuống bản PDF của hướng dẫn lựa chọn robot và tờ giới thiệu sản phẩm."
@@ -7652,7 +7708,9 @@
               {
                 "title": "Ver 26.11.27",
                 "items": [
-                  "`[Düzeltildi]` Yerel test ve önizleme ziyaretleri artık yayındaki sitenin istatistiklerine dahil edilmez."
+                  "`[Düzeltildi]` Yerel test ve önizleme ziyaretleri artık yayındaki sitenin istatistiklerine dahil edilmez.",
+                  "`[Eklendi]` Ana sayfadaki yapay zekâ sohbet botuna robot modelleri, alarm kodları, CAD dosyaları ve kılavuzlar hakkında soru sorabilir ve yanıtın kaynaklarını açabilirsiniz.",
+                  "`[İyileştirildi]` Gizlilik politikası, sohbet botu sorularının nasıl işlendiğini ve saklandığını açıklıyor."
                 ]
               },
               {
@@ -7746,6 +7804,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Düzeltildi]` Temiz oda robotlarının tahmini teslim süresi 10 hafta olarak güncellendi."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -8828,6 +8892,12 @@
             "title": "Document",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Düzeltildi]` Öğretme paneli kılavuzunun PDF başlığı dosya adıyla eşleştirildi."
+                ]
+              },
+              {
                 "title": "Ver 26.11.25",
                 "items": [
                   "`[Düzeltildi]` Robot seçim kılavuzunun ve ürün broşürünün PDF önizleme ve indirme bağlantıları düzeltildi."
@@ -9556,7 +9626,9 @@
               {
                 "title": "Ver 26.11.27",
                 "items": [
-                  "`[Исправлено]` Посещения при локальном тестировании и предварительном просмотре больше не учитываются в статистике рабочего сайта."
+                  "`[Исправлено]` Посещения при локальном тестировании и предварительном просмотре больше не учитываются в статистике рабочего сайта.",
+                  "`[Добавлено]` На главной странице можно задать ИИ-чатботу вопрос о моделях роботов, кодах тревог, CAD-файлах и руководствах и открыть источники ответа.",
+                  "`[Улучшено]` В политике конфиденциальности описано, как обрабатываются и хранятся вопросы чатбота."
                 ]
               },
               {
@@ -9650,6 +9722,12 @@
           {
             "title": "Robot Model Select",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Исправлено]` Расчётный срок поставки роботов для чистых помещений обновлён до 10 недель."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -10731,6 +10809,12 @@
           {
             "title": "Document",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Исправлено]` Заголовок PDF руководства по пульту обучения теперь совпадает с именем файла."
+                ]
+              },
               {
                 "title": "Ver 26.11.25",
                 "items": [

@@ -93,7 +93,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/Language/runtime/i18n.css?v=20261121-header-font">
-    <script src="/Language/runtime/locales-data.js?v=5295581e7f1e" defer></script>
+    <script src="/Language/runtime/locales-data.js?v=0e41f7c1381f" defer></script>
     <script src="/Language/runtime/i18n.js?v=32e3e6ff3849" defer></script>
     <script src="/Language/runtime/icon-fallback.js" defer></script>
 <script src="/analytics-config.js"></script>
@@ -378,6 +378,9 @@ function refreshLocalizedHelpImages(locale){
   });
 }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');const m=t.dataset.mode;document.getElementById('mode-direct').classList.toggle('hide',m!=='direct');document.getElementById('mode-calc').classList.toggle('hide',m!=='calc');document.getElementById('mode-shape').classList.toggle('hide',m!=='shape');document.getElementById('mode-cad').classList.toggle('hide',m!=='cad');document.getElementById('robot-card').classList.toggle('hide',m==='shape'||m==='cad');document.getElementById('main-calculate').classList.toggle('hide',m==='cad');document.getElementById('result').classList.add('hide');if(m==='cad')window.ToolModeD?.activate();});
+if (new URL(location.href).searchParams.get('mode') === 'cad') {
+    document.addEventListener('DOMContentLoaded', () => document.querySelector('.tab[data-mode="cad"]')?.click(), {once:true});
+}
 const sel=document.getElementById('robot');
 const gCobot=document.createElement('optgroup');gCobot.label=uiText('다관절로봇');
 const gScara=document.createElement('optgroup');gScara.label='SCARA';

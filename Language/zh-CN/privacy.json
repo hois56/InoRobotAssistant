@@ -6,11 +6,11 @@
       "backLink": "← InoRobot Assistant 首页",
       "heading": "隐私政策",
       "effectiveDateLabel": "生效日期：",
-      "effectiveDate": "2026年8月12日",
+      "effectiveDate": "2026年11月27日",
       "scopeLabel": "适用范围：",
       "scope": "https://inovancerobot.com/ 及其子页面",
       "intro": "INOVANCE Robot Assistant（以下简称“本网站”）重视访问者的隐私。本政策说明本网站处理哪些信息以及处理目的。",
-      "notice": "本网站不提供注册、登录、支付或咨询表单，也不会直接收集或保存访问者的姓名、电话号码、电子邮箱等信息。",
+      "notice": "本站不提供注册、登录或支付功能。使用 AI 聊天助手时，请勿输入姓名、电话号码、电子邮件地址等个人信息，也不要输入客户资料等保密信息。",
       "operatorHeading": "1. 运营者与联系",
       "operatorLabel": "运营者：",
       "contactLabel": "隐私相关联系：",
@@ -37,7 +37,12 @@
       "rightsParagraph": "有关个人信息处理的咨询，以及访问、更正、删除或限制处理的请求，可发送至 inovancerobot@gmail.com。如果本网站不收集可直接识别个人身份的信息，可用于处理请求的信息可能受到限制。",
       "changesHeading": "7. 政策变更",
       "changesParagraph": "当分析工具、外部服务或相关法律发生变化时，本页面可能会更新。变更时将更新生效日期并公开变更内容。",
-      "footerPolicy": "隐私政策"
+      "footerPolicy": "隐私政策",
+      "chatHeading": "四、AI 聊天助手",
+      "chatProcessing": "您在 AI 聊天助手中发送问题时，当前问题、上一条问题（如有）和所选语言将经 Cloudflare Workers 传送至 OpenAI API，以生成回复。Cloudflare 会处理您的访问 IP 地址，以限制过量请求。",
+      "chatRetention": "本站关闭了 OpenAI API 的响应存储选项。除非明确选择同意，否则 OpenAI 不会使用 API 数据训练模型。不过，在默认设置下，问答内容可能在滥用监测日志中保留最多 30 天；出于法律要求或安全需要，保留期可能延长。",
+      "chatChoice": "AI 聊天助手为可选功能。如果不愿发送问题，您仍可浏览本站及其公开资料。",
+      "chatProviderLink": "OpenAI API 数据处理说明"
     }
   },
   "legacy": {},

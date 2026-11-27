@@ -6,11 +6,11 @@
       "backLink": "← InoRobot Assistant home",
       "heading": "Privacy Policy",
       "effectiveDateLabel": "Effective date:",
-      "effectiveDate": "August 12, 2026",
+      "effectiveDate": "November 27, 2026",
       "scopeLabel": "Applies to:",
       "scope": "https://inovancerobot.com/ and its subpages",
       "intro": "INOVANCE Robot Assistant (the “Site”) values visitors’ privacy. This policy explains what information the Site processes and why.",
-      "notice": "The Site does not provide account registration, login, payment, or inquiry forms. It does not directly collect or store information such as visitors’ names, telephone numbers, or email addresses.",
+      "notice": "The Site does not offer account registration, login or payments. Do not enter personal information such as names, phone numbers or email addresses, or confidential information such as customer details, in the AI chatbot.",
       "operatorHeading": "1. Operator and contact",
       "operatorLabel": "Operator:",
       "contactLabel": "Privacy contact:",
@@ -37,7 +37,12 @@
       "rightsParagraph": "Questions about personal-information processing and requests for access, correction, deletion, or restriction of processing may be sent to inovancerobot@gmail.com. If the Site does not collect directly identifiable personal information, the information available to process such a request may be limited.",
       "changesHeading": "7. Changes to this policy",
       "changesParagraph": "This page may be updated when analytics tools, external services, or applicable laws change. The effective date will be updated and the change will be published.",
-      "footerPolicy": "Privacy Policy"
+      "footerPolicy": "Privacy Policy",
+      "chatHeading": "D. AI chatbot",
+      "chatProcessing": "When you send a question in the AI chatbot, your question, the previous question (if any), and the selected language are sent through Cloudflare Workers to the OpenAI API to generate a reply. Cloudflare processes your IP address to limit excessive chatbot requests.",
+      "chatRetention": "The Site disables response storage in the OpenAI API. OpenAI does not use API data to train its models unless you explicitly opt in. Under the default settings, questions and answers may still be kept in abuse monitoring logs for up to 30 days, or longer when required by law or necessary for safety.",
+      "chatChoice": "The chatbot is optional. If you do not want to send your question, you can browse the Site and its public documents without using the chatbot.",
+      "chatProviderLink": "OpenAI API data handling"
     }
   },
   "legacy": {},

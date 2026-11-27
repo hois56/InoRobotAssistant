@@ -11,7 +11,7 @@ GOOGLE_SHEETS_DATA_START = "Daily!A2"
 
 [triggers]
 # 01:00 UTC = 10:00 KST. The Worker refreshes the previous three KST days.
-crons = ["0 1 * * *"]
+crons = ["0 0 * * *", "0 1 * * *"]
 
 [observability.logs]
 enabled = true

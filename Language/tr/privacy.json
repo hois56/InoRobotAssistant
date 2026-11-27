@@ -6,11 +6,11 @@
       "backLink": "← InoRobot Asistanı ana sayfası",
       "heading": "Gizlilik Politikası",
       "effectiveDateLabel": "Geçerlilik tarihi:",
-      "effectiveDate": "12 Ağustos 2026",
+      "effectiveDate": "27 Kasım 2026",
       "scopeLabel": "Şunlar için geçerlidir:",
       "scope": "https://inovancerobot.com/ ve alt sayfaları",
       "intro": "INOVANCE Robot Asistanı (\"Site\") ziyaretçilerin gizliliğine değer verir. Bu politika, Sitenin hangi bilgileri neden işlediğini açıklar.",
-      "notice": "Site hesap kaydı, oturum açma, ödeme veya sorgulama formları sağlamaz. Ziyaretçilerin adları, telefon numaraları veya e-posta adresleri gibi bilgileri doğrudan toplamaz veya saklamaz.",
+      "notice": "Site hesap kaydı, giriş veya ödeme özelliği sunmaz. Yapay zekâ sohbet botuna ad, telefon numarası veya e-posta adresi gibi kişisel bilgileri ya da müşteri bilgileri gibi gizli verileri girmeyin.",
       "operatorHeading": "1. Operatör ve iletişim",
       "operatorLabel": "Operatör:",
       "contactLabel": "Gizlilik iletişim bilgileri:",
@@ -37,7 +37,12 @@
       "rightsParagraph": "Kişisel bilgilerin işlenmesine ilişkin sorular ve erişim, düzeltme, silme veya işlemenin kısıtlanması talepleri inovancerobot@gmail.com adresine gönderilebilir. Sitenin doğrudan tanımlanabilir kişisel bilgileri toplamaması durumunda, bu tür bir talebin işlenmesi için mevcut bilgiler sınırlı olabilir.",
       "changesHeading": "7. Bu politikadaki değişiklikler",
       "changesParagraph": "Bu sayfa, analiz araçları, harici hizmetler veya geçerli yasalar değiştiğinde güncellenebilir. Yürürlük tarihi güncellenecek ve değişiklik yayınlanacak.",
-      "footerPolicy": "Gizlilik Politikası"
+      "footerPolicy": "Gizlilik Politikası",
+      "chatHeading": "D. Yapay zekâ sohbet botu",
+      "chatProcessing": "Sohbet botunda soru gönderdiğinizde yanıt üretmek için sorunuz, varsa önceki sorunuz ve seçtiğiniz dil Cloudflare Workers üzerinden OpenAI API’ye iletilir. Cloudflare, aşırı sayıda isteği sınırlamak için IP adresinizi işler.",
+      "chatRetention": "Site, OpenAI API’nin yanıtları saklama seçeneğini kapatır. Açıkça onay verilmedikçe OpenAI, API verilerini model eğitiminde kullanmaz. Varsayılan ayarlarda sorular ve yanıtlar, kötüye kullanım izleme kayıtlarında 30 güne kadar, yasal zorunluluk veya güvenlik gereği daha uzun süre saklanabilir.",
+      "chatChoice": "Sohbet botunu kullanmak isteğe bağlıdır. Sorunuzu göndermek istemiyorsanız Siteyi ve herkese açık belgeleri botsuz inceleyebilirsiniz.",
+      "chatProviderLink": "OpenAI API veri işleme bilgileri"
     }
   },
   "legacy": {},

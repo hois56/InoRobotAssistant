@@ -1,0 +1,20 @@
+# InoRobot Web Assistant
+
+Independent from the Slack bot. The home dialog sends the current question, the preceding question from the same page, and the site's current locale. It does not use local storage for chat. The Worker searches the public document index and catalog first. If evidence is missing, the model requests a second search, or a visitor asks for live verification, the Worker may read up to two relevant public HTML pages on inovancerobot.com (plus the sitemap). Only same-origin canonical redirects may be followed. External links, private resources, and arbitrary visitor-supplied URLs are not opened. PDFs use indexed text with page citations; this feature does not open live PDFs or run site JavaScript. The provider is `gpt-6-luna` via Responses, with `store: false`, `reasoning.effort: none`, and `max_output_tokens: 1050`. It does not invoke a paid external web search tool or expose Slack credentials, endpoints, or private files.
+
+## Deploy the Worker
+
+- Create a dedicated OpenAI project and a server-side restricted key. Enable only the needed model; use spending enforcement and disable automatic recharge if the owner wants credits-only operation. Set this key as `OPENAI_API_KEY` under the Worker’s **Settings → Variables and Secrets → Secret**. Do not put it in HTML, Wrangler vars, a command logged in shell history, or version control.
+- `npx wrangler deploy --config wrangler.toml` uploads the named web Worker. Its 6/minute client limit and monthly Luna budget ($95 public and $5 authenticated local preview, UTC) apply before model generation, including a second model call. The endpoint is publicly reachable to support the website, and CORS is not authentication. Existing Slack remains unchanged. Supply the independent preview credential as a Worker secret, never in source or browser code.
+- GET `/healthz` returning 200 only verifies the Worker route; complete a real POST smoke test with a synthetic public-data question after setting the key. Check a model/STEP question, `731.0`, and a non-Korean locale. Rotate and update the secret if needed.
+- The user must explicitly ask to push before publishing the web UI to GitHub Pages.
+
+## Tests
+
+`node --test worker.test.mjs` checks query normalization, the model payload, catalog evidence, source filtering, and budget behavior. The repo's `tests/ui/robot-chat.spec.mjs` checks all six home locales with a mocked API. The servo catalog is extracted without executing any program from the public InoDiagAnalyzer V2.1 distribution and points to the official site.
+
+## Public website and document index
+
+The web assistant uses an isolated Workers Assets binding for the additional text index. Its internal JSON paths are intentionally not served by the Worker. The existing shared D1 catalog is unchanged. This is retrieval, not model training.
+
+To regenerate in a clean private build directory: copy `collect.mjs`, `build-index.mjs`, and `public-corpus.mjs`; install the pinned build dependencies with `npm install --ignore-scripts --no-save pdfjs-dist@4.10.38 cheerio@1.0.0`, then run node collect.mjs, node include-cad.mjs, and node build-index.mjs corpus-publish-rows.json. On supported Windows hosts, copy the OCR scripts, set PDFTOPPM to the trusted Poppler executable, and run node extract-ocr.mjs before node include-cad.mjs corpus-ocr-rows.json. Include-cad and the OCR scripts are in this directory. Review ocr-audit.json. Review `corpus-audit.json` for incomplete files and empty or image-only pages. The collector only follows public first-party links and visible catalog entries. No private PC documents or credentials are read. Executables and CAD files are listed as downloads, never run or represented as text. Copy Worker sources and `wrangler.toml` into that directory for deployment. Keep generated JSON and vendor dependencies out of Git and verify the deployed `/_kb/docs.json` route returns 404. For a catalog update, also regenerate the Worker model allowlist from the live public sitemap.

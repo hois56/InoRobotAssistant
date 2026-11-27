@@ -114,7 +114,7 @@ globalThis.InoSite = (() => {
         const subtype = product.specs['Sub Type'];
         const weeks = wasm().lead_time(product.specs.Type === 'SCARA', product.id.endsWith('C-INT'), certified,
             product.id.includes('S60') || subtype === '클린형' || subtype === '경제형', Boolean(code && code !== '-'));
-        return weeks ? weeks + '주' : '6개월';
+        return (weeks || 10) + '주'; // The calculator's cleanroom marker is zero; publish 10 weeks.
     }
     function history(markdown, heading = '', stopAtRule = false) {
         const title = encoder.encode(heading), body = encoder.encode(markdown);

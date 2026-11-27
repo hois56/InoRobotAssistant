@@ -6,11 +6,11 @@
       "backLink": "← Trang chủ InoRobot Assistant",
       "heading": "Chính sách quyền riêng tư",
       "effectiveDateLabel": "Ngày có hiệu lực:",
-      "effectiveDate": "12 tháng 8 năm 2026",
+      "effectiveDate": "27 tháng 11 năm 2026",
       "scopeLabel": "Phạm vi áp dụng:",
       "scope": "https://inovancerobot.com/ và các trang con",
       "intro": "INOVANCE Robot Assistant (sau đây gọi là “Trang web”) coi trọng quyền riêng tư của khách truy cập. Chính sách này giải thích Trang web xử lý thông tin nào và vì mục đích gì.",
-      "notice": "Trang web không cung cấp biểu mẫu đăng ký, đăng nhập, thanh toán hoặc liên hệ. Trang web không trực tiếp thu thập hay lưu trữ tên, số điện thoại, địa chỉ email hoặc thông tin tương tự của khách truy cập.",
+      "notice": "Trang web không cung cấp tính năng đăng ký tài khoản, đăng nhập hoặc thanh toán. Không nhập thông tin cá nhân như tên, số điện thoại, địa chỉ email hoặc thông tin mật như dữ liệu khách hàng vào chatbot AI.",
       "operatorHeading": "1. Đơn vị vận hành và liên hệ",
       "operatorLabel": "Đơn vị vận hành:",
       "contactLabel": "Liên hệ về quyền riêng tư:",
@@ -37,7 +37,12 @@
       "rightsParagraph": "Các câu hỏi về việc xử lý thông tin cá nhân và yêu cầu truy cập, chỉnh sửa, xóa hoặc hạn chế xử lý có thể gửi đến inovancerobot@gmail.com. Nếu Trang web không thu thập thông tin cá nhân có thể nhận diện trực tiếp, thông tin có thể dùng để xử lý yêu cầu sẽ bị giới hạn.",
       "changesHeading": "7. Thay đổi chính sách",
       "changesParagraph": "Trang này có thể được cập nhật khi công cụ phân tích, dịch vụ bên ngoài hoặc pháp luật liên quan thay đổi. Khi có thay đổi, ngày có hiệu lực sẽ được cập nhật và nội dung thay đổi sẽ được công bố.",
-      "footerPolicy": "Chính sách quyền riêng tư"
+      "footerPolicy": "Chính sách quyền riêng tư",
+      "chatHeading": "D. Chatbot AI",
+      "chatProcessing": "Khi bạn gửi câu hỏi qua chatbot AI, câu hỏi đó, câu hỏi trước đó (nếu có) và ngôn ngữ đã chọn được chuyển qua Cloudflare Workers đến API OpenAI để tạo câu trả lời. Cloudflare xử lý địa chỉ IP truy cập để giới hạn số lượng yêu cầu quá mức.",
+      "chatRetention": "Trang web tắt tùy chọn lưu phản hồi của API OpenAI. OpenAI không dùng dữ liệu API để huấn luyện mô hình trừ khi có sự đồng ý rõ ràng. Theo thiết lập mặc định, câu hỏi và câu trả lời vẫn có thể được giữ trong nhật ký giám sát hành vi lạm dụng tối đa 30 ngày, hoặc lâu hơn nếu pháp luật yêu cầu hoặc vì lý do an toàn.",
+      "chatChoice": "Bạn không bắt buộc phải dùng chatbot. Nếu không muốn gửi câu hỏi, bạn vẫn có thể xem trang web và các tài liệu công khai.",
+      "chatProviderLink": "Cách OpenAI xử lý dữ liệu API"
     }
   },
   "legacy": {},

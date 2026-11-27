@@ -2,6 +2,7 @@ const GRAPHQL_ENDPOINT = 'https://api.cloudflare.com/client/v4/graphql';
 const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const GOOGLE_SHEETS_ENDPOINT = 'https://sheets.googleapis.com/v4/spreadsheets';
 const GOOGLE_TREND_SHEET_NAME = '주간·월간 추이';
+const GOOGLE_KST_SHEET_NAME = 'Daily_KST';
 const ANALYTICS_START_DATE = '2026-07-22';
 const KST_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
 const KST_UTC_OFFSET = '+09:00';
@@ -36,6 +37,82 @@ const GOOGLE_SHEET_HEADERS = [
     '수집 시각 한국 시간 (collected_at)'
 ];
 
+
+const HOME_COUNTER_CAPTURE_CRON = '0 0 * * *';
+const HOME_COUNTER_SHEET_RANGE = "'홈 방문 카운터'!A2:C";
+const HOME_COUNTER_SITE_URL = 'https://inovancerobot.com/';
+const HOME_COUNTER_ORIGIN = new URL(HOME_COUNTER_SITE_URL).origin;
+const HOME_COUNTER_READ_URL = 'https://inorobot-visitor-counter.hois56.workers.dev/visit';
+const HOME_CAPTURE_MAX_DELAY_MS = 15 * 60 * 1000;
+
+async function ensureHomeCounterSnapshotTable(db) {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS home_counter_snapshots (
+        date_kst TEXT PRIMARY KEY,
+        observed_at TEXT NOT NULL,
+        total INTEGER NOT NULL CHECK (total >= 0)
+    )`).run();
+}
+
+async function captureHomeCounter(controller, env) {
+    const scheduled = new Date(controller.scheduledTime);
+    const now = Date.now();
+    if (!Number.isFinite(scheduled.getTime()) || now < scheduled.getTime()
+        || now - scheduled.getTime() > HOME_CAPTURE_MAX_DELAY_MS) {
+        throw new Error('Outside the 09:00 KST home counter capture window; no snapshot written.');
+    }
+    const request = new Request(HOME_COUNTER_READ_URL, {
+        method: 'GET',
+        headers: { Origin: HOME_COUNTER_ORIGIN, 'Cache-Control': 'no-cache' }
+    });
+    const response = env.HOME_COUNTER
+        ? await env.HOME_COUNTER.fetch(request)
+        : await fetch(request);
+    if (!response.ok) throw new Error(`Home counter read failed (${response.status}).`);
+    const data = await response.json();
+    if (data?.ok !== true || data.counted !== false || !Number.isSafeInteger(data.total) || data.total < 0) {
+        throw new Error('Home counter returned an invalid or non-read-only response.');
+    }
+    const observedAt = new Date();
+    if (observedAt.getTime() - scheduled.getTime() > HOME_CAPTURE_MAX_DELAY_MS) {
+        throw new Error('Home counter read finished outside the capture window; no snapshot written.');
+    }
+    const date = formatKoreanDate(scheduled);
+    await ensureHomeCounterSnapshotTable(env.ANALYTICS_DB);
+    const result = await env.ANALYTICS_DB.prepare(
+        'INSERT OR IGNORE INTO home_counter_snapshots (date_kst, observed_at, total) VALUES (?, ?, ?)'
+    ).bind(date, observedAt.toISOString(), data.total).run();
+    return { date, saved: result.meta?.changes === 1 };
+}
+
+async function publishHomeCounterSnapshots(env, accessToken, spreadsheetId, observationDate) {
+    await ensureHomeCounterSnapshotTable(env.ANALYTICS_DB);
+    const result = await env.ANALYTICS_DB.prepare(
+        "SELECT date_kst, observed_at, total FROM home_counter_snapshots WHERE date_kst <= ? AND date_kst >= date(?, '-7 days') ORDER BY date_kst ASC"
+    ).bind(observationDate, observationDate).all();
+    const snapshots = result.results || [];
+    if (!snapshots.length) return 0;
+
+    const range = encodeURIComponent(HOME_COUNTER_SHEET_RANGE);
+    const current = await googleSheetsApiRequest(
+        accessToken, `${spreadsheetId}/values/${range}?valueRenderOption=UNFORMATTED_VALUE`
+    );
+    const existing = new Set((current.values || []).map(row => String(row[0] || '').slice(0, 10)));
+    const pending = snapshots.filter(snapshot => !existing.has(snapshot.date_kst));
+    if (!pending.length) return 0;
+    const rows = pending.map(snapshot => [
+        formatKoreanDateTime(snapshot.observed_at),
+        snapshot.total,
+        HOME_COUNTER_SITE_URL
+    ]);
+    await googleSheetsApiRequest(
+        accessToken,
+        `${spreadsheetId}/values/${range}:append?valueInputOption=RAW&insertDataOption=OVERWRITE`,
+        'POST',
+        { majorDimension: 'ROWS', values: rows }
+    );
+    return rows.length;
+}
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -43,12 +120,21 @@ export default {
             return json({ ok: true, service: SERVICE_NAME });
         }
         if (url.pathname === '/analytics.csv') {
-            return await handleAnalyticsCsv(request, env, url);
+            const cutoverDate = getKstCutoverDate(env);
+            return cutoverDate
+                ? await handleLegacyAnalyticsCsv(env, url, cutoverDate)
+                : await handleAnalyticsCsv(request, env, url);
         }
         return json({ ok: false, message: 'Not Found' }, 404);
     },
 
     async scheduled(controller, env) {
+        if (controller.cron === HOME_COUNTER_CAPTURE_CRON) {
+            const snapshot = await captureHomeCounter(controller, env);
+            console.info('home-counter-capture-complete', snapshot);
+            return;
+        }
+
         validateEnvironment(env);
         await ensureSyncStateTable(env);
 
@@ -81,9 +167,10 @@ export default {
             });
         }
 
+        if (plan.cutoverDate && plan.dates.length === 0) return;
         if (googleSheetsConfigured(env)) {
             try {
-                const result = await syncGoogleSheet(env);
+                const result = await syncGoogleSheet(env, plan.cutoverDate, formatKoreanDate(referenceDate));
                 console.info('google-sheets-sync-complete', result);
             } catch (error) {
                 console.error('google-sheets-sync-failed', { message: error?.message || String(error) });
@@ -118,6 +205,12 @@ function validateEnvironment(env) {
 
 async function collectDate(date, env, graphQLBudget) {
     const { start, end } = getKoreanDayUtcWindow(date);
+    if (env.WEB_ANALYTICS_KST_CUTOVER_DATE) {
+        const existing = await env.ANALYTICS_DB.prepare(
+            'SELECT source_window_start, source_window_end FROM analytics_daily WHERE date = ? AND host = ?'
+        ).bind(date, env.WEB_ANALYTICS_HOST).first();
+        if (existing && !hasKstWindow(date, existing)) return { date, skipped: 'legacy-window-preserved' };
+    }
     const collectedAt = new Date().toISOString();
     const archive = await queryRawAnalytics({
         accountTag: env.CLOUDFLARE_ACCOUNT_TAG,
@@ -530,6 +623,23 @@ function splitRawBody(value) {
     return parts.length > 0 ? parts : [''];
 }
 
+async function handleLegacyAnalyticsCsv(env, url, cutoverDate) {
+    if (!env.ANALYTICS_DB) return json({ ok: false, message: 'Analytics database is not configured.' }, 503);
+
+    // Preserve the previously public CSV and never expose new KST rows here.
+    const limit = Math.min(Math.max(Number(url.searchParams.get('limit') || CSV_DEFAULT_LIMIT), 1), CSV_MAX_LIMIT);
+    const result = await env.ANALYTICS_DB.prepare(
+        "SELECT date, host, page_views, referrer_visits, sample_interval, " +
+        "source_window_start, source_window_end, collected_at " +
+        "FROM analytics_daily WHERE host = ? AND date >= ? AND date < ? " +
+        "AND source_window_start IN (date || 'T00:00:00Z', date || 'T00:00:00.000Z') " +
+        "AND source_window_end IN (date(date, '+1 day') || 'T00:00:00Z', date(date, '+1 day') || 'T00:00:00.000Z') " +
+        "ORDER BY date ASC LIMIT ?"
+    ).bind(env.WEB_ANALYTICS_HOST, ANALYTICS_START_DATE, cutoverDate, limit).all();
+
+    return makeAnalyticsCsvResponse(result.results || []);
+}
+
 async function handleAnalyticsCsv(request, env, url) {
     if (!env.ANALYTICS_DB) return json({ ok: false, message: 'Analytics database is not configured.' }, 503);
     if (!env.ANALYTICS_CSV_TOKEN || typeof env.ANALYTICS_CSV_TOKEN !== 'string') {
@@ -569,6 +679,10 @@ async function handleAnalyticsCsv(request, env, url) {
         ORDER BY date ASC
     `).bind(env.WEB_ANALYTICS_HOST, ANALYTICS_START_DATE, limit).all();
 
+    return makeAnalyticsCsvResponse(result.results || []);
+}
+
+function makeAnalyticsCsvResponse(records) {
     const headers = [
         'date',
         'host',
@@ -579,7 +693,7 @@ async function handleAnalyticsCsv(request, env, url) {
         'source_window_end',
         'collected_at'
     ];
-    const rows = (result.results || []).map(row => [
+    const rows = records.map(row => [
         row.date,
         row.host,
         row.page_views,
@@ -623,9 +737,22 @@ function googleSheetsConfigured(env) {
     );
 }
 
+function getKstCutoverDate(env) {
+    const cutoverDate = String(env.WEB_ANALYTICS_KST_CUTOVER_DATE || '').trim();
+    if (cutoverDate) {
+        getKoreanDayUtcWindow(cutoverDate);
+        if (cutoverDate < ANALYTICS_START_DATE) throw new Error('KST cutover cannot precede the analytics start date.');
+    }
+    return cutoverDate;
+}
+
 async function getCollectionPlan(referenceDate, env) {
     const referenceDay = new Date(`${formatKoreanDate(referenceDate)}T00:00:00Z`);
     const recentDates = getRecentDates(referenceDay);
+    const cutoverDate = getKstCutoverDate(env);
+    if (cutoverDate) {
+        return { dates: recentDates.filter(date => date >= cutoverDate), backfill: false, cutoverDate };
+    }
     const state = await env.ANALYTICS_DB
         .prepare('SELECT value FROM analytics_sync_state WHERE key = ?')
         .bind(BACKFILL_STATE_KEY)
@@ -679,7 +806,7 @@ async function saveBackfillState(env, value) {
     `).bind(BACKFILL_STATE_KEY, value).run();
 }
 
-async function syncGoogleSheet(env) {
+async function syncGoogleSheet(env, cutoverDate, homeCounterDate = null) {
     const accessToken = await getGoogleAccessToken(env);
     const result = await env.ANALYTICS_DB.prepare(`
         SELECT date, host, page_views, referrer_visits, sample_interval,
@@ -687,8 +814,11 @@ async function syncGoogleSheet(env) {
         FROM analytics_daily
         WHERE host = ? AND date >= ?
         ORDER BY date ASC
-    `).bind(env.WEB_ANALYTICS_HOST, ANALYTICS_START_DATE).all();
-    const values = (result.results || []).map(row => [
+    `).bind(env.WEB_ANALYTICS_HOST, cutoverDate || ANALYTICS_START_DATE).all();
+    const rows = result.results || [];
+    const verifiedRows = cutoverDate ? rows.filter(row => hasKstWindow(row.date, row)) : rows;
+    if (cutoverDate && !verifiedRows.length) return { rows: 0, status: 'waiting-for-kst-data' };
+    const values = verifiedRows.map(row => [
         row.date,
         row.host,
         row.page_views,
@@ -699,16 +829,16 @@ async function syncGoogleSheet(env) {
         formatKoreanDateTime(row.collected_at)
     ]);
 
-    const headerRange = env.GOOGLE_SHEETS_HEADER_RANGE || 'Daily!A1:H1';
-    const clearRange = env.GOOGLE_SHEETS_CLEAR_RANGE || 'Daily!A2:H';
-    const dataStartRange = env.GOOGLE_SHEETS_DATA_START || 'Daily!A2';
+    const headerRange = cutoverDate ? GOOGLE_KST_SHEET_NAME + '!A1:H1' : env.GOOGLE_SHEETS_HEADER_RANGE || 'Daily!A1:H1';
+    const clearRange = cutoverDate ? GOOGLE_KST_SHEET_NAME + '!A2:H' : env.GOOGLE_SHEETS_CLEAR_RANGE || 'Daily!A2:H';
+    const dataStartRange = cutoverDate ? GOOGLE_KST_SHEET_NAME + '!A2' : env.GOOGLE_SHEETS_DATA_START || 'Daily!A2';
     const spreadsheetId = encodeURIComponent(env.GOOGLE_SHEETS_ID);
 
     if (values.length === 0) {
         throw new Error('Refusing to replace the Google Sheet because D1 returned no analytics rows.');
     }
 
-    await ensureGoogleSheetRowCapacity(accessToken, spreadsheetId, dataStartRange, values.length);
+    await ensureGoogleSheetRowCapacity(accessToken, spreadsheetId, dataStartRange, values.length, Boolean(cutoverDate));
 
     // Write the complete replacement before clearing anything. If this request
     // fails, the current sheet remains intact instead of being left empty.
@@ -731,7 +861,11 @@ async function syncGoogleSheet(env) {
     const trailingClearRange = buildTrailingClearRange(dataStartRange, clearRange, values.length);
     await googleSheetsValuesRequest(accessToken, spreadsheetId, trailingClearRange, 'POST', {}, 'clear');
 
-    const trendSheet = await syncGoogleTrendSheet(accessToken, spreadsheetId, values.length);
+    const trendSheet = cutoverDate ? null : await syncGoogleTrendSheet(accessToken, spreadsheetId, values.length);
+    if (homeCounterDate) {
+        const homeRows = await publishHomeCounterSnapshots(env, accessToken, spreadsheetId, homeCounterDate);
+        console.info('home-counter-sheet-sync-complete', { date: homeCounterDate, rows: homeRows });
+    }
     return { spreadsheetId: env.GOOGLE_SHEETS_ID, rows: values.length, trendSheet };
 }
 
@@ -751,7 +885,7 @@ function buildTrailingClearRange(dataStartRange, configuredClearRange, writtenRo
     return `${clear.sheetPrefix}${clear.startColumn}${firstStaleRow}:${clear.endColumn}`;
 }
 
-async function ensureGoogleSheetRowCapacity(accessToken, spreadsheetId, dataStartRange, writtenRowCount) {
+async function ensureGoogleSheetRowCapacity(accessToken, spreadsheetId, dataStartRange, writtenRowCount, createKstSheet = false) {
     const dataStart = parseA1Range(dataStartRange);
     const sheetTitle = unquoteA1SheetName(dataStart.sheet);
     if (!sheetTitle) throw new Error('Google Sheets data start range must include a sheet name.');
@@ -762,6 +896,15 @@ async function ensureGoogleSheetRowCapacity(accessToken, spreadsheetId, dataStar
     );
     const sheet = (metadata.sheets || []).find(item => item.properties?.title === sheetTitle);
     if (sheet?.properties?.sheetId === undefined) {
+        if (createKstSheet && sheetTitle === GOOGLE_KST_SHEET_NAME) {
+            await googleSheetsApiRequest(accessToken, spreadsheetId + ':batchUpdate', 'POST', {
+                requests: [{ addSheet: { properties: {
+                    title: sheetTitle,
+                    gridProperties: { rowCount: Math.max(1000, dataStart.startRow + writtenRowCount), columnCount: 8, frozenRowCount: 1 }
+                } } }]
+            });
+            return;
+        }
         throw new Error(`Google Sheets tab was not found: ${sheetTitle}`);
     }
 
@@ -1346,6 +1489,12 @@ function getKoreanDayUtcWindow(date) {
         start: startDate.toISOString().replace('.000Z', 'Z'),
         end: new Date(startDate.getTime() + 24 * 60 * 60 * 1000).toISOString().replace('.000Z', 'Z')
     };
+}
+
+function hasKstWindow(date, row) {
+    const { start, end } = getKoreanDayUtcWindow(date);
+    return Date.parse(row.source_window_start) === Date.parse(start)
+        && Date.parse(row.source_window_end) === Date.parse(end);
 }
 
 function formatKoreanDateTime(value) {

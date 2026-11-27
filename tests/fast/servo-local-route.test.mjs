@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-test('가상환경의 모션 카드는 서보 페이지와 이미지·스타일을 제공한다', { timeout: 15000 }, async t => {
+test('가상환경의 홈에는 서보 카드가 없고 서보 페이지와 이미지·스타일은 직접 접속할 수 있다', { timeout: 15000 }, async t => {
     const reservation = net.createServer();
     reservation.listen(0, '127.0.0.1');
     await once(reservation, 'listening');
@@ -35,7 +35,7 @@ test('가상환경의 모션 카드는 서보 페이지와 이미지·스타일�
     const base = `http://127.0.0.1:${port}`;
     const home = await fetch(base + '/');
     assert.equal(home.status, 200);
-    assert.match(await home.text(), /id="motion-card" href="\/Servo\/"/);
+    assert.ok(!(await home.text()).includes('href="/Servo/"'), '홈에 서보 페이지 링크가 표시됩니다.');
     for (const route of ['/Servo/', '/Servo/index.html']) {
         const page = await fetch(base + route);
         assert.equal(page.status, 200, route);

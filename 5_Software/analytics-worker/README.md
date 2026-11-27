@@ -19,7 +19,7 @@ only runs as a scheduled server-side collector.
    npx wrangler@latest d1 execute inorobot-analytics --remote --file=schema.sql
    ```
 
-3. D1 stores the daily metrics, and the deployed Worker exposes a protected,
+3. Outside cutover mode, D1 stores the daily metrics and the Worker exposes a protected,
    Excel-compatible CSV download at `/analytics.csv`. Create a strong bearer
    token as a Worker secret:
 
@@ -97,6 +97,16 @@ progress is saved immediately after the D1 batch succeeds, before Sheets sync;
 therefore a temporary Sheets failure does not recollect the same GraphQL batch,
 and the next successful invocation still rewrites Sheets from all D1 rows. The
 D1 upsert and full-sheet synchronization prevent duplicate rows.
+
+
+## Safe UTC-to-KST cutover
+
+In cutover mode the previously public /analytics.csv remains an Excel-compatible
+snapshot of only the pre-cutover 09:00 KST legacy rows, in the original chronological
+order and format. It does not expose newly collected KST-midnight rows. Read the
+new data from the existing access-controlled spreadsheet's Daily_KST tab.
+
+Set `WEB_ANALYTICS_KST_CUTOVER_DATE` (YYYY-MM-DD in KST) on the production Worker before enabling this release. In this mode the Worker does not backfill automatically. It collects completed days from that date onward and preserves any pre-existing UTC-window row and raw archive for the same date. Valid KST rows go to the new `Daily_KST` sheet tab. The original `Daily` and its charts remain unchanged. Do not total the two tabs together or disable the cutover setting to recover older days. Compare the new values to the exact same host and midnight interval in Cloudflare before moving charts or reconciling past days.
 
 ## Stored metrics
 

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const allTools = ['tool-model', 'tool-simulation', 'tool-tool', 'tool-project', 'tool-software', 'tool-document', 'tool-debuggingTool', 'motion-card-title'];
+const allTools = ['tool-model', 'tool-simulation', 'tool-tool', 'tool-project', 'tool-software', 'tool-document', 'tool-debuggingTool'];
 const categoryTools = [
     ['tool-model', 'tool-tool', 'tool-document'],
     ['tool-simulation', 'tool-tool', 'tool-document'],
@@ -23,7 +23,7 @@ for (const [locale, labels] of Object.entries({
         const filters = page.locator('.tool-filters');
         const visibleTools = () => page.locator('.tool-card:visible h2').evaluateAll(titles => titles.map(title => title.id));
         const [all, ...categories] = labels;
-        const allLabel = `${all} 8`;
+        const allLabel = `${all} ${allTools.length}`;
         await expect(filters.getByRole('button')).toHaveText([allLabel, ...categories]);
         expect(await visibleTools()).toEqual(allTools);
         const expectedTools = [...categoryTools, allTools];
@@ -45,7 +45,7 @@ test('홈의 각 도구는 카드 한 곳에서 열고 헤더에는 원본 로�
     await page.goto('/0_Home/ko/');
 
     const cards = page.locator('.tool-grid a.tool-link');
-    await expect(cards).toHaveCount(8);
+    await expect(cards).toHaveCount(allTools.length);
     const toolPaths = await cards.evaluateAll(links => links.map(link => link.pathname));
     const visiblePaths = await page.locator('a:visible').evaluateAll(links => links.map(link => link.pathname));
     for (const path of toolPaths) {

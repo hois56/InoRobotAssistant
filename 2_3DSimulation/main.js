@@ -148,7 +148,7 @@ import {
     updateOlpFileText
 } from './olp-project-core.mjs?v=20261102-generator-2';
 import { createEquipmentApp } from './equipment-app.mjs?v=20261123-live-settings';
-import { createVisionApp } from './vision-app.mjs?v=20261126-native-vision';
+import { createVisionApp } from './vision-app.mjs?v=20261126-native-vision&labCamera=20261126-readiness';
 import { EQUIPMENT_TYPES, EQUIPMENT_IO_TYPES, EQUIPMENT_LABELS, normalizeEquipmentDefinition, equipmentMotionGroups, equipmentReferences, equipmentCommandOptions } from './equipment-core.mjs?v=20261107-object-home-1';
 import { equipmentObjectRef } from './equipment-scene.mjs?v=20261123-grip-time';
 import { normalizeModelGroupTree, walkModelGroups, modelGroupPath, modelGroupAtPath, dissolveModelGroup, moveModelsToGroup } from './model-group-tree-core.mjs';
@@ -38283,6 +38283,18 @@ const visionApp = createVisionApp({
     moveTcp: moveRobotTcpForVision,
     saveRobotState: saveVisionRobotState,
     isExternallyDriven: (robot) => isVirtualControllerActiveForRobot(robot),
+    labVisionSource: (robot) => {
+        if (!robot) return null;
+        const now = performance.now();
+        const session = getVirtualControllerForRobot(robot);
+        if (session) {
+            if (session.controllerKind !== 'virtual' || !session.lastSampleAt || now - session.lastSampleAt > 1500 ||
+                !isVirtualControllerSourceLive(now, session)) return null;
+            applyVirtualControllerFrameForController(now, session);
+            return session.status === 'error' ? null : session.sessionId;
+        }
+        return null;
+    },
     isBusy: () => isRobotMotionActive() || isOlpRunning(),
     models: () => state.models,
     modelId: (model) => ensureWorkspaceModelId(model),

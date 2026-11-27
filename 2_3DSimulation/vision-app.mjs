@@ -652,8 +652,69 @@ export function createVisionApp(adapter) {
         schedulePanelRender();
     }
 
+
+
+    const labCameraEndpoint = 'http://127.0.0.1:8766';
+    let labCameraSession = null;
+    let labCameraRetryAt = 0;
+    let disposed = false;
+
+    function releaseLabCamera() {
+        const session = labCameraSession;
+        if (!session) return;
+        labCameraSession = null;
+        session.abort.abort();
+        void fetch(`${labCameraEndpoint}/offline?page=${session.page}`, {
+            method: 'POST', keepalive: true
+        }).catch(() => {});
+    }
+
+    window.addEventListener('pagehide', releaseLabCamera);
+
+    async function pollLabCamera() {
+        const robot = calibrationRobot();
+        const source = config().enabled ? adapter.labVisionSource?.(robot) : null;
+        if (labCameraSession && (source !== labCameraSession.source || robot !== labCameraSession.robot))
+            releaseLabCamera();
+        if (disposed || !source || labCameraSession || performance.now() < labCameraRetryAt) return;
+        const session = { page: crypto.randomUUID().replaceAll('-', ''), robot, source, abort: new AbortController() };
+        labCameraSession = session;
+        const current = () => labCameraSession === session && config().enabled &&
+            calibrationRobot() === robot && adapter.labVisionSource?.(robot) === source;
+        try {
+            while (current()) {
+                const response = await fetch(`${labCameraEndpoint}/capture?page=${session.page}`, {
+                    cache: 'no-store', signal: session.abort.signal
+                });
+                if (response.status === 204) continue;
+                if (!response.ok) break;
+                const id = await response.text();
+                if (!/^[a-f0-9]{32}$/.test(id)) break;
+                if (!current()) break;
+                const result = await controller.rawPixels(true);
+                if (!current()) break;
+                const query = new URLSearchParams({ id, page: session.page });
+                if (result?.ok) {
+                    query.set('u', result.u.toFixed(3));
+                    query.set('v', result.v.toFixed(3));
+                }
+                if (!(await fetch(`${labCameraEndpoint}/capture?${query}`, {
+                    method: 'POST', signal: session.abort.signal
+                })).ok) break;
+            }
+        } catch {
+            // Lab may be closed while the web simulation remains open.
+        } finally {
+            if (labCameraSession === session) {
+                labCameraRetryAt = performance.now() + 2000;
+                releaseLabCamera();
+            }
+        }
+    }
+
     function tick() {
         const cfg = config();
+        void pollLabCamera();
         if (!cfg.enabled) return;
         syncCameraFromModel();
         // The camera model can be deleted from the model tree at any time.
@@ -1254,6 +1315,9 @@ export function createVisionApp(adapter) {
         drawImage,
         get state() { return state; },
         dispose() {
+            disposed = true;
+            window.removeEventListener('pagehide', releaseLabCamera);
+            releaseLabCamera();
             clearInterval(state.tickTimer); clearInterval(state.ioTimer); clearInterval(state.liveTimer);
             disconnectExternal();
             rig.dispose(); mark.dispose(); imageRenderer.dispose();
