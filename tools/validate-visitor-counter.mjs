@@ -42,6 +42,7 @@ assert.match(clientSource, /currentText\.replace\(\/\[0-9\]\[0-9,\]\*\//);
 async function renderClientCount(initialText, total) {
     const counter = { textContent: initialText };
     vm.runInNewContext(clientSource, {
+        window: { location: new URL('https://inovancerobot.com/') },
         document: { getElementById: id => id === 'visit-count' ? counter : null },
         fetch: async () => ({
             ok: true,

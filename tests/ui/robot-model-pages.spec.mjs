@@ -157,13 +157,22 @@ test('기존 model 매개변수도 지원하고 잘못된 모델·숨겨진 모�
     expect(new URL(page.url()).pathname).toBe(catalog);
 });
 
-test('통계 비콘이 감지하는 경로 변경은 모델을 열 때 한 번이며 언어·옵션 변경에는 중복되지 않는다',async({page})=>{
-    await page.route('https://static.cloudflareinsights.com/beacon.min.js',route=>route.fulfill({
-        contentType:'application/javascript',
-        body:'window.__modelPageViews=[];const originalPush=history.pushState;history.pushState=function(...args){const out=originalPush.apply(this,args);window.__modelPageViews.push(location.pathname);return out;};'
-    }));
+test('로컬 모델 경로 변경은 한 번만 일어나고 운영 통계 비콘은 전송하지 않는다',async({page})=>{
+    const productionAnalyticsRequests=[];
+    await page.route('https://static.cloudflareinsights.com/**',route=>{
+        productionAnalyticsRequests.push(route.request().url());
+        return route.abort();
+    });
+    await page.addInitScript(()=>{
+        window.__modelPageViews=[];
+        const originalPush=history.pushState;
+        history.pushState=function(...args){
+            const out=originalPush.apply(this,args);
+            window.__modelPageViews.push(location.pathname);
+            return out;
+        };
+    });
     await page.goto(catalog);
-    await expect.poll(()=>page.evaluate(()=>Array.isArray(window.__modelPageViews))).toBe(true);
     const id='IR-R15H-145S-K-INT';
     await modelCard(page,id).click();
     await expect(page.locator('#options-modal')).toBeVisible();
@@ -172,7 +181,8 @@ test('통계 비콘이 감지하는 경로 변경은 모델을 열 때 한 번�
     await expect(page).toHaveURL(new RegExp(modelPath(id)+'\\?lang=en$'));
     await expect(page.locator('#modal-model-name')).toHaveText(id);
     expect(await page.evaluate(()=>window.__modelPageViews)).toEqual([modelPath(id)]);
-    await expect(page.locator('[data-inorobot-cloudflare-analytics]')).toHaveCount(1);
+    await expect(page.locator('[data-inorobot-cloudflare-analytics]')).toHaveCount(0);
+    expect(productionAnalyticsRequests).toEqual([]);
 });
 
 test('자바스크립트 없이도 모델 링크·사양·개별 제목과 canonical을 제공한다',async({browser})=>{

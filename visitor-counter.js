@@ -30,6 +30,9 @@
 
     renderVisitCount(fallbackCount);
 
+    const { protocol, hostname } = window.location;
+    if (protocol !== 'https:' || (hostname !== 'inovancerobot.com' && hostname !== 'www.inovancerobot.com')) return;
+
     fetch(visitCounterUrl, {
         method: 'POST',
         cache: 'no-store',

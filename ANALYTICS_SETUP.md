@@ -13,6 +13,8 @@ Beacon token은 `analytics-config.js`에 입력되어 있으며, 배포 후 페�
 
 토큰은 브라우저에 전달되는 공개 식별자이므로 소스에 포함되어도 정상입니다. API 키나 비밀번호를 입력하면 안 됩니다.
 
+운영 집계는 HTTPS의 정확한 운영 호스트(inovancerobot.com, www.inovancerobot.com)에서만 전송합니다. localhost, 로컬 IP, 파일 열기 및 미리보기 주소에서는 분석 비콘과 누적 카운터 요청을 전송하지 않습니다.
+
 ## 방문자 분석
 
 사이트에는 목적이 다른 두 지표가 있습니다.

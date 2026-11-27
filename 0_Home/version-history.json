@@ -34,6 +34,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[수정]` 로컬 테스트와 미리보기에서 발생한 방문은 운영 사이트 통계에 포함되지 않습니다."
+                ]
+              },
+              {
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[개선]` 공유한 도구 링크를 열면 링크에 지정된 언어가 유지됩니다."
@@ -1931,6 +1937,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Fixed]` Visits from local tests and previews are no longer included in production site statistics."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -3830,6 +3842,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[修复]` 本地测试和预览产生的访问不再计入正式网站统计。"
+                ]
+              },
+              {
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[改进]` 打开分享的工具链接时会保留链接指定的语言。"
@@ -5727,6 +5745,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Đã sửa]` Lượt truy cập từ môi trường thử nghiệm cục bộ và bản xem trước không còn được tính vào thống kê của trang chính thức."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [
@@ -7626,6 +7650,12 @@
             "title": "InoRobot Assistant",
             "versions": [
               {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Düzeltildi]` Yerel test ve önizleme ziyaretleri artık yayındaki sitenin istatistiklerine dahil edilmez."
+                ]
+              },
+              {
                 "title": "Ver 26.11.26",
                 "items": [
                   "`[İyileştirildi]` Paylaşılan araç bağlantıları, bağlantıda belirtilen dilde açılır."
@@ -9523,6 +9553,12 @@
           {
             "title": "InoRobot Assistant",
             "versions": [
+              {
+                "title": "Ver 26.11.27",
+                "items": [
+                  "`[Исправлено]` Посещения при локальном тестировании и предварительном просмотре больше не учитываются в статистике рабочего сайта."
+                ]
+              },
               {
                 "title": "Ver 26.11.26",
                 "items": [

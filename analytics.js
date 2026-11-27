@@ -4,6 +4,9 @@
  * it possible to disable analytics by clearing the token in analytics-config.js.
  */
 (function loadInoRobotAnalytics() {
+    const { protocol, hostname } = window.location;
+    if (protocol !== 'https:' || (hostname !== 'inovancerobot.com' && hostname !== 'www.inovancerobot.com')) return;
+
     const embedMode = new URLSearchParams(window.location.search).get('embed');
     const isEmbeddedManual = window.self !== window.top
         && (embedMode === 'manual' || embedMode === 'manual-guide');
